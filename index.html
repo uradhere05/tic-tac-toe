@@ -305,6 +305,11 @@
   <div class="slogan">Tic Tac Toe for the ADHD in you.</div>
   <div class="best-of">Best of 3 Game Wins</div>
 
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;width:100%;justify-content:center;">
+    <span id="lobby-greeting" style="font-size:0.82rem;letter-spacing:1px;opacity:0.7;"></span>
+    <button class="btn btn-secondary btn-sm" style="padding:6px 14px;font-size:0.65rem;" onclick="changeName()">Change</button>
+  </div>
+
   <p class="pick-label">Pick a Room</p>
 
   <div class="rooms-grid">
@@ -436,11 +441,17 @@
 
   /* ── Name selection ── */
   function selectName(name) {
+    if (myName && myName !== name) setOffline(myName); // logout old name immediately
     myName = name;
     startOnlinePresence(name);
     show('s-lobby');
+    document.getElementById('lobby-greeting').textContent = 'Hi, ' + name + '!';
     startPresencePoll();
     loadAndRenderLeaderboard();
+  }
+
+  function changeName() {
+    show('s-name');
   }
 
   /* ── Firebase — leaderboard ── */
