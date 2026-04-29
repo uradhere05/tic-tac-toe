@@ -211,6 +211,23 @@
     .lb-wins { font-size: 1rem; font-weight: 700; color: #ffd200; }
     .lb-empty { font-size: 0.75rem; opacity: 0.3; text-align: center; letter-spacing: 1px; padding: 14px 0; }
 
+    /* ── Online now ── */
+    .online-section { width: 100%; margin-top: 20px; }
+    .online-title { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
+    .online-pills { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+    .online-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 5px 13px;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .online-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #4caf50;
+      animation: pdot 1.8s ease-in-out infinite;
+    }
+    @keyframes pdot { 0%,100% { opacity:1; box-shadow:0 0 0 0 #4caf5066; } 50% { opacity:.6; box-shadow:0 0 0 4px #4caf5000; } }
+    .online-empty { font-size: 0.72rem; opacity: 0.28; text-align: center; letter-spacing: 1px; padding: 6px 0; }
+
     /* ── Error ── */
     .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
 
@@ -274,6 +291,11 @@
       <div class="nc-num">10</div><div class="nc-name">Shantelle</div>
     </div>
   </div>
+
+  <div class="online-section">
+    <div class="online-title">Online Now</div>
+    <div id="ol-name"><div class="online-empty">Checking…</div></div>
+  </div>
 </div>
 
 <!-- ══ LOBBY ══ -->
@@ -304,6 +326,11 @@
   </div>
 
   <div class="err" id="lobby-err"></div>
+
+  <div class="online-section">
+    <div class="online-title">Online Now</div>
+    <div id="ol-lobby"><div class="online-empty">Checking…</div></div>
+  </div>
 
   <div class="lb-section">
     <div class="lb-title">Weekly Leaderboard</div>
@@ -410,6 +437,7 @@
   /* ── Name selection ── */
   function selectName(name) {
     myName = name;
+    startOnlinePresence(name);
     show('s-lobby');
     startPresencePoll();
     loadAndRenderLeaderboard();
@@ -449,6 +477,62 @@
     } catch { el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'; }
   }
 
+  /* ── Firebase — online presence ── */
+  const ONLINE_STALE = 2.5 * 60 * 1000; // 2.5 min
+  let onlineHeartbeat = null;
+  let onlineInterval  = null;
+
+  async function setOnline(name) {
+    try {
+      await fetch(`${DB}/online/${encodeURIComponent(name)}.json`, {
+        method: 'PUT', body: JSON.stringify({ ts: Date.now() })
+      });
+    } catch(e) {}
+  }
+
+  async function setOffline(name) {
+    try {
+      await fetch(`${DB}/online/${encodeURIComponent(name)}.json`, { method: 'DELETE' });
+    } catch(e) {}
+  }
+
+  function startOnlinePresence(name) {
+    setOnline(name);
+    clearInterval(onlineHeartbeat);
+    onlineHeartbeat = setInterval(() => setOnline(name), 60000);
+  }
+
+  function startOnlinePoll() {
+    loadOnlineUsers();
+    clearInterval(onlineInterval);
+    onlineInterval = setInterval(loadOnlineUsers, 5000);
+  }
+
+  function stopOnlinePoll() { clearInterval(onlineInterval); onlineInterval = null; }
+
+  async function loadOnlineUsers() {
+    try {
+      const data = await fetch(`${DB}/online.json`).then(r => r.json()) || {};
+      const now = Date.now();
+      const names = Object.entries(data || {})
+        .filter(([, v]) => v && (now - v.ts < ONLINE_STALE))
+        .map(([n]) => n);
+      renderOnline(names);
+    } catch { renderOnline([]); }
+  }
+
+  function renderOnline(names) {
+    const html = names.length
+      ? `<div class="online-pills">${names.map(n =>
+          `<div class="online-pill"><span class="online-dot"></span>${n}</div>`
+        ).join('')}</div>`
+      : '<div class="online-empty">No one online yet</div>';
+    ['ol-name', 'ol-lobby'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  }
+
   /* ── Firebase — room presence ── */
   async function writePresence(roomN, role) {
     try {
@@ -468,7 +552,8 @@
   function startPresencePoll() {
     stopPresencePoll();
     loadRoomPresence();
-    presenceInterval = setInterval(loadRoomPresence, 4000);
+    loadOnlineUsers();
+    presenceInterval = setInterval(() => { loadRoomPresence(); loadOnlineUsers(); }, 4000);
   }
 
   function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; }
@@ -797,6 +882,14 @@
     stopHeartbeat(); setConn(false); over = true;
     setStatus(`<span class="dt">Opponent disconnected</span>`);
   }
+
+  // Show online users on the name screen immediately
+  startOnlinePoll();
+
+  // Clear online presence when closing the browser
+  window.addEventListener('beforeunload', () => {
+    if (myName) navigator.sendBeacon(`${DB}/online/${encodeURIComponent(myName)}.json`, 'null');
+  });
 </script>
 </body>
 </html>
