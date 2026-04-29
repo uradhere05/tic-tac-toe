@@ -91,26 +91,39 @@
     }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.3); }
 
-    /* ── Input ── */
-    input {
-      width: 100%;
-      padding: 15px;
-      border-radius: 50px;
-      border: 1.5px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.07);
-      color: #fff;
-      font-size: 1.4rem;
-      letter-spacing: 8px;
-      text-align: center;
-      text-transform: uppercase;
-      outline: none;
-      margin-bottom: 12px;
-      font-weight: 700;
+    /* ── Room picker ── */
+    .pick-label {
+      font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+      opacity: 0.45; margin-bottom: 14px;
     }
-    input::placeholder { letter-spacing: 2px; opacity: 0.35; font-size: 0.85rem; font-weight: 400; }
-    input:focus { border-color: #ffd200; }
 
-    /* ── Room code box ── */
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 14px;
+    }
+
+    .room-card {
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      padding: 22px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .room-card:hover  { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+    .room-card:active { transform: scale(0.94); }
+
+    .room-card .rn { font-size: 2.2rem; font-weight: 900; color: #ffd200; line-height: 1; }
+    .room-card .rl { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; margin-top: 5px; }
+
+    .room-card-5 { grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; }
+
+    /* ── Room code box (waiting screen) ── */
     .code-box {
       width: 100%;
       background: rgba(255,255,255,0.06);
@@ -121,7 +134,7 @@
       margin-bottom: 18px;
     }
     .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
-    .code-value { font-size: 2.8rem; font-weight: 900; letter-spacing: 10px; color: #ffd200; }
+    .code-value { font-size: 2.4rem; font-weight: 900; letter-spacing: 4px; color: #ffd200; }
 
     /* ── Spinner ── */
     .spinner {
@@ -268,13 +281,26 @@
   <div class="game-title">Tictactoe</div>
   <div class="slogan">Tic Tac Toe for the ADHD in you.</div>
 
-  <button class="btn btn-primary" onclick="createGame()">Create Game</button>
+  <p class="pick-label">Pick a Room</p>
 
-  <div class="divider">or join</div>
+  <div class="rooms-grid">
+    <div class="room-card" onclick="enterRoom(1)">
+      <div class="rn">1</div><div class="rl">Room 1</div>
+    </div>
+    <div class="room-card" onclick="enterRoom(2)">
+      <div class="rn">2</div><div class="rl">Room 2</div>
+    </div>
+    <div class="room-card" onclick="enterRoom(3)">
+      <div class="rn">3</div><div class="rl">Room 3</div>
+    </div>
+    <div class="room-card" onclick="enterRoom(4)">
+      <div class="rn">4</div><div class="rl">Room 4</div>
+    </div>
+    <div class="room-card room-card-5" onclick="enterRoom(5)">
+      <div class="rn">5</div><div class="rl">Room 5</div>
+    </div>
+  </div>
 
-  <input id="join-input" type="text" maxlength="6" placeholder="Room code"
-         oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
-  <button class="btn btn-secondary" onclick="joinGame()">Join Game</button>
   <div class="err" id="lobby-err"></div>
 </div>
 
@@ -283,12 +309,11 @@
   <h1>FILO Gang</h1>
   <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
-    <div class="code-label">Room Code</div>
+    <div class="code-label">You're in</div>
     <div class="code-value" id="code-display"></div>
   </div>
-  <button class="btn btn-secondary btn-sm" onclick="copyCode()">Copy Code</button>
   <div class="spinner"></div>
-  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;">Share this code with your friend</p>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;">Ask your friend to pick the same room!</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
 </div>
 
@@ -354,11 +379,6 @@
   }
 
   /* ── Helpers ── */
-  function randCode() {
-    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({length:6}, () => abc[Math.floor(Math.random()*abc.length)]).join('');
-  }
-
   function send(data) { if (conn && conn.open) conn.send(data); }
 
   function lobbyErr(msg) { document.getElementById('lobby-err').textContent = msg; }
@@ -403,57 +423,62 @@
     conn = null; peer = null;
   }
 
-  /* ── Create / Join ── */
-  function createGame() {
-    roomCode = randCode();
-    document.getElementById('code-display').textContent = roomCode;
+  /* ── Room entry — auto host or join ── */
+  function enterRoom(n) {
+    lobbyErr('');
+    const roomId = 'filo-gang-room-' + n;
+    document.getElementById('code-display').textContent = 'Room ' + n;
     show('s-wait');
 
-    peer = new Peer(PREFIX + roomCode, PEER_CFG);
+    // Try to become the host for this room
+    peer = new Peer(roomId, PEER_CFG);
 
-    peer.on('error', err => {
-      destroyPeer();
-      if (err.type === 'unavailable-id') { createGame(); return; }
-      lobbyErr('Connection error — try again.'); show('s-lobby');
+    peer.on('open', () => {
+      // We're the host — wait for someone to join
+      myPiece = 'X';
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+      peer.on('connection', c => {
+        conn = c;
+        wireConn();
+        conn.on('open', () => {
+          conn.send({ type: 'start', piece: 'O' });
+          startGame();
+          startHeartbeat();
+        });
+      });
     });
 
-    // Reconnect to signaling server if it drops (keeps the room alive)
-    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
-
-    peer.on('connection', c => {
-      conn = c;
-      myPiece = 'X';
-      wireConn();
-      conn.on('open', () => {
-        conn.send({ type: 'start', piece: 'O' });
-        startGame();
-        startHeartbeat();
-      });
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id') {
+        // Room already has a host — join instead
+        destroyPeer();
+        joinRoomN(n);
+      } else {
+        destroyPeer();
+        lobbyErr('Connection error — try again.');
+        show('s-lobby');
+      }
     });
   }
 
-  function joinGame() {
-    const code = document.getElementById('join-input').value.trim().toUpperCase();
-    if (code.length !== 6) { lobbyErr('Enter the full 6-character code.'); return; }
-    lobbyErr('');
-
+  function joinRoomN(n) {
+    const roomId = 'filo-gang-room-' + n;
     peer = new Peer(PEER_CFG);
 
-    // Bug fix: track giveUp so we can cancel it on success
     let giveUp = setTimeout(() => {
       destroyPeer();
-      lobbyErr('Room not found — check the code.');
+      lobbyErr('Room ' + n + ' has no host yet — create it first!');
       show('s-lobby');
     }, 10000);
 
     peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
 
     peer.on('open', () => {
-      conn = peer.connect(PREFIX + code, { reliable: true, serialization: 'json' });
+      conn = peer.connect(roomId, { reliable: true, serialization: 'json' });
       myPiece = 'O';
       wireConn();
       conn.on('open', () => {
-        clearTimeout(giveUp); // ← fix: cancel the timeout now that we're in
+        clearTimeout(giveUp);
         startHeartbeat();
       });
     });
@@ -461,7 +486,7 @@
     peer.on('error', () => {
       clearTimeout(giveUp);
       destroyPeer();
-      lobbyErr('Could not connect — check the code.');
+      lobbyErr('Could not join Room ' + n + ' — try again.');
       show('s-lobby');
     });
   }
@@ -597,7 +622,6 @@
   function leaveGame() {
     destroyPeer();
     scores = {X:0,O:0,D:0}; refreshScores();
-    document.getElementById('join-input').value = '';
     lobbyErr('');
     show('s-lobby');
   }
@@ -610,12 +634,6 @@
     setStatus(`<span class="dt">Opponent disconnected</span>`);
   }
 
-  /* ── Copy code ── */
-  function copyCode() {
-    navigator.clipboard.writeText(roomCode)
-      .then(() => toast('Code copied!'))
-      .catch(() => toast(roomCode));
-  }
 </script>
 </body>
 </html>
