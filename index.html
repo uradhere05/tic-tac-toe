@@ -249,8 +249,48 @@
     .cdot.off { background: #f44336; animation: blink 1s infinite; }
     @keyframes blink { 50% { opacity: 0.2; } }
 
+    /* ── Scrollable screens ── */
+    .screen { overflow-y: auto; max-height: 100vh; padding-bottom: 30px; }
+
     /* ── Error ── */
     .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
+
+    /* ── Champion screen ── */
+    .trophy-icon { font-size: 3.6rem; margin-bottom: 4px; animation: tbounce 1.2s ease-in-out infinite alternate; }
+    @keyframes tbounce { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-10px) rotate(5deg); } }
+
+    .names-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px; width: 100%; margin-bottom: 14px;
+    }
+    .name-card {
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      padding: 14px 8px; text-align: center; cursor: pointer;
+      transition: background 0.14s, transform 0.1s, border-color 0.14s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .name-card:hover  { background: rgba(255,255,255,0.14); border-color: #ffd200; }
+    .name-card:active { transform: scale(0.93); }
+    .name-card .nc-num  { font-size: 0.58rem; letter-spacing: 2px; opacity: 0.35; text-transform: uppercase; }
+    .name-card .nc-name { font-size: 0.92rem; font-weight: 700; margin-top: 4px; }
+
+    /* ── Leaderboard ── */
+    .lb-section { width: 100%; margin-top: 22px; }
+    .lb-title { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
+    .lb-row {
+      display: flex; align-items: center;
+      padding: 9px 14px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px; margin-bottom: 6px;
+    }
+    .lb-row.gold { background: rgba(255,210,0,0.1); border: 1px solid rgba(255,210,0,0.22); }
+    .lb-rank { font-size: 0.9rem; min-width: 28px; }
+    .lb-name { font-size: 0.88rem; font-weight: 600; flex: 1; margin-left: 6px; }
+    .lb-wins { font-size: 1rem; font-weight: 700; color: #ffd200; }
+    .lb-empty { font-size: 0.75rem; opacity: 0.3; text-align: center; letter-spacing: 1px; padding: 14px 0; }
 
     /* ── Toast ── */
     #toast {
@@ -302,6 +342,11 @@
   </div>
 
   <div class="err" id="lobby-err"></div>
+
+  <div class="lb-section">
+    <div class="lb-title">Weekly Leaderboard</div>
+    <div id="lb-list"><div class="lb-empty">Loading…</div></div>
+  </div>
 </div>
 
 <!-- ══ WAITING ══ -->
@@ -358,13 +403,145 @@
   </div>
 </div>
 
+<!-- ══ CHAMPION ══ -->
+<div class="screen" id="s-champ">
+  <div class="trophy-icon">🏆</div>
+  <h1>FILO Gang</h1>
+  <div class="game-title" style="margin-bottom:8px;">Champion!</div>
+  <div class="slogan" id="champ-sub" style="margin-bottom:18px;">First to 3 wins!</div>
+
+  <p class="pick-label" id="champ-pick-label">Who are you?</p>
+  <div class="names-grid" id="names-grid">
+    <div class="name-card" onclick="selectChamp('Kuya AD')">
+      <div class="nc-num">01</div><div class="nc-name">Kuya AD</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Matt')">
+      <div class="nc-num">02</div><div class="nc-name">Matt</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Gianne')">
+      <div class="nc-num">03</div><div class="nc-name">Gianne</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Austin')">
+      <div class="nc-num">04</div><div class="nc-name">Austin</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Charm')">
+      <div class="nc-num">05</div><div class="nc-name">Charm</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Kee')">
+      <div class="nc-num">06</div><div class="nc-name">Kee</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Kriselle')">
+      <div class="nc-num">07</div><div class="nc-name">Kriselle</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Monique')">
+      <div class="nc-num">08</div><div class="nc-name">Monique</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Tiff')">
+      <div class="nc-num">09</div><div class="nc-name">Tiff</div>
+    </div>
+    <div class="name-card" onclick="selectChamp('Shantelle')">
+      <div class="nc-num">10</div><div class="nc-name">Shantelle</div>
+    </div>
+  </div>
+
+  <div class="btn-row" id="champ-btns" style="display:none; width:100%;">
+    <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
+    <button class="btn btn-secondary" onclick="goHome()">Home</button>
+  </div>
+</div>
+
 <footer>Created by ADML &mdash; 2026</footer>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
-  const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  const PREFIX = 'adml-ttt-';
+  const WINS       = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const PREFIX     = 'adml-ttt-';
+  const WINS_NEED  = 3;
+  const DB         = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+
+  /* ── Firebase helpers ── */
+  function getWeekKey() {
+    const now = new Date();
+    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate() + diff);
+    return mon.toISOString().slice(0, 10);
+  }
+
+  async function recordWin(name) {
+    const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
+    try {
+      const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
+      await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
+    } catch(e) { console.error('Firebase write error', e); }
+  }
+
+  async function loadAndRenderLeaderboard() {
+    const el = document.getElementById('lb-list');
+    el.innerHTML = '<div class="lb-empty">Loading…</div>';
+    try {
+      const data = await fetch(`${DB}/leaderboard/${getWeekKey()}.json`).then(r => r.json());
+      if (!data) { el.innerHTML = '<div class="lb-empty">No wins yet this week</div>'; return; }
+      const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+      const medals = ['🥇','🥈','🥉'];
+      el.innerHTML = sorted.map(([name, w], i) =>
+        `<div class="lb-row ${i===0?'gold':''}">
+          <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
+          <span class="lb-name">${name}</span>
+          <span class="lb-wins">${w} win${w!==1?'s':''}</span>
+        </div>`
+      ).join('');
+    } catch { el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'; }
+  }
+
+  /* ── Champion screen ── */
+  let champSaved = false;
+
+  function showChampionScreen(iAmWinner) {
+    champSaved = false;
+    document.getElementById('champ-sub').textContent =
+      iAmWinner ? 'You won 3 rounds! Who are you?' : 'Opponent won 3 rounds!';
+    document.getElementById('champ-pick-label').style.display = iAmWinner ? '' : 'none';
+    document.getElementById('names-grid').style.display       = iAmWinner ? '' : 'none';
+    document.getElementById('champ-btns').style.display       = iAmWinner ? 'none' : '';
+    show('s-champ');
+  }
+
+  async function selectChamp(name) {
+    if (champSaved) return;
+    champSaved = true;
+    document.getElementById('names-grid').style.display      = 'none';
+    document.getElementById('champ-pick-label').style.display = 'none';
+    document.getElementById('champ-sub').textContent = `Saving ${name} to leaderboard…`;
+    await recordWin(name);
+    document.getElementById('champ-sub').textContent = `${name} recorded! 🎉`;
+    document.getElementById('champ-btns').style.display = '';
+    toast(`${name} added to the leaderboard!`);
+  }
+
+  function requestRematch() {
+    send({ type: 'rematch' });
+    doRematch();
+  }
+
+  function doRematch() {
+    champSaved = false;
+    wantsRestart = false;
+    scores = {X:0, O:0, D:0};
+    refreshScores();
+    show('s-game');
+    resetBoard();
+  }
+
+  function goHome() {
+    destroyPeer();
+    scores = {X:0, O:0, D:0};
+    refreshScores();
+    champSaved = false;
+    lobbyErr('');
+    show('s-lobby');
+    loadAndRenderLeaderboard();
+  }
 
   /* ── State ── */
   let peer = null, conn = null;
@@ -508,6 +685,7 @@
     else if (msg.type === 'move')           { applyMove(msg.i); }
     else if (msg.type === 'restart-req')    { onRestartReq(); }
     else if (msg.type === 'restart-ok')     { doRestart(); }
+    else if (msg.type === 'rematch')        { doRematch(); }
   }
 
   /* ── Game start ── */
@@ -554,7 +732,12 @@
       refreshScores();
       win.line.forEach(j => cells[j].classList.add('winning'));
       const mine = win.p === myPiece;
-      setStatus(`<span class="wt">${mine ? 'You Win! 🎉' : 'Opponent Wins!'}</span>`);
+      if (scores[win.p] >= WINS_NEED) {
+        setStatus(`<span class="wt">${mine ? '🏆 You are the Champion!' : '🏆 Opponent is the Champion!'}</span>`);
+        setTimeout(() => showChampionScreen(mine), 1600);
+      } else {
+        setStatus(`<span class="wt">${mine ? 'You Win! 🎉' : 'Opponent Wins!'}</span>`);
+      }
     } else if (board.every(Boolean)) {
       over = true; wantsRestart = false;
       scores.D++;
@@ -625,8 +808,10 @@
   function leaveGame() {
     destroyPeer();
     scores = {X:0,O:0,D:0}; refreshScores();
+    champSaved = false;
     lobbyErr('');
     show('s-lobby');
+    loadAndRenderLeaderboard();
   }
 
   function cancelGame() { destroyPeer(); show('s-lobby'); }
@@ -636,6 +821,9 @@
     setConn(false); over = true;
     setStatus(`<span class="dt">Opponent disconnected</span>`);
   }
+
+  // Load leaderboard on first open
+  loadAndRenderLeaderboard();
 
 </script>
 </body>
