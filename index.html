@@ -356,7 +356,28 @@
     toastT = setTimeout(() => el.classList.remove('show'), 2600);
   }
 
+  /* ── PeerJS config with reliable STUN servers ── */
+  const PEER_CFG = {
+    debug: 0,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+      ]
+    }
+  };
+
+  /* ── Heartbeat — keeps mobile connections alive ── */
+  let heartbeat;
+  function startHeartbeat() {
+    clearInterval(heartbeat);
+    heartbeat = setInterval(() => send({ type: 'ping' }), 6000);
+  }
+  function stopHeartbeat() { clearInterval(heartbeat); }
+
   function destroyPeer() {
+    stopHeartbeat();
     try { conn && conn.close(); } catch(_){}
     try { peer && peer.destroy(); } catch(_){}
     conn = null; peer = null;
@@ -368,7 +389,7 @@
     document.getElementById('code-display').textContent = roomCode;
     show('s-wait');
 
-    peer = new Peer(PREFIX + roomCode, {debug:0});
+    peer = new Peer(PREFIX + roomCode, PEER_CFG);
 
     peer.on('error', err => {
       destroyPeer();
@@ -376,13 +397,17 @@
       lobbyErr('Connection error — try again.'); show('s-lobby');
     });
 
+    // Reconnect to signaling server if it drops (keeps the room alive)
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+
     peer.on('connection', c => {
       conn = c;
       myPiece = 'X';
       wireConn();
       conn.on('open', () => {
-        conn.send({type:'start', piece:'O'});
+        conn.send({ type: 'start', piece: 'O' });
         startGame();
+        startHeartbeat();
       });
     });
   }
@@ -392,25 +417,28 @@
     if (code.length !== 6) { lobbyErr('Enter the full 6-character code.'); return; }
     lobbyErr('');
 
-    peer = new Peer({debug:0});
+    peer = new Peer(PEER_CFG);
 
-    let timedOut = false;
-    const giveUp = setTimeout(() => {
-      timedOut = true;
+    // Bug fix: track giveUp so we can cancel it on success
+    let giveUp = setTimeout(() => {
       destroyPeer();
       lobbyErr('Room not found — check the code.');
       show('s-lobby');
-    }, 9000);
+    }, 10000);
+
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
 
     peer.on('open', () => {
-      if (timedOut) return;
-      conn = peer.connect(PREFIX + code, {reliable:true});
+      conn = peer.connect(PREFIX + code, { reliable: true, serialization: 'json' });
       myPiece = 'O';
       wireConn();
+      conn.on('open', () => {
+        clearTimeout(giveUp); // ← fix: cancel the timeout now that we're in
+        startHeartbeat();
+      });
     });
 
     peer.on('error', () => {
-      if (timedOut) return;
       clearTimeout(giveUp);
       destroyPeer();
       lobbyErr('Could not connect — check the code.');
@@ -426,7 +454,9 @@
 
   /* ── Incoming messages ── */
   function handleData(msg) {
-    if      (msg.type === 'start')          { myPiece = msg.piece; startGame(); }
+    if      (msg.type === 'ping')           { send({ type: 'pong' }); }
+    else if (msg.type === 'pong')           { /* alive */ }
+    else if (msg.type === 'start')          { myPiece = msg.piece; startGame(); startHeartbeat(); }
     else if (msg.type === 'move')           { applyMove(msg.i); }
     else if (msg.type === 'restart-req')    { onRestartReq(); }
     else if (msg.type === 'restart-ok')     { doRestart(); }
@@ -555,6 +585,7 @@
   function cancelGame() { destroyPeer(); show('s-lobby'); }
 
   function onDrop() {
+    stopHeartbeat();
     setConn(false); over = true;
     setStatus(`<span class="dt">Opponent disconnected</span>`);
   }
