@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Tic Tac Toe – Multiplayer</title>
+  <title>FILO Gang Tictactoe</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -33,6 +33,25 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
       margin-bottom: 6px;
+    }
+
+    .game-title {
+      font-size: 1.1rem;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #fff;
+      opacity: 0.75;
+      margin-bottom: 8px;
+    }
+
+    .slogan {
+      font-size: 0.78rem;
+      letter-spacing: 1.5px;
+      font-style: italic;
+      color: #ffd200;
+      opacity: 0.85;
+      margin-bottom: 30px;
+      text-align: center;
     }
 
     .subtitle {
@@ -245,8 +264,9 @@
 
 <!-- ══ LOBBY ══ -->
 <div class="screen active" id="s-lobby">
-  <h1>Tic Tac Toe</h1>
-  <div class="subtitle">Multiplayer</div>
+  <h1>FILO Gang</h1>
+  <div class="game-title">Tictactoe</div>
+  <div class="slogan">Blink. Tap. Win. Wait — what were we doing?</div>
 
   <button class="btn btn-primary" onclick="createGame()">Create Game</button>
 
@@ -260,7 +280,7 @@
 
 <!-- ══ WAITING ══ -->
 <div class="screen" id="s-wait">
-  <h1>Tic Tac Toe</h1>
+  <h1>FILO Gang</h1>
   <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
     <div class="code-label">Room Code</div>
