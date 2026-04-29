@@ -193,6 +193,15 @@
       70%  { transform: scale(1.18) rotate(3deg); opacity: 1; }
       100% { transform: scale(1) rotate(0deg); opacity: 1; }
     }
+    .cell.shake { animation: shake 0.35s ease-out; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-6px); }
+      40%     { transform: translateX(6px); }
+      60%     { transform: translateX(-4px); }
+      80%     { transform: translateX(4px); }
+    }
+    .not-your-turn { cursor: not-allowed !important; }
 
     /* ── Game buttons ── */
     .btn-row { display: flex; gap: 10px; width: 100%; }
@@ -435,9 +444,23 @@
 
   /* ── Gameplay ── */
   function tap(i) {
-    if (over || board[i] || current !== myPiece) return;
+    if (over) return;
+    if (current !== myPiece) {
+      shakeThenWarn(i);
+      return;
+    }
+    if (board[i]) return;
     send({type:'move', i});
     applyMove(i);
+  }
+
+  function shakeThenWarn(i) {
+    const cell = cells[i];
+    cell.classList.remove('shake');
+    void cell.offsetWidth; // reflow to restart animation
+    cell.classList.add('shake');
+    cell.addEventListener('animationend', () => cell.classList.remove('shake'), {once:true});
+    toast("⏳ Wait for opponent's turn!");
   }
 
   function applyMove(i) {
@@ -465,6 +488,7 @@
       const cls  = current === 'X' ? 'xt' : 'ot';
       setStatus(`<span class="${cls}">${mine ? 'Your Turn' : "Opponent's Turn"}</span>`);
     }
+    syncCursorClass();
   }
 
   function findWin() {
@@ -511,6 +535,12 @@
     cells.forEach(c => { c.className = 'cell'; c.innerHTML = ''; });
     const mine = myPiece === 'X';
     setStatus(`<span class="${mine?'xt':'ot'}">${mine?'Your Turn':"Opponent's Turn"}</span>`);
+    syncCursorClass();
+  }
+
+  function syncCursorClass() {
+    const notMine = over || current !== myPiece;
+    cells.forEach(c => c.classList.toggle('not-your-turn', notMine));
   }
 
   /* ── Leave / disconnect ── */
