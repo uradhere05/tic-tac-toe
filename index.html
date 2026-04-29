@@ -78,10 +78,14 @@
       transition: background 0.14s, transform 0.1s, border-color 0.14s;
       -webkit-tap-highlight-color: transparent;
     }
-    .name-card:hover  { background: rgba(255,255,255,0.14); border-color: #ffd200; }
-    .name-card:active { transform: scale(0.93); }
-    .name-card .nc-num  { font-size: 0.58rem; letter-spacing: 2px; opacity: 0.35; text-transform: uppercase; }
-    .name-card .nc-name { font-size: 0.92rem; font-weight: 700; margin-top: 4px; }
+    .name-card:hover:not(.taken)  { background: rgba(255,255,255,0.14); border-color: #ffd200; }
+    .name-card:active:not(.taken) { transform: scale(0.93); }
+    .name-card .nc-num    { font-size: 0.58rem; letter-spacing: 2px; opacity: 0.35; text-transform: uppercase; }
+    .name-card .nc-name   { font-size: 0.92rem; font-weight: 700; margin-top: 4px; }
+    .name-card .nc-status { font-size: 0.55rem; letter-spacing: 1px; margin-top: 3px; color: #ff8888; }
+    .name-card.taken  { opacity: 0.35; cursor: not-allowed; border-color: rgba(255,255,255,0.06); }
+    .name-card.mine   { border-color: #4caf50 !important; opacity: 1 !important; }
+    .name-card.mine .nc-status { color: #4caf50; }
 
     /* ── Room picker ── */
     .rooms-grid {
@@ -260,35 +264,35 @@
 
   <p class="pick-label">Who are you?</p>
   <div class="names-grid">
-    <div class="name-card" onclick="selectName('Kuya AD')">
-      <div class="nc-num">01</div><div class="nc-name">Kuya AD</div>
+    <div class="name-card" data-name="Kuya AD"   onclick="selectName('Kuya AD')">
+      <div class="nc-num">01</div><div class="nc-name">Kuya AD</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Matt')">
-      <div class="nc-num">02</div><div class="nc-name">Matt</div>
+    <div class="name-card" data-name="Matt"      onclick="selectName('Matt')">
+      <div class="nc-num">02</div><div class="nc-name">Matt</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Gianne')">
-      <div class="nc-num">03</div><div class="nc-name">Gianne</div>
+    <div class="name-card" data-name="Gianne"    onclick="selectName('Gianne')">
+      <div class="nc-num">03</div><div class="nc-name">Gianne</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Austin')">
-      <div class="nc-num">04</div><div class="nc-name">Austin</div>
+    <div class="name-card" data-name="Austin"    onclick="selectName('Austin')">
+      <div class="nc-num">04</div><div class="nc-name">Austin</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Charm')">
-      <div class="nc-num">05</div><div class="nc-name">Charm</div>
+    <div class="name-card" data-name="Charm"     onclick="selectName('Charm')">
+      <div class="nc-num">05</div><div class="nc-name">Charm</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Kee')">
-      <div class="nc-num">06</div><div class="nc-name">Kee</div>
+    <div class="name-card" data-name="Kee"       onclick="selectName('Kee')">
+      <div class="nc-num">06</div><div class="nc-name">Kee</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Kriselle')">
-      <div class="nc-num">07</div><div class="nc-name">Kriselle</div>
+    <div class="name-card" data-name="Kriselle"  onclick="selectName('Kriselle')">
+      <div class="nc-num">07</div><div class="nc-name">Kriselle</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Monique')">
-      <div class="nc-num">08</div><div class="nc-name">Monique</div>
+    <div class="name-card" data-name="Monique"   onclick="selectName('Monique')">
+      <div class="nc-num">08</div><div class="nc-name">Monique</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Tiff')">
-      <div class="nc-num">09</div><div class="nc-name">Tiff</div>
+    <div class="name-card" data-name="Tiff"      onclick="selectName('Tiff')">
+      <div class="nc-num">09</div><div class="nc-name">Tiff</div><div class="nc-status"></div>
     </div>
-    <div class="name-card" onclick="selectName('Shantelle')">
-      <div class="nc-num">10</div><div class="nc-name">Shantelle</div>
+    <div class="name-card" data-name="Shantelle" onclick="selectName('Shantelle')">
+      <div class="nc-num">10</div><div class="nc-name">Shantelle</div><div class="nc-status"></div>
     </div>
   </div>
 
@@ -441,6 +445,8 @@
 
   /* ── Name selection ── */
   function selectName(name) {
+    const card = document.querySelector(`.name-card[data-name="${name}"]`);
+    if (card && card.classList.contains('taken')) return;
     if (myName && myName !== name) setOffline(myName); // logout old name immediately
     myName = name;
     startOnlinePresence(name);
@@ -452,6 +458,7 @@
 
   function changeName() {
     show('s-name');
+    loadOnlineUsers();
   }
 
   /* ── Firebase — leaderboard ── */
@@ -541,6 +548,19 @@
     ['ol-name', 'ol-lobby'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = html;
+    });
+    updateNameCards(names);
+  }
+
+  function updateNameCards(onlineNames) {
+    document.querySelectorAll('.name-card[data-name]').forEach(card => {
+      const n = card.dataset.name;
+      const status = card.querySelector('.nc-status');
+      const isMe = n === myName;
+      const isTaken = !isMe && onlineNames.includes(n);
+      card.classList.toggle('mine', isMe);
+      card.classList.toggle('taken', isTaken);
+      if (status) status.textContent = isMe ? 'you' : isTaken ? 'taken' : '';
     });
   }
 
