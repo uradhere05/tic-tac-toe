@@ -2,14 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Tic Tac Toe – Multiplayer</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       min-height: 100vh;
@@ -20,397 +16,525 @@
       background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #fff;
+      padding: 20px;
     }
 
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 380px; }
+    .screen.active { display: flex; }
+
+    /* ── Title ── */
     h1 {
-      font-size: 2.8rem;
-      letter-spacing: 6px;
+      font-size: 2.2rem;
+      letter-spacing: 5px;
       text-transform: uppercase;
-      margin-bottom: 10px;
       background: linear-gradient(90deg, #f7971e, #ffd200);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: none;
+      margin-bottom: 6px;
     }
 
-    .scoreboard {
-      display: flex;
-      gap: 30px;
-      margin-bottom: 20px;
-    }
-
-    .score-box {
-      text-align: center;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
-      padding: 10px 24px;
-      min-width: 90px;
-    }
-
-    .score-box .label {
-      font-size: 0.75rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      opacity: 0.7;
-    }
-
-    .score-box .value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #ffd200;
-    }
-
-    .score-box.x-score .value { color: #f7971e; }
-    .score-box.o-score .value { color: #56ccf2; }
-
-    .status {
-      font-size: 1.1rem;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-      height: 28px;
-      text-align: center;
-      opacity: 0.85;
-    }
-
-    .status .x-turn { color: #f7971e; font-weight: bold; }
-    .status .o-turn { color: #56ccf2; font-weight: bold; }
-    .status .win   { color: #ffd200; font-weight: bold; font-size: 1.2rem; }
-    .status .draw  { color: #aaa;    font-weight: bold; }
-
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 110px);
-      grid-template-rows: repeat(3, 110px);
-      gap: 10px;
-    }
-
-    .cell {
-      background: rgba(255,255,255,0.06);
-      border: 2px solid rgba(255,255,255,0.12);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      font-weight: 900;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s, border-color 0.15s;
-      user-select: none;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .cell:hover:not(.taken) {
-      background: rgba(255,255,255,0.13);
-      border-color: rgba(255,255,255,0.3);
-      transform: scale(1.04);
-    }
-
-    .cell.taken { cursor: default; }
-
-    .cell.x {
-      color: #f7971e;
-      text-shadow: 0 0 20px #f7971e88;
-    }
-
-    .cell.o {
-      color: #56ccf2;
-      text-shadow: 0 0 20px #56ccf288;
-    }
-
-    .cell.winning {
-      background: rgba(255, 210, 0, 0.18);
-      border-color: #ffd200;
-      animation: pulse 0.6s ease-in-out infinite alternate;
-    }
-
-    @keyframes pulse {
-      from { box-shadow: 0 0 8px #ffd20044; }
-      to   { box-shadow: 0 0 24px #ffd200cc; }
-    }
-
-    .cell .mark {
-      transform: scale(0);
-      animation: pop 0.2s ease-out forwards;
-    }
-
-    @keyframes pop {
-      0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
-      70%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
-      100% { transform: scale(1) rotate(0deg); opacity: 1; }
-    }
-
-    .buttons {
-      display: flex;
-      gap: 14px;
-      margin-top: 28px;
-    }
-
-    button {
-      padding: 10px 28px;
-      border: none;
-      border-radius: 40px;
-      font-size: 0.85rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      cursor: pointer;
-      font-weight: 700;
-      transition: transform 0.12s, opacity 0.12s;
-    }
-
-    button:active { transform: scale(0.96); }
-
-    .btn-restart {
-      background: linear-gradient(90deg, #f7971e, #ffd200);
-      color: #1a1a2e;
-    }
-
-    .btn-reset {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-
-    .btn-reset:hover { background: rgba(255,255,255,0.18); }
-    .btn-restart:hover { opacity: 0.9; }
-
-    .mode-selector {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 22px;
-    }
-
-    .mode-btn {
-      padding: 7px 20px;
-      border-radius: 30px;
-      font-size: 0.78rem;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      cursor: pointer;
-      font-weight: 700;
-      border: 1.5px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.06);
-      color: #fff;
-      transition: all 0.15s;
-    }
-
-    .mode-btn.active {
-      background: linear-gradient(90deg, #302b63, #24243e);
-      border-color: #ffd200;
-      color: #ffd200;
-    }
-
-    footer {
-      margin-top: 36px;
+    .subtitle {
       font-size: 0.72rem;
       letter-spacing: 3px;
       text-transform: uppercase;
-      opacity: 0.4;
+      opacity: 0.45;
+      margin-bottom: 36px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.1s, opacity 0.12s;
+      margin-bottom: 12px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: linear-gradient(90deg, #f7971e, #ffd200); color: #1a1a2e; }
+    .btn-secondary { background: rgba(255,255,255,0.09); color: #fff; border: 1.5px solid rgba(255,255,255,0.2); }
+    .btn-danger { background: rgba(255,80,80,0.12); color: #ff8888; border: 1.5px solid rgba(255,80,80,0.25); }
+    .btn-sm { width: auto; padding: 10px 22px; font-size: 0.75rem; margin-bottom: 0; }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; margin: 4px 0 16px;
+      font-size: 0.72rem; letter-spacing: 2px; opacity: 0.35;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.3); }
+
+    /* ── Input ── */
+    input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 50px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.07);
+      color: #fff;
+      font-size: 1.4rem;
+      letter-spacing: 8px;
+      text-align: center;
+      text-transform: uppercase;
+      outline: none;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    input::placeholder { letter-spacing: 2px; opacity: 0.35; font-size: 0.85rem; font-weight: 400; }
+    input:focus { border-color: #ffd200; }
+
+    /* ── Room code box ── */
+    .code-box {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 22px;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
+    .code-value { font-size: 2.8rem; font-weight: 900; letter-spacing: 10px; color: #ffd200; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffd200;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 18px auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Player badge ── */
+    .player-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 30px;
+      padding: 7px 18px;
+      font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-x { background: #f7971e; }
+    .dot-o { background: #56ccf2; }
+
+    /* ── Scoreboard ── */
+    .scoreboard { display: flex; gap: 10px; width: 100%; margin-bottom: 14px; }
+    .score-box {
+      flex: 1; text-align: center;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 9px 4px;
+    }
+    .score-box .sl { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.55; }
+    .score-box .sv { font-size: 1.6rem; font-weight: 700; }
+    .score-box.sx .sv { color: #f7971e; }
+    .score-box.so .sv { color: #56ccf2; }
+
+    /* ── Status ── */
+    .status {
+      font-size: 0.95rem; letter-spacing: 2px;
+      height: 26px; margin-bottom: 14px; text-align: center;
+    }
+    .xt { color: #f7971e; font-weight: 700; }
+    .ot { color: #56ccf2; font-weight: 700; }
+    .wt { color: #ffd200; font-weight: 700; }
+    .dt { color: #aaa;    font-weight: 700; }
+
+    /* ── Board ── */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      width: 100%;
+      max-width: 340px;
+      margin-bottom: 18px;
+    }
+    .cell {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,255,255,0.11);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.6rem; font-weight: 900;
+      cursor: pointer;
+      transition: background 0.14s, transform 0.08s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cell:active:not(.taken) { transform: scale(0.93); background: rgba(255,255,255,0.12); }
+    .cell.taken { cursor: default; }
+    .cell.x { color: #f7971e; text-shadow: 0 0 18px #f7971e77; }
+    .cell.o { color: #56ccf2; text-shadow: 0 0 18px #56ccf277; }
+    .cell.winning {
+      background: rgba(255,210,0,0.14);
+      border-color: #ffd200;
+      animation: pulse 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      from { box-shadow: 0 0 6px #ffd20033; }
+      to   { box-shadow: 0 0 22px #ffd200bb; }
+    }
+    .mark { transform: scale(0); animation: pop 0.2s ease-out forwards; }
+    @keyframes pop {
+      0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
+      70%  { transform: scale(1.18) rotate(3deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* ── Game buttons ── */
+    .btn-row { display: flex; gap: 10px; width: 100%; }
+    .btn-row .btn { margin-bottom: 0; }
+
+    /* ── Connection indicator ── */
+    .conn-bar {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 14px;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.45;
+    }
+    .cdot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
+    .cdot.off { background: #f44336; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.2; } }
+
+    /* ── Error ── */
+    .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; top: 18px; left: 50%;
+      transform: translateX(-50%) translateY(-70px);
+      background: #ffd200; color: #1a1a2e;
+      padding: 10px 22px; border-radius: 30px;
+      font-weight: 700; font-size: 0.82rem; letter-spacing: 1px;
+      transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999; pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Footer ── */
+    footer {
+      position: fixed; bottom: 14px;
+      font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25;
     }
   </style>
 </head>
 <body>
 
+<div id="toast"></div>
+
+<!-- ══ LOBBY ══ -->
+<div class="screen active" id="s-lobby">
   <h1>Tic Tac Toe</h1>
+  <div class="subtitle">Multiplayer</div>
+
+  <button class="btn btn-primary" onclick="createGame()">Create Game</button>
+
+  <div class="divider">or join</div>
+
+  <input id="join-input" type="text" maxlength="6" placeholder="Room code"
+         oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')" />
+  <button class="btn btn-secondary" onclick="joinGame()">Join Game</button>
+  <div class="err" id="lobby-err"></div>
+</div>
+
+<!-- ══ WAITING ══ -->
+<div class="screen" id="s-wait">
+  <h1>Tic Tac Toe</h1>
+  <div class="subtitle">Waiting for opponent…</div>
+  <div class="code-box">
+    <div class="code-label">Room Code</div>
+    <div class="code-value" id="code-display"></div>
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="copyCode()">Copy Code</button>
+  <div class="spinner"></div>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;">Share this code with your friend</p>
+  <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="screen" id="s-game">
+  <div class="player-badge" id="badge">
+    <span class="dot dot-x" id="bdot"></span>
+    <span id="btext">You are X</span>
+  </div>
 
   <div class="scoreboard">
-    <div class="score-box x-score">
-      <div class="label">Player X</div>
-      <div class="value" id="score-x">0</div>
-    </div>
-    <div class="score-box">
-      <div class="label">Draws</div>
-      <div class="value" id="score-d">0</div>
-    </div>
-    <div class="score-box o-score">
-      <div class="label" id="o-label">Player O</div>
-      <div class="value" id="score-o">0</div>
-    </div>
+    <div class="score-box sx"><div class="sl">X</div><div class="sv" id="sc-x">0</div></div>
+    <div class="score-box">   <div class="sl">Draw</div><div class="sv" id="sc-d">0</div></div>
+    <div class="score-box so"><div class="sl">O</div><div class="sv" id="sc-o">0</div></div>
   </div>
 
-  <div class="mode-selector">
-    <button class="mode-btn active" id="btn-pvp" onclick="setMode('pvp')">2 Players</button>
-    <button class="mode-btn" id="btn-ai" onclick="setMode('ai')">vs AI</button>
-  </div>
-
-  <div class="status" id="status"><span class="x-turn">X's Turn</span></div>
+  <div class="status" id="status"><span class="xt">X's Turn</span></div>
 
   <div class="board" id="board">
-    <div class="cell" onclick="handleClick(0)"></div>
-    <div class="cell" onclick="handleClick(1)"></div>
-    <div class="cell" onclick="handleClick(2)"></div>
-    <div class="cell" onclick="handleClick(3)"></div>
-    <div class="cell" onclick="handleClick(4)"></div>
-    <div class="cell" onclick="handleClick(5)"></div>
-    <div class="cell" onclick="handleClick(6)"></div>
-    <div class="cell" onclick="handleClick(7)"></div>
-    <div class="cell" onclick="handleClick(8)"></div>
+    <div class="cell" onclick="tap(0)"></div>
+    <div class="cell" onclick="tap(1)"></div>
+    <div class="cell" onclick="tap(2)"></div>
+    <div class="cell" onclick="tap(3)"></div>
+    <div class="cell" onclick="tap(4)"></div>
+    <div class="cell" onclick="tap(5)"></div>
+    <div class="cell" onclick="tap(6)"></div>
+    <div class="cell" onclick="tap(7)"></div>
+    <div class="cell" onclick="tap(8)"></div>
   </div>
 
-  <div class="buttons">
-    <button class="btn-restart" onclick="restartGame()">New Game</button>
-    <button class="btn-reset" onclick="resetAll()">Reset Scores</button>
+  <div class="btn-row">
+    <button class="btn btn-primary"   onclick="requestRestart()">Play Again</button>
+    <button class="btn btn-danger"    onclick="leaveGame()">Leave</button>
   </div>
 
-  <footer>Created by ADML &mdash; 2026</footer>
+  <div class="conn-bar">
+    <span class="cdot" id="cdot"></span>
+    <span id="ctext">Connected</span>
+  </div>
+</div>
 
-  <script>
-    const WINS = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
+<footer>Created by ADML &mdash; 2026</footer>
 
-    let board   = Array(9).fill(null);
-    let current = 'X';
-    let gameOver = false;
-    let mode    = 'pvp'; // 'pvp' or 'ai'
-    let scores  = { X: 0, O: 0, D: 0 };
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+  /* ── Constants ── */
+  const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const PREFIX = 'adml-ttt-';
 
-    const cells   = document.querySelectorAll('.cell');
-    const statusEl = document.getElementById('status');
+  /* ── State ── */
+  let peer = null, conn = null;
+  let myPiece = null, roomCode = '';
+  let board = Array(9).fill(null), current = 'X', over = false;
+  let scores = {X:0,O:0,D:0};
+  let wantsRestart = false;
 
-    function setMode(m) {
-      mode = m;
-      document.getElementById('btn-pvp').classList.toggle('active', m === 'pvp');
-      document.getElementById('btn-ai').classList.toggle('active', m === 'ai');
-      document.getElementById('o-label').textContent = m === 'ai' ? 'AI (O)' : 'Player O';
-      restartGame();
-    }
+  const cells = document.querySelectorAll('.cell');
 
-    function handleClick(i) {
-      if (gameOver || board[i]) return;
-      if (mode === 'ai' && current === 'O') return;
-      makeMove(i);
-      if (mode === 'ai' && !gameOver) {
-        setTimeout(aiMove, 400);
-      }
-    }
+  /* ── Screens ── */
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
 
-    function makeMove(i) {
-      board[i] = current;
-      renderCell(i);
-      const winner = checkWinner();
-      if (winner) {
-        endGame(winner);
-      } else if (board.every(Boolean)) {
-        endGame(null);
-      } else {
-        current = current === 'X' ? 'O' : 'X';
-        updateStatus();
-      }
-    }
+  /* ── Helpers ── */
+  function randCode() {
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({length:6}, () => abc[Math.floor(Math.random()*abc.length)]).join('');
+  }
 
-    function renderCell(i) {
-      const cell = cells[i];
-      cell.classList.add(board[i].toLowerCase(), 'taken');
-      cell.innerHTML = `<span class="mark">${board[i]}</span>`;
-    }
+  function send(data) { if (conn && conn.open) conn.send(data); }
 
-    function checkWinner() {
-      for (const [a,b,c] of WINS) {
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-          return { player: board[a], line: [a,b,c] };
-        }
-      }
-      return null;
-    }
+  function lobbyErr(msg) { document.getElementById('lobby-err').textContent = msg; }
 
-    function endGame(winner) {
-      gameOver = true;
-      if (winner) {
-        scores[winner.player]++;
-        updateScores();
-        winner.line.forEach(i => cells[i].classList.add('winning'));
-        const label = mode === 'ai' && winner.player === 'O' ? 'AI' : `Player ${winner.player}`;
-        statusEl.innerHTML = `<span class="win">${label} Wins!</span>`;
-      } else {
-        scores.D++;
-        updateScores();
-        statusEl.innerHTML = `<span class="draw">It's a Draw!</span>`;
-      }
-    }
+  function setConn(on) {
+    document.getElementById('cdot').className = 'cdot' + (on ? '' : ' off');
+    document.getElementById('ctext').textContent = on ? 'Connected' : 'Disconnected';
+  }
 
-    function updateStatus() {
-      if (mode === 'ai' && current === 'O') {
-        statusEl.innerHTML = `<span class="o-turn">AI is thinking...</span>`;
-      } else {
-        const cls = current === 'X' ? 'x-turn' : 'o-turn';
-        statusEl.innerHTML = `<span class="${cls}">${current}'s Turn</span>`;
-      }
-    }
+  let toastT;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('show'), 2600);
+  }
 
-    function updateScores() {
-      document.getElementById('score-x').textContent = scores.X;
-      document.getElementById('score-o').textContent = scores.O;
-      document.getElementById('score-d').textContent = scores.D;
-    }
+  function destroyPeer() {
+    try { conn && conn.close(); } catch(_){}
+    try { peer && peer.destroy(); } catch(_){}
+    conn = null; peer = null;
+  }
 
-    function restartGame() {
-      board    = Array(9).fill(null);
-      current  = 'X';
-      gameOver = false;
-      cells.forEach(c => {
-        c.className = 'cell';
-        c.innerHTML = '';
+  /* ── Create / Join ── */
+  function createGame() {
+    roomCode = randCode();
+    document.getElementById('code-display').textContent = roomCode;
+    show('s-wait');
+
+    peer = new Peer(PREFIX + roomCode, {debug:0});
+
+    peer.on('error', err => {
+      destroyPeer();
+      if (err.type === 'unavailable-id') { createGame(); return; }
+      lobbyErr('Connection error — try again.'); show('s-lobby');
+    });
+
+    peer.on('connection', c => {
+      conn = c;
+      myPiece = 'X';
+      wireConn();
+      conn.on('open', () => {
+        conn.send({type:'start', piece:'O'});
+        startGame();
       });
-      statusEl.innerHTML = `<span class="x-turn">X's Turn</span>`;
-    }
+    });
+  }
 
-    function resetAll() {
-      scores = { X: 0, O: 0, D: 0 };
-      updateScores();
-      restartGame();
-    }
+  function joinGame() {
+    const code = document.getElementById('join-input').value.trim().toUpperCase();
+    if (code.length !== 6) { lobbyErr('Enter the full 6-character code.'); return; }
+    lobbyErr('');
 
-    /* ── Minimax AI ── */
-    function aiMove() {
-      const move = getBestMove();
-      if (move !== -1) makeMove(move);
-    }
+    peer = new Peer({debug:0});
 
-    function getBestMove() {
-      let best = -Infinity, move = -1;
-      for (let i = 0; i < 9; i++) {
-        if (!board[i]) {
-          board[i] = 'O';
-          const score = minimax(board, 0, false);
-          board[i] = null;
-          if (score > best) { best = score; move = i; }
-        }
-      }
-      return move;
-    }
+    let timedOut = false;
+    const giveUp = setTimeout(() => {
+      timedOut = true;
+      destroyPeer();
+      lobbyErr('Room not found — check the code.');
+      show('s-lobby');
+    }, 9000);
 
-    function minimax(b, depth, isMax) {
-      const w = checkWinner();
-      if (w) return w.player === 'O' ? 10 - depth : depth - 10;
-      if (b.every(Boolean)) return 0;
+    peer.on('open', () => {
+      if (timedOut) return;
+      conn = peer.connect(PREFIX + code, {reliable:true});
+      myPiece = 'O';
+      wireConn();
+    });
 
-      if (isMax) {
-        let best = -Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (!b[i]) {
-            b[i] = 'O';
-            best = Math.max(best, minimax(b, depth + 1, false));
-            b[i] = null;
-          }
-        }
-        return best;
-      } else {
-        let best = Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (!b[i]) {
-            b[i] = 'X';
-            best = Math.min(best, minimax(b, depth + 1, true));
-            b[i] = null;
-          }
-        }
-        return best;
-      }
+    peer.on('error', () => {
+      if (timedOut) return;
+      clearTimeout(giveUp);
+      destroyPeer();
+      lobbyErr('Could not connect — check the code.');
+      show('s-lobby');
+    });
+  }
+
+  function wireConn() {
+    conn.on('data',  handleData);
+    conn.on('close', onDrop);
+    conn.on('error', onDrop);
+  }
+
+  /* ── Incoming messages ── */
+  function handleData(msg) {
+    if      (msg.type === 'start')          { myPiece = msg.piece; startGame(); }
+    else if (msg.type === 'move')           { applyMove(msg.i); }
+    else if (msg.type === 'restart-req')    { onRestartReq(); }
+    else if (msg.type === 'restart-ok')     { doRestart(); }
+  }
+
+  /* ── Game start ── */
+  function startGame() {
+    const isX = myPiece === 'X';
+    document.getElementById('bdot').className = 'dot dot-' + myPiece.toLowerCase();
+    document.getElementById('btext').textContent = 'You are ' + myPiece;
+    setConn(true);
+    show('s-game');
+    resetBoard();
+  }
+
+  /* ── Gameplay ── */
+  function tap(i) {
+    if (over || board[i] || current !== myPiece) return;
+    send({type:'move', i});
+    applyMove(i);
+  }
+
+  function applyMove(i) {
+    board[i] = current;
+    const cell = cells[i];
+    cell.classList.add(current.toLowerCase(), 'taken');
+    cell.innerHTML = `<span class="mark">${current}</span>`;
+
+    const win = findWin();
+    if (win) {
+      over = true; wantsRestart = false;
+      scores[win.p]++;
+      refreshScores();
+      win.line.forEach(j => cells[j].classList.add('winning'));
+      const mine = win.p === myPiece;
+      setStatus(`<span class="wt">${mine ? 'You Win! 🎉' : 'Opponent Wins!'}</span>`);
+    } else if (board.every(Boolean)) {
+      over = true; wantsRestart = false;
+      scores.D++;
+      refreshScores();
+      setStatus(`<span class="dt">It's a Draw!</span>`);
+    } else {
+      current = current === 'X' ? 'O' : 'X';
+      const mine = current === myPiece;
+      const cls  = current === 'X' ? 'xt' : 'ot';
+      setStatus(`<span class="${cls}">${mine ? 'Your Turn' : "Opponent's Turn"}</span>`);
     }
-  </script>
+  }
+
+  function findWin() {
+    for (const [a,b,c] of WINS)
+      if (board[a] && board[a]===board[b] && board[a]===board[c])
+        return { p: board[a], line:[a,b,c] };
+    return null;
+  }
+
+  function setStatus(html) { document.getElementById('status').innerHTML = html; }
+  function refreshScores() {
+    document.getElementById('sc-x').textContent = scores.X;
+    document.getElementById('sc-o').textContent = scores.O;
+    document.getElementById('sc-d').textContent = scores.D;
+  }
+
+  /* ── Restart ── */
+  function requestRestart() {
+    if (wantsRestart) {               // they already asked → confirm
+      doRestart(); send({type:'restart-ok'});
+    } else {
+      wantsRestart = true;
+      send({type:'restart-req'});
+      toast('Waiting for opponent…');
+    }
+  }
+
+  function onRestartReq() {
+    if (wantsRestart) {               // both want → go
+      doRestart(); send({type:'restart-ok'});
+    } else {
+      wantsRestart = true;
+      toast('Opponent wants to play again — tap Play Again!');
+    }
+  }
+
+  function doRestart() {
+    wantsRestart = false;
+    resetBoard();
+  }
+
+  function resetBoard() {
+    board = Array(9).fill(null); current = 'X'; over = false;
+    cells.forEach(c => { c.className = 'cell'; c.innerHTML = ''; });
+    const mine = myPiece === 'X';
+    setStatus(`<span class="${mine?'xt':'ot'}">${mine?'Your Turn':"Opponent's Turn"}</span>`);
+  }
+
+  /* ── Leave / disconnect ── */
+  function leaveGame() {
+    destroyPeer();
+    scores = {X:0,O:0,D:0}; refreshScores();
+    document.getElementById('join-input').value = '';
+    lobbyErr('');
+    show('s-lobby');
+  }
+
+  function cancelGame() { destroyPeer(); show('s-lobby'); }
+
+  function onDrop() {
+    setConn(false); over = true;
+    setStatus(`<span class="dt">Opponent disconnected</span>`);
+  }
+
+  /* ── Copy code ── */
+  function copyCode() {
+    navigator.clipboard.writeText(roomCode)
+      .then(() => toast('Code copied!'))
+      .catch(() => toast(roomCode));
+  }
+</script>
 </body>
 </html>
