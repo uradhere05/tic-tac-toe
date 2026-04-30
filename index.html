@@ -453,6 +453,7 @@
     if (online.includes(name)) return; // taken right now
     if (myName) setOffline(myName);
     myName = name;
+    localStorage.setItem('filoName', name);
     startOnlinePresence(name);
     show('s-lobby');
     document.getElementById('lobby-greeting').textContent = 'Hi, ' + name + '!';
@@ -500,7 +501,7 @@
   }
 
   /* ── Firebase — online presence ── */
-  const ONLINE_STALE = 2.5 * 60 * 1000; // 2.5 min
+  const ONLINE_STALE = 75 * 1000; // 75s — clears ~75s after crash/abandon
   let onlineHeartbeat = null;
   let onlineInterval  = null;
 
@@ -521,7 +522,7 @@
   function startOnlinePresence(name) {
     setOnline(name);
     clearInterval(onlineHeartbeat);
-    onlineHeartbeat = setInterval(() => setOnline(name), 60000);
+    onlineHeartbeat = setInterval(() => setOnline(name), 30000);
   }
 
   function startOnlinePoll() {
@@ -919,12 +920,16 @@
     setStatus(`<span class="dt">Opponent disconnected</span>`);
   }
 
+  // Clear leftover presence from a previous session (refresh / crash)
+  const _prevName = localStorage.getItem('filoName');
+  if (_prevName) setOffline(_prevName);
+
   // Show online users on the name screen immediately
   startOnlinePoll();
 
-  // Clear online presence when closing the browser
+  // Properly DELETE presence on close/refresh (keepalive lets it outlive the page)
   window.addEventListener('beforeunload', () => {
-    if (myName) navigator.sendBeacon(`${DB}/online/${encodeURIComponent(myName)}.json`, 'null');
+    if (myName) fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
   });
 </script>
 </body>
