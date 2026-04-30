@@ -300,6 +300,12 @@
     <div class="online-title">Online Now</div>
     <div id="ol-name"><div class="online-empty">Checking…</div></div>
   </div>
+
+  <div class="lb-section">
+    <div class="lb-title">Weekly Leaderboard</div>
+    <div id="lb-week-name" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
+    <div id="lb-list-name"><div class="lb-empty">Loading…</div></div>
+  </div>
 </div>
 
 <!-- ══ LOBBY ══ -->
@@ -442,6 +448,8 @@
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    const footer = document.querySelector('footer');
+    if (footer) footer.style.display = id === 's-name' ? '' : 'none';
   }
 
   /* ── Name selection ── */
@@ -496,23 +504,24 @@
   }
 
   async function loadAndRenderLeaderboard() {
-    const el = document.getElementById('lb-list');
-    el.innerHTML = '<div class="lb-empty">Loading…</div>';
-    const weekEl = document.getElementById('lb-week');
-    if (weekEl) weekEl.textContent = getWeekLabel();
+    const listEls = ['lb-list', 'lb-list-name'].map(id => document.getElementById(id)).filter(Boolean);
+    const weekEls = ['lb-week', 'lb-week-name'].map(id => document.getElementById(id)).filter(Boolean);
+    listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Loading…</div>');
+    weekEls.forEach(el => el.textContent = getWeekLabel());
     try {
       const data = await fetch(`${DB}/leaderboard/${getWeekKey()}.json`).then(r => r.json());
-      if (!data) { el.innerHTML = '<div class="lb-empty">No wins yet this week</div>'; return; }
-      const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
       const medals = ['🥇','🥈','🥉'];
-      el.innerHTML = sorted.map(([name, w], i) =>
-        `<div class="lb-row ${i===0?'gold':''}">
-          <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
-          <span class="lb-name">${name}</span>
-          <span class="lb-wins">${w} win${w!==1?'s':''}</span>
-        </div>`
-      ).join('');
-    } catch { el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'; }
+      const html = !data
+        ? '<div class="lb-empty">No wins yet this week</div>'
+        : Object.entries(data).sort((a, b) => b[1] - a[1]).map(([name, w], i) =>
+            `<div class="lb-row ${i===0?'gold':''}">
+              <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
+              <span class="lb-name">${name}</span>
+              <span class="lb-wins">${w} win${w!==1?'s':''}</span>
+            </div>`
+          ).join('');
+      listEls.forEach(el => el.innerHTML = html);
+    } catch { listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'); }
   }
 
   /* ── Firebase — online presence ── */
@@ -939,8 +948,9 @@
   const _prevName = localStorage.getItem('filoName');
   if (_prevName) setOffline(_prevName);
 
-  // Show online users on the name screen immediately
+  // Show online users and leaderboard on the name screen immediately
   startOnlinePoll();
+  loadAndRenderLeaderboard();
 
   // Properly DELETE presence on close/refresh (keepalive lets it outlive the page)
   window.addEventListener('beforeunload', () => {
