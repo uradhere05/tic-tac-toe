@@ -309,6 +309,7 @@
     <div class="lb-title">Weekly Leaderboard</div>
     <div id="lb-week-name" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list-name"><div class="lb-empty">Loading…</div></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="resetWeeklyScores()">Reset Weekly Scores</button>
   </div>
 </div>
 
@@ -355,6 +356,7 @@
     <div class="lb-title">Weekly Leaderboard</div>
     <div id="lb-week" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list"><div class="lb-empty">Loading…</div></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="resetWeeklyScores()">Reset Weekly Scores</button>
   </div>
 </div>
 
@@ -428,7 +430,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.22</div>
+  <div class="app-version">v1.23</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -439,6 +441,7 @@
   const WINS_NEED = 2;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 30 * 1000; // 30 sec — treat older presence as stale
+  const SCORE_SYNC_KEY = 'filo-score-sync';
 
   /* ── State ── */
   let myName = '', opponentName = '';
@@ -548,6 +551,27 @@
         : '<div class="lb-empty">No wins yet this week</div>';
       listEls.forEach(el => el.innerHTML = html);
     } catch { listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'); }
+  }
+
+  function broadcastScoreSync() {
+    try { localStorage.setItem(SCORE_SYNC_KEY, String(Date.now())); } catch {}
+  }
+
+  async function resetWeeklyScores() {
+    if (!confirm('Reset all weekly leaderboard scores to zero?')) return;
+    const week = getWeekKey();
+    const targets = [`leaderboard/${week}`, `pong-leaderboard/${week}`];
+    const results = await Promise.allSettled(
+      targets.map(path => fetch(`${DB}/${path}.json`, { method: 'DELETE' }))
+    );
+    const ok = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok);
+    if (ok) {
+      toast('Weekly scores reset.');
+      loadAndRenderLeaderboard();
+      broadcastScoreSync();
+    } else {
+      toast('Could not reset scores.');
+    }
   }
 
   /* ── Firebase — online presence ── */
@@ -1026,6 +1050,12 @@
       if (currentRoom && myRole) {
         fetch(`${DB}/rooms/room-${currentRoom}/${myRole}.json`, { method: 'DELETE', keepalive: true });
       }
+    }
+  });
+
+  window.addEventListener('storage', e => {
+    if (e.key === SCORE_SYNC_KEY) {
+      loadAndRenderLeaderboard();
     }
   });
 </script>

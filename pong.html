@@ -197,6 +197,7 @@
     <div class="lb-title">Pong Leaderboard</div>
     <div class="lb-week" id="lb-week"></div>
     <div id="lb-list"><div class="lb-empty">Loading…</div></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="resetWeeklyScores()">Reset Weekly Scores</button>
   </div>
 </div>
 
@@ -264,7 +265,7 @@
 
 <div class="credits">
   <footer style="font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;opacity:0.25;margin-top:16px;">Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.22</div>
+  <div class="app-version">v1.23</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -274,6 +275,7 @@
   const WINS_NEED = 5;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 30 * 1000; // presence expires if not refreshed
+  const SCORE_SYNC_KEY = 'filo-score-sync';
 
   const CW       = 600, CH       = 340;  // logical canvas dimensions
   const PW       = 12,  PH       = 70;   // paddle size
@@ -497,6 +499,27 @@
       listEls.forEach(el => { el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'; });
     } finally {
       lbLoading = false;
+    }
+  }
+
+  function broadcastScoreSync() {
+    try { localStorage.setItem(SCORE_SYNC_KEY, String(Date.now())); } catch {}
+  }
+
+  async function resetWeeklyScores() {
+    if (!confirm('Reset all weekly leaderboard scores to zero?')) return;
+    const week = getWeekKey();
+    const targets = [`leaderboard/${week}`, `pong-leaderboard/${week}`];
+    const results = await Promise.allSettled(
+      targets.map(path => fetch(`${DB}/${path}.json`, { method: 'DELETE' }))
+    );
+    const ok = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok);
+    if (ok) {
+      toast('Weekly scores reset.');
+      loadAndRenderLeaderboard(true);
+      broadcastScoreSync();
+    } else {
+      toast('Could not reset scores.');
     }
   }
 
@@ -920,6 +943,12 @@
   window.addEventListener('beforeunload', () => {
     if (myRole) {
       fetch(`${DB}/rooms/pong-room/${myRole}.json`, { method: 'DELETE', keepalive: true });
+    }
+  });
+
+  window.addEventListener('storage', e => {
+    if (e.key === SCORE_SYNC_KEY) {
+      loadAndRenderLeaderboard(true);
     }
   });
 
