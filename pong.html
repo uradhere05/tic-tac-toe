@@ -40,6 +40,19 @@
       font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
       color: #ffd200; opacity: 0.85; margin-bottom: 24px; text-align: center;
     }
+    .format-badge {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 210, 0, 0.14);
+      border: 1px solid rgba(255, 210, 0, 0.35);
+      color: #ffd200;
+      font-size: 0.68rem;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
 
     /* ── Buttons ── */
     .btn {
@@ -169,12 +182,13 @@
 <div class="screen active" id="s-wait">
   <h1>Pong</h1>
   <div class="game-title">FILO Gang</div>
+  <div class="format-badge" id="format-badge">First to 5 wins</div>
   <div class="slogan">Real-time Pong battles!</div>
   <div class="code-box">
     <div class="code-label">Finding opponent…</div>
     <div class="spinner"></div>
   </div>
-  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;">Waiting for another player to join Pong!</p>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;">Waiting for another player to join Pong! First to 5 game wins is champion.</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
 
   <div class="lb-section">
@@ -188,6 +202,7 @@
 <div class="screen" id="s-game">
   <h1 style="margin-bottom:2px;">Pong</h1>
   <div class="game-title" style="margin-bottom:4px;">FILO Gang</div>
+  <div class="format-badge" id="format-badge-game">First to 5 wins</div>
 
   <div class="player-badge">
     <span class="dot dot-left" id="bdot"></span>
@@ -219,6 +234,12 @@
     <span class="cdot" id="cdot"></span>
     <span id="ctext">Connected</span>
   </div>
+
+  <div class="lb-section">
+    <div class="lb-title">Pong Leaderboard</div>
+    <div class="lb-week"></div>
+    <div class="lb-list"><div class="lb-empty">Loading…</div></div>
+  </div>
 </div>
 
 <!-- ══ CHAMPION ══ -->
@@ -230,6 +251,12 @@
   <div class="btn-row" style="width:100%;">
     <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
     <button class="btn btn-secondary" onclick="goHome()">Home</button>
+  </div>
+
+  <div class="lb-section">
+    <div class="lb-title">Pong Leaderboard</div>
+    <div class="lb-week"></div>
+    <div class="lb-list"><div class="lb-empty">Loading…</div></div>
   </div>
 </div>
 
@@ -259,6 +286,15 @@
   let animFrameId = null;
   let frameCount  = 0;
   let scores = { left: 0, right: 0 };
+
+  function updateFormatBadge() {
+    const bestOf = WINS_NEED * 2 - 1;
+    const txt = `Best of ${bestOf} • First to ${WINS_NEED} wins`;
+    const badges = [document.getElementById('format-badge'), document.getElementById('format-badge-game')];
+    badges.forEach(badge => {
+      if (badge) badge.textContent = txt;
+    });
+  }
 
   /* ── Canvas — logical size fixed; CSS size set by fitCanvas() ── */
   const canvas = document.getElementById('pongCanvas');
@@ -328,6 +364,9 @@
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    if (['s-wait', 's-game', 's-champ'].includes(id)) {
+      loadAndRenderLeaderboard();
+    }
   }
 
   /* ── Firebase — leaderboard ── */
@@ -347,22 +386,62 @@
     return `${fmt(mon)} – ${fmt(sun)}`;
   }
 
-  async function recordWin(name) {
-    const url = `${DB}/pong-leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
-    try {
-      const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
-      await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
-    } catch(e) { console.error('recordWin failed', e); }
+  const LB_ROOTS = ['pong-leaderboard', 'leaderboard'];
+
+  async function fbGet(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`GET failed (${res.status})`);
+    return res.json();
   }
 
-  async function loadAndRenderLeaderboard() {
-    const listEl = document.getElementById('lb-list');
-    const weekEl = document.getElementById('lb-week');
-    if (!listEl) return;
-    if (weekEl) weekEl.textContent = getWeekLabel();
-    listEl.innerHTML = '<div class="lb-empty">Loading…</div>';
+  async function fbPut(url, value) {
+    const res = await fetch(url, { method: 'PUT', body: JSON.stringify(value) });
+    if (!res.ok) throw new Error(`PUT failed (${res.status})`);
+  }
+
+  async function recordWin(name) {
+    const week = getWeekKey();
+    const safe = encodeURIComponent(name);
+
+    // Prefer dedicated pong path; fall back to shared leaderboard when rules block it.
+    for (const root of LB_ROOTS) {
+      try {
+        const url = `${DB}/${root}/${week}/${safe}.json`;
+        const cur = Number((await fbGet(url)) || 0);
+        await fbPut(url, cur + 1);
+        return;
+      } catch (e) {
+        console.warn(`recordWin failed at ${root}`, e);
+      }
+    }
+    console.error('recordWin failed on all leaderboard paths');
+  }
+
+  let lbLoading = false;
+  let lbLastLoad = 0;
+  const LB_REFRESH_MS = 5000;
+
+  async function loadAndRenderLeaderboard(force = false) {
+    const listEls = [...document.querySelectorAll('.lb-list')];
+    const weekEls = [...document.querySelectorAll('.lb-week')];
+    if (!listEls.length) return;
+    if (lbLoading) return;
+    if (!force && Date.now() - lbLastLoad < LB_REFRESH_MS) return;
+
+    weekEls.forEach(el => { el.textContent = getWeekLabel(); });
+    listEls.forEach(el => { el.innerHTML = '<div class="lb-empty">Loading…</div>'; });
+    lbLoading = true;
     try {
-      const allData = await fetch(`${DB}/pong-leaderboard.json`).then(r => r.json()) || {};
+      const trees = await Promise.all(
+        LB_ROOTS.map(async root => {
+          try {
+            return (await fbGet(`${DB}/${root}.json`)) || {};
+          } catch {
+            return {};
+          }
+        })
+      );
+      const allData = Object.assign({}, ...trees);
       // Merge wins across ±1 day of the current week to tolerate timezone-offset keys
       const now  = new Date();
       const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
@@ -384,7 +463,7 @@
 
       const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
       const medals = ['🥇','🥈','🥉'];
-      listEl.innerHTML = sorted.length
+      const html = sorted.length
         ? sorted.map(([name, w], i) =>
             `<div class="lb-row ${i===0?'gold':''}">
               <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
@@ -392,8 +471,12 @@
               <span class="lb-wins">${w} win${w!==1?'s':''}</span>
             </div>`).join('')
         : '<div class="lb-empty">No pong wins yet this week</div>';
+      listEls.forEach(el => { el.innerHTML = html; });
+      lbLastLoad = Date.now();
     } catch {
-      listEl.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>';
+      listEls.forEach(el => { el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'; });
+    } finally {
+      lbLoading = false;
     }
   }
 
@@ -527,7 +610,6 @@
   /* ── Room entry — exact mirror of TTT's enterRoom / joinRoomN ── */
   function enterPongRoom() {
     show('s-wait');
-    loadAndRenderLeaderboard();
 
     peer = new Peer(PEER_ID, PEER_CFG);
 
@@ -763,7 +845,7 @@
     document.getElementById('champ-sub').textContent =
       iAmWinner ? `${myName} is the Pong Champion! 🎉` : `${winner} is the Pong Champion!`;
     if (iAmWinner) {
-      recordWin(myName);
+      recordWin(myName).then(() => loadAndRenderLeaderboard(true));
       setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
     }
     show('s-champ');
@@ -814,6 +896,7 @@
   });
 
   draw();
+  updateFormatBadge();
   enterPongRoom();
 </script>
 </body>
