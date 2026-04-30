@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pong Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Pong — FILO Gang</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -12,14 +12,14 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #fff; padding: 20px;
+      color: #fff; padding: 16px;
     }
 
     /* ── Screens ── */
     .screen {
       display: none; flex-direction: column; align-items: center;
-      width: 100%; max-width: 380px;
-      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 60px;
+      width: 100%; max-width: 640px;
+      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 40px;
       scrollbar-width: none;
     }
     .screen::-webkit-scrollbar { display: none; }
@@ -38,7 +38,7 @@
     }
     .slogan {
       font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
-      color: #ffd200; opacity: 0.85; margin-bottom: 30px; text-align: center;
+      color: #ffd200; opacity: 0.85; margin-bottom: 24px; text-align: center;
     }
 
     /* ── Buttons ── */
@@ -46,7 +46,7 @@
       width: 100%; padding: 15px; border: none; border-radius: 50px;
       font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;
       cursor: pointer; font-weight: 700;
-      transition: transform 0.1s, opacity: 0.12s;
+      transition: transform 0.1s, opacity 0.12s;
       margin-bottom: 12px; -webkit-tap-highlight-color: transparent;
     }
     .btn:active { transform: scale(0.96); }
@@ -54,73 +54,102 @@
     .btn-secondary{ background: rgba(255,255,255,0.09); color: #fff; border: 1.5px solid rgba(255,255,255,0.2); }
     .btn-danger   { background: rgba(255,80,80,0.12); color: #ff8888; border: 1.5px solid rgba(255,80,80,0.25); }
     .btn-sm { width: auto; padding: 10px 22px; font-size: 0.75rem; margin-bottom: 0; }
+    .btn-row { display: flex; gap: 10px; width: 100%; }
+    .btn-row .btn { margin-bottom: 0; }
 
     /* ── Scoreboard ── */
     .scoreboard {
-      display: flex;
-      gap: 50px;
-      margin-bottom: 20px;
+      display: flex; gap: 40px; margin-bottom: 14px;
     }
-
     .score-box {
       text-align: center;
       background: rgba(255,255,255,0.07);
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
-      padding: 10px 24px;
-      min-width: 90px;
+      padding: 8px 22px;
+      min-width: 80px;
     }
+    .score-label { font-size: 0.72rem; opacity: 0.6; margin-bottom: 4px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+    .score-val   { font-size: 1.8rem; font-weight: 700; }
+    .score-box.left-box .score-val  { color: #f7971e; }
+    .score-box.right-box .score-val { color: #56ccf2; }
 
-    .score-label {
-      font-size: 0.8rem;
-      opacity: 0.7;
-      margin-bottom: 5px;
-    }
-
-    .score {
-      font-size: 2rem;
-      font-weight: bold;
-    }
-
+    /* ── Canvas ── */
     canvas {
-      border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.3);
+      display: block;
+      width: min(600px, calc(100vw - 32px));
+      aspect-ratio: 600 / 340;
+      border: 2px solid rgba(255,255,255,0.18);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.35);
+      touch-action: none;
     }
+
+    /* ── Touch controls ── */
+    .touch-controls {
+      display: flex; gap: 12px; margin-top: 12px; width: 100%;
+    }
+    .touch-btn {
+      flex: 1; height: 52px;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 14px; color: #fff;
+      font-size: 1.3rem; cursor: pointer;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+    }
+    .touch-btn:active, .touch-btn.pressed { background: rgba(255,255,255,0.18); }
 
     /* ── Player badge ── */
     .player-badge {
       display: inline-flex; align-items: center; gap: 8px;
       background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
-      border-radius: 30px; padding: 7px 18px;
+      border-radius: 30px; padding: 6px 16px;
       font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot-left { background: #f7971e; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-left  { background: #f7971e; }
     .dot-right { background: #56ccf2; }
 
     /* ── VS display ── */
     .vs-display {
       font-size: 0.72rem; letter-spacing: 1px; opacity: 0.5;
-      margin-bottom: 12px; text-align: center;
+      margin-bottom: 10px; text-align: center;
     }
 
     /* ── Status ── */
-    .status { font-size: 0.95rem; letter-spacing: 2px; height: 26px; margin-bottom: 14px; text-align: center; }
-    .left { color: #f7971e; font-weight: 700; }
-    .right { color: #56ccf2; font-weight: 700; }
-    .wt { color: #ffd200; font-weight: 700; }
-    .dt { color: #aaa;    font-weight: 700; }
+    .status { font-size: 0.9rem; letter-spacing: 1.5px; min-height: 22px; margin-bottom: 10px; text-align: center; }
+    .left-c  { color: #f7971e; font-weight: 700; }
+    .right-c { color: #56ccf2; font-weight: 700; }
+    .win-c   { color: #ffd200; font-weight: 700; }
+    .dim-c   { color: #aaa;    font-weight: 700; }
 
     /* ── Connection indicator ── */
     .conn-bar {
-      display: flex; align-items: center; gap: 6px; margin-top: 14px;
-      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.45;
+      display: flex; align-items: center; gap: 6px; margin-top: 12px;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.4;
     }
     .cdot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
     .cdot.off { background: #f44336; animation: blink 1s infinite; }
     @keyframes blink { 50% { opacity: 0.2; } }
+
+    /* ── Code box (waiting) ── */
+    .code-box {
+      width: 100%; max-width: 340px;
+      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 22px; text-align: center; margin-bottom: 18px;
+    }
+    .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffd200; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 16px auto 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Champion ── */
     .trophy-icon { font-size: 3.6rem; margin-bottom: 4px; animation: tbounce 1.2s ease-in-out infinite alternate; }
@@ -137,17 +166,6 @@
       z-index: 999; pointer-events: none;
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ── Spinner ── */
-    .spinner {
-      width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: #ffd200; border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 18px auto 10px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Error ── */
-    .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
   </style>
 </head>
 <body>
@@ -163,7 +181,7 @@
     <div class="code-label">Finding opponent…</div>
     <div class="spinner"></div>
   </div>
-  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;">Waiting for another player to join Pong!</p>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;">Waiting for another player to join Pong!</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
 </div>
 
@@ -172,26 +190,31 @@
   <h1 style="margin-bottom:2px;">Pong</h1>
   <div class="game-title" style="margin-bottom:4px;">FILO Gang</div>
 
-  <div class="player-badge" id="badge">
+  <div class="player-badge">
     <span class="dot dot-left" id="bdot"></span>
-    <span id="btext">You (Left)</span>
+    <span id="btext">You</span>
   </div>
   <div class="vs-display" id="vs-display"></div>
 
   <div class="scoreboard">
-    <div class="score-box">
+    <div class="score-box left-box">
       <div class="score-label" id="sl-left">Left</div>
-      <div class="score" id="sc-left">0</div>
+      <div class="score-val" id="sc-left">0</div>
     </div>
-    <div class="score-box">
+    <div class="score-box right-box">
       <div class="score-label" id="sl-right">Right</div>
-      <div class="score" id="sc-right">0</div>
+      <div class="score-val" id="sc-right">0</div>
     </div>
   </div>
 
-  <div class="status" id="status"><span class="left">Game Starting...</span></div>
+  <div class="status" id="status"></div>
 
-  <canvas id="pongCanvas" width="800" height="400"></canvas>
+  <canvas id="pongCanvas" width="600" height="340"></canvas>
+
+  <div class="touch-controls">
+    <button class="touch-btn" id="btn-up">▲</button>
+    <button class="touch-btn" id="btn-dn">▼</button>
+  </div>
 
   <div class="conn-bar">
     <span class="cdot" id="cdot"></span>
@@ -214,61 +237,77 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
-  const PREFIX    = 'filo-gang-pong-';
-  const WINS_NEED = 5;
-  const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+  const PEER_ID    = 'filo-gang-pong-room';
+  const WINS_NEED  = 5;
+  const DB         = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+
+  const CW = 600, CH = 340;         // logical canvas size
+  const PW = 12,  PH = 70;          // paddle dimensions
+  const PSPEED = 7;                  // paddle pixels per frame
+  const BR = 9;                      // ball radius
+  const BASE_SPD = 5, MAX_SPD = 13; // ball speed bounds
 
   /* ── State ── */
-  let myName = localStorage.getItem('filoName') || 'Anonymous';
+  let myName = localStorage.getItem('filoName') || '';
+  if (!myName) { window.location.href = 'index.html'; }
+
   let opponentName = '';
   let peer = null, conn = null;
-  let mySide = null; // 'left' or 'right'
+  let mySide = null;   // 'left' | 'right'
   let gameRunning = false;
-  let scores = {left: 0, right: 0};
-  let wantsRematch = false;
+  let animFrameId = null;
+  let scores = { left: 0, right: 0 };
 
-  /* ── Game variables ── */
+  /* ── Canvas ── */
   const canvas = document.getElementById('pongCanvas');
-  const ctx = canvas.getContext('2d');
+  const ctx    = canvas.getContext('2d');
+  canvas.width = CW; canvas.height = CH;
 
-  // Ball properties
-  const ball = {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    radius: 10,
-    speed: 5,
-    velocityX: 5,
-    velocityY: 5
-  };
+  /* ── Game objects ── */
+  const ball = { x: CW / 2, y: CH / 2, vx: BASE_SPD, vy: BASE_SPD * 0.8 };
 
-  // Paddle properties
-  const paddleWidth = 10;
-  const paddleHeight = 80;
-  const paddleSpeed = 8;
+  const leftPaddle  = { x: 14,          y: CH / 2 - PH / 2, w: PW, h: PH };
+  const rightPaddle = { x: CW - PW - 14, y: CH / 2 - PH / 2, w: PW, h: PH };
 
-  const leftPaddle = {
-    x: 10,
-    y: canvas.height / 2 - paddleHeight / 2,
-    width: paddleWidth,
-    height: paddleHeight,
-    velocity: 0
-  };
+  /* ── Keyboard input ── */
+  const keys = {};
+  document.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (['ArrowUp','ArrowDown','w','s','W','S'].includes(e.key)) e.preventDefault();
+  });
+  document.addEventListener('keyup', e => { keys[e.key] = false; });
 
-  const rightPaddle = {
-    x: canvas.width - paddleWidth - 10,
-    y: canvas.height / 2 - paddleHeight / 2,
-    width: paddleWidth,
-    height: paddleHeight,
-    velocity: 0
-  };
+  /* ── On-screen button input ── */
+  let touchUp = false, touchDn = false;
 
-  // Keys
-  const keys = {
-    w: false,
-    s: false,
-    ArrowUp: false,
-    ArrowDown: false
-  };
+  function bindTouchBtn(id, isUp) {
+    const el = document.getElementById(id);
+    const start = e => { e.preventDefault(); if (isUp) touchUp = true; else touchDn = true; el.classList.add('pressed'); };
+    const end   = ()  => { if (isUp) touchUp = false; else touchDn = false; el.classList.remove('pressed'); };
+    el.addEventListener('touchstart',  start, { passive: false });
+    el.addEventListener('mousedown',   start);
+    el.addEventListener('touchend',    end);
+    el.addEventListener('touchcancel', end);
+    el.addEventListener('mouseup',     end);
+    el.addEventListener('mouseleave',  end);
+  }
+  bindTouchBtn('btn-up', true);
+  bindTouchBtn('btn-dn', false);
+
+  /* ── Canvas drag-to-move ── */
+  canvas.addEventListener('touchstart', onCanvasTouch, { passive: false });
+  canvas.addEventListener('touchmove',  onCanvasTouch, { passive: false });
+
+  function onCanvasTouch(e) {
+    e.preventDefault();
+    if (!gameRunning || !mySide) return;
+    const touch = e.touches[0];
+    const rect  = canvas.getBoundingClientRect();
+    const scaleY = CH / rect.height;
+    const y = (touch.clientY - rect.top) * scaleY;
+    const p = mySide === 'left' ? leftPaddle : rightPaddle;
+    p.y = Math.max(0, Math.min(CH - PH, y - PH / 2));
+  }
 
   /* ── Screens ── */
   function show(id) {
@@ -276,30 +315,12 @@
     document.getElementById(id).classList.add('active');
   }
 
-  /* ── Event listeners ── */
-  document.addEventListener('keydown', (e) => {
-    if (e.key in keys) {
-      keys[e.key] = true;
-      e.preventDefault();
-    }
-  });
-
-  document.addEventListener('keyup', (e) => {
-    if (e.key in keys) {
-      keys[e.key] = false;
-      e.preventDefault();
-    }
-  });
-
-  /* ── Firebase — leaderboard ── */
+  /* ── Firebase ── */
   function getWeekKey() {
     const now = new Date();
     const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
     const mon = new Date(now); mon.setDate(now.getDate() + diff);
-    const y = mon.getFullYear();
-    const m = String(mon.getMonth() + 1).padStart(2, '0');
-    const d = String(mon.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
   }
 
   async function recordWin(name) {
@@ -315,6 +336,11 @@
   function setConn(on) {
     document.getElementById('cdot').className = 'cdot' + (on ? '' : ' off');
     document.getElementById('ctext').textContent = on ? 'Connected' : 'Disconnected';
+  }
+  function setStatus(html) { document.getElementById('status').innerHTML = html; }
+  function refreshScores() {
+    document.getElementById('sc-left').textContent  = scores.left;
+    document.getElementById('sc-right').textContent = scores.right;
   }
 
   let toastT;
@@ -344,55 +370,70 @@
   function stopHeartbeat() { clearInterval(heartbeat); }
 
   function destroyPeer() {
-    stopHeartbeat();
-    try { conn && conn.close(); } catch(_){}
-    try { peer && peer.destroy(); } catch(_){}
+    stopHeartbeat(); stopLoop();
+    try { conn && conn.close(); } catch(_) {}
+    try { peer && peer.destroy(); } catch(_) {}
     conn = null; peer = null;
   }
 
-  /* ── Start Pong game ── */
+  /* ── Game loop ── */
+  function startLoop() {
+    stopLoop();
+    gameRunning = true;
+    animFrameId = requestAnimationFrame(loop);
+  }
+
+  function stopLoop() {
+    gameRunning = false;
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  }
+
+  function loop() {
+    if (!gameRunning) return;
+    update();
+    draw();
+    animFrameId = requestAnimationFrame(loop);
+  }
+
+  /* ── Game start ── */
   function startPongGame() {
-    // Determine sides - host is left, guest is right
     mySide = 'left';
     document.getElementById('bdot').className = 'dot dot-left';
     document.getElementById('btext').textContent = myName + ' (Left)';
     updateNameDisplays();
     setConn(true);
     show('s-game');
-    gameRunning = true;
     resetBall();
-    gameLoop();
+    startLoop();
   }
 
   function joinPongGame() {
-    // Guest joins as right player
     mySide = 'right';
     document.getElementById('bdot').className = 'dot dot-right';
     document.getElementById('btext').textContent = myName + ' (Right)';
     updateNameDisplays();
     setConn(true);
     show('s-game');
-    gameRunning = true;
-    gameLoop();
+    ball.x = CW / 2; ball.y = CH / 2; ball.vx = 0; ball.vy = 0;
+    startLoop();
   }
 
   function updateNameDisplays() {
-    const leftName = mySide === 'left' ? myName : opponentName;
+    const leftName  = mySide === 'left'  ? myName : opponentName;
     const rightName = mySide === 'right' ? myName : opponentName;
-    document.getElementById('sl-left').textContent = leftName || 'Left';
+    document.getElementById('sl-left').textContent  = leftName  || 'Left';
     document.getElementById('sl-right').textContent = rightName || 'Right';
-    const vs = opponentName ? `vs ${opponentName}` : '';
-    document.getElementById('vs-display').textContent = vs;
+    document.getElementById('vs-display').textContent = opponentName ? `vs ${opponentName}` : '';
+    setStatus('');
   }
 
   /* ── Room entry ── */
   function enterPongRoom() {
     show('s-wait');
-
-    peer = new Peer(PREFIX + 'pong', PEER_CFG);
+    peer = new Peer(PEER_ID, PEER_CFG);
 
     peer.on('open', () => {
-      peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch(_) {} });
       peer.on('connection', c => {
         conn = c; wireConn();
         conn.on('open', () => {
@@ -417,21 +458,18 @@
   function joinPongRoom() {
     peer = new Peer(PEER_CFG);
 
-    let giveUp = setTimeout(() => {
+    const giveUp = setTimeout(() => {
       destroyPeer();
       toast('No host found — try again.');
       setTimeout(() => window.location.href = 'index.html', 2000);
     }, 10000);
 
-    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_) {} });
 
     peer.on('open', () => {
-      conn = peer.connect(PREFIX + 'pong', { reliable: true, serialization: 'json' });
+      conn = peer.connect(PEER_ID, { reliable: true, serialization: 'json' });
       wireConn();
-      conn.on('open', () => {
-        clearTimeout(giveUp);
-        startHeartbeat();
-      });
+      conn.on('open', () => { clearTimeout(giveUp); startHeartbeat(); });
     });
 
     peer.on('error', () => {
@@ -449,163 +487,171 @@
 
   /* ── Incoming messages ── */
   function handleData(msg) {
-    if      (msg.type === 'ping')        { send({ type: 'pong' }); }
-    else if (msg.type === 'pong')        { /* alive */ }
-    else if (msg.type === 'start')       {
-      opponentName = msg.hostName || '?';
-      joinPongGame();
-      send({ type: 'player-name', name: myName });
+    switch (msg.type) {
+      case 'ping':
+        send({ type: 'pong' });
+        break;
+      case 'pong':
+        break;
+      case 'start':
+        opponentName = msg.hostName || '?';
+        joinPongGame();
+        send({ type: 'player-name', name: myName });
+        break;
+      case 'player-name':
+        opponentName = msg.name;
+        updateNameDisplays();
+        break;
+      case 'paddle-pos':
+        if (mySide === 'left')  rightPaddle.y = msg.y;
+        else                    leftPaddle.y  = msg.y;
+        break;
+      case 'ball-state':
+        ball.x  = msg.x;  ball.y  = msg.y;
+        ball.vx = msg.vx; ball.vy = msg.vy;
+        break;
+      case 'score':
+        scores.left  = msg.left;
+        scores.right = msg.right;
+        refreshScores();
+        if (msg.reset) {
+          // Centre ball visually while waiting for host's ball-state updates
+          ball.x = CW / 2; ball.y = CH / 2; ball.vx = 0; ball.vy = 0;
+        }
+        break;
+      case 'game-over':
+        stopLoop();
+        showChampion(
+          (mySide === 'left'  && scores.left  >= WINS_NEED) ||
+          (mySide === 'right' && scores.right >= WINS_NEED)
+        );
+        break;
+      case 'rematch':
+        doRematch();
+        break;
     }
-    else if (msg.type === 'player-name') {
-      opponentName = msg.name;
-      updateNameDisplays();
-    }
-    else if (msg.type === 'paddle-pos')  {
-      // Update opponent's paddle position
-      if (mySide === 'left') {
-        rightPaddle.y = msg.y;
-      } else {
-        leftPaddle.y = msg.y;
-      }
-    }
-    else if (msg.type === 'ball-state')  {
-      // Sync ball state
-      ball.x = msg.x;
-      ball.y = msg.y;
-      ball.velocityX = msg.vx;
-      ball.velocityY = msg.vy;
-    }
-    else if (msg.type === 'score')       {
-      scores.left = msg.left;
-      scores.right = msg.right;
-      refreshScores();
-      if (msg.reset) {
-        resetBall();
-      }
-    }
-    else if (msg.type === 'game-over')   {
-      gameRunning = false;
-      const iAmWinner = (mySide === 'left' && scores.left >= WINS_NEED) ||
-                       (mySide === 'right' && scores.right >= WINS_NEED);
-      showChampion(iAmWinner);
-    }
-    else if (msg.type === 'rematch')     { doRematch(); }
   }
 
-  /* ── Game logic ── */
+  /* ── Physics update (called every frame) ── */
   function update() {
-    // Update my paddle
-    let myPaddle = mySide === 'left' ? leftPaddle : rightPaddle;
-    if ((keys.w || keys.ArrowUp) && myPaddle.y > 0) {
-      myPaddle.y -= paddleSpeed;
-    }
-    if ((keys.s || keys.ArrowDown) && myPaddle.y < canvas.height - paddleHeight) {
-      myPaddle.y += paddleSpeed;
-    }
+    const myPaddle = mySide === 'left' ? leftPaddle : rightPaddle;
 
-    // Send paddle position to opponent
+    // Move my paddle via keyboard or touch
+    const goUp = keys['w'] || keys['W'] || keys['ArrowUp']   || touchUp;
+    const goDn = keys['s'] || keys['S'] || keys['ArrowDown'] || touchDn;
+    if (goUp) myPaddle.y = Math.max(0,      myPaddle.y - PSPEED);
+    if (goDn) myPaddle.y = Math.min(CH - PH, myPaddle.y + PSPEED);
     send({ type: 'paddle-pos', y: myPaddle.y });
 
-    // Update ball (only host controls ball physics)
-    if (mySide === 'left') {
-      // Ball movement
-      ball.x += ball.velocityX;
-      ball.y += ball.velocityY;
+    // Only the host (left) drives ball physics
+    if (mySide !== 'left') return;
 
-      // Ball collision with top and bottom walls
-      if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= canvas.height) {
-        ball.velocityY = -ball.velocityY;
-      }
+    ball.x += ball.vx;
+    ball.y += ball.vy;
 
-      // Ball collision with paddles
-      if (ball.x - ball.radius <= leftPaddle.x + leftPaddle.width &&
-          ball.y >= leftPaddle.y && ball.y <= leftPaddle.y + leftPaddle.height &&
-          ball.velocityX < 0) {
-        ball.velocityX = -ball.velocityX;
-      }
+    // Top / bottom wall bounce
+    if (ball.y - BR <= 0)      { ball.y = BR;      ball.vy =  Math.abs(ball.vy); }
+    if (ball.y + BR >= CH)     { ball.y = CH - BR; ball.vy = -Math.abs(ball.vy); }
 
-      if (ball.x + ball.radius >= rightPaddle.x &&
-          ball.y >= rightPaddle.y && ball.y <= rightPaddle.y + rightPaddle.height &&
-          ball.velocityX > 0) {
-        ball.velocityX = -ball.velocityX;
-      }
+    // Left paddle collision
+    if (ball.vx < 0 &&
+        ball.x - BR <= leftPaddle.x + PW &&
+        ball.x - BR >= leftPaddle.x - 2 &&
+        ball.y + BR >= leftPaddle.y &&
+        ball.y - BR <= leftPaddle.y + PH) {
+      ball.x = leftPaddle.x + PW + BR;
+      bouncePaddle(leftPaddle, 1);
+    }
 
-      // Score points
-      let scored = false;
-      if (ball.x < 0) {
-        scores.right++;
-        scored = true;
-      } else if (ball.x > canvas.width) {
-        scores.left++;
-        scored = true;
-      }
+    // Right paddle collision
+    if (ball.vx > 0 &&
+        ball.x + BR >= rightPaddle.x &&
+        ball.x + BR <= rightPaddle.x + PW + 2 &&
+        ball.y + BR >= rightPaddle.y &&
+        ball.y - BR <= rightPaddle.y + PH) {
+      ball.x = rightPaddle.x - BR;
+      bouncePaddle(rightPaddle, -1);
+    }
 
-      if (scored) {
-        refreshScores();
-        send({ type: 'score', left: scores.left, right: scores.right, reset: true });
-
-        if (scores.left >= WINS_NEED || scores.right >= WINS_NEED) {
-          gameRunning = false;
-          send({ type: 'game-over' });
-          const iAmWinner = (mySide === 'left' && scores.left >= WINS_NEED) ||
-                           (mySide === 'right' && scores.right >= WINS_NEED);
-          showChampion(iAmWinner);
-        } else {
-          resetBall();
-        }
-      }
-
-      // Send ball state to opponent
-      send({ type: 'ball-state', x: ball.x, y: ball.y, vx: ball.velocityX, vy: ball.velocityY });
+    // Scoring
+    if (ball.x < 0) {
+      scores.right++;
+      onPoint();
+    } else if (ball.x > CW) {
+      scores.left++;
+      onPoint();
+    } else {
+      send({ type: 'ball-state', x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy });
     }
   }
 
-  function draw() {
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw center line
-    ctx.setLineDash([5, 15]);
-    ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 0);
-    ctx.lineTo(canvas.width / 2, canvas.height);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw paddles
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
-    ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
-
-    // Draw ball
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffd200';
-    ctx.fill();
+  function bouncePaddle(paddle, xSign) {
+    const rel   = (ball.y - (paddle.y + PH / 2)) / (PH / 2); // -1 to 1
+    const angle = rel * (Math.PI / 4);                         // max 45°
+    const spd   = Math.min(Math.hypot(ball.vx, ball.vy) + 0.5, MAX_SPD);
+    ball.vx = xSign * spd * Math.cos(angle);
+    ball.vy = spd * Math.sin(angle);
   }
 
-  function gameLoop() {
-    if (gameRunning) {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
+  function onPoint() {
+    refreshScores();
+    if (scores.left >= WINS_NEED || scores.right >= WINS_NEED) {
+      send({ type: 'score', left: scores.left, right: scores.right, reset: false });
+      stopLoop();
+      send({ type: 'game-over' });
+      showChampion(scores.left >= WINS_NEED);
+    } else {
+      send({ type: 'score', left: scores.left, right: scores.right, reset: true });
+      resetBall();
     }
   }
 
   function resetBall() {
-    ball.x = canvas.width / 2;
-    ball.y = canvas.height / 2;
-    ball.velocityX = Math.random() > 0.5 ? ball.speed : -ball.speed;
-    ball.velocityY = Math.random() > 0.5 ? ball.speed : -ball.speed;
+    ball.x  = CW / 2;
+    ball.y  = CH / 2;
+    const angle = (Math.random() * 0.5 - 0.25); // -0.25…0.25 rad
+    const dir   = Math.random() > 0.5 ? 1 : -1;
+    ball.vx = dir * BASE_SPD * Math.cos(angle);
+    ball.vy = BASE_SPD * Math.sin(angle) * (Math.random() > 0.5 ? 1 : -1);
   }
 
-  function refreshScores() {
-    document.getElementById('sc-left').textContent = scores.left;
-    document.getElementById('sc-right').textContent = scores.right;
+  /* ── Draw ── */
+  function draw() {
+    ctx.clearRect(0, 0, CW, CH);
+
+    // Centre dashed line
+    ctx.save();
+    ctx.setLineDash([6, 14]);
+    ctx.beginPath();
+    ctx.moveTo(CW / 2, 0);
+    ctx.lineTo(CW / 2, CH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Paddles
+    ctx.fillStyle = '#f7971e';
+    ctx.beginPath();
+    ctx.roundRect(leftPaddle.x,  leftPaddle.y,  PW, PH, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#56ccf2';
+    ctx.beginPath();
+    ctx.roundRect(rightPaddle.x, rightPaddle.y, PW, PH, 4);
+    ctx.fill();
+
+    // Ball
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, BR, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffd200';
+    ctx.shadowColor = '#ffd200';
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
-  /* ── Champion ── */
+  /* ── Champion screen ── */
   function showChampion(iAmWinner) {
     const winner = iAmWinner ? myName : (opponentName || 'Opponent');
     document.getElementById('champ-sub').textContent =
@@ -623,19 +669,17 @@
   }
 
   function doRematch() {
-    wantsRematch = false;
-    scores = {left: 0, right: 0};
+    scores = { left: 0, right: 0 };
     refreshScores();
     show('s-game');
-    gameRunning = true;
-    resetBall();
-    gameLoop();
+    if (mySide === 'left') resetBall();
+    startLoop();
   }
 
   function goHome() {
     destroyPeer();
     opponentName = '';
-    scores = {left: 0, right: 0};
+    scores = { left: 0, right: 0 };
     refreshScores();
     window.location.href = 'index.html';
   }
@@ -646,15 +690,13 @@
   }
 
   function onDrop() {
-    stopHeartbeat(); setConn(false); gameRunning = false;
-    document.getElementById('status').innerHTML = `<span class='dt'>Opponent disconnected</span>`;
+    stopHeartbeat(); setConn(false); stopLoop();
+    setStatus(`<span class="dim-c">Opponent disconnected</span>`);
   }
 
-  // Start the game when page loads
+  /* ── Boot ── */
+  draw(); // initial blank frame
   enterPongRoom();
-
-  // Initial draw
-  draw();
 </script>
 </body>
 </html>
