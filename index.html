@@ -998,8 +998,18 @@
   if (_prevName) setOffline(_prevName);
 
   // Show online users and leaderboard on the name screen immediately
-  startOnlinePoll();
-  loadAndRenderLeaderboard();
+  const _startScreen = new URLSearchParams(window.location.search).get('screen');
+  if (_startScreen === 'lobby' && _prevName) {
+    myName = _prevName;
+    show('s-lobby');
+    document.getElementById('lobby-greeting').textContent = 'Hi, ' + myName + '!';
+    startOnlinePresence(myName);
+    startPresencePoll();
+    loadAndRenderLeaderboard();
+  } else {
+    startOnlinePoll();
+    loadAndRenderLeaderboard();
+  }
 
   // Properly DELETE presence on close/refresh (keepalive lets it outlive the page)
   window.addEventListener('beforeunload', () => {
