@@ -386,7 +386,7 @@
     return `${fmt(mon)} – ${fmt(sun)}`;
   }
 
-  const LB_ROOTS = ['pong-leaderboard', 'leaderboard'];
+  const LB_ROOTS = ['leaderboard', 'pong-leaderboard'];
 
   async function fbGet(url) {
     const res = await fetch(url);
@@ -402,19 +402,24 @@
   async function recordWin(name) {
     const week = getWeekKey();
     const safe = encodeURIComponent(name);
-
-    // Prefer dedicated pong path; fall back to shared leaderboard when rules block it.
-    for (const root of LB_ROOTS) {
-      try {
-        const url = `${DB}/${root}/${week}/${safe}.json`;
-        const cur = Number((await fbGet(url)) || 0);
-        await fbPut(url, cur + 1);
-        return;
-      } catch (e) {
-        console.warn(`recordWin failed at ${root}`, e);
-      }
+    // Use shared leaderboard so Tic Tac Toe + Pong contribute to one weekly score.
+    try {
+      const sharedUrl = `${DB}/leaderboard/${week}/${safe}.json`;
+      const cur = Number((await fbGet(sharedUrl)) || 0);
+      await fbPut(sharedUrl, cur + 1);
+      return;
+    } catch (e) {
+      console.warn('recordWin failed on shared leaderboard, trying legacy pong path', e);
     }
-    console.error('recordWin failed on all leaderboard paths');
+
+    // Backward-compat fallback if shared path is blocked by rules.
+    try {
+      const legacyUrl = `${DB}/pong-leaderboard/${week}/${safe}.json`;
+      const cur = Number((await fbGet(legacyUrl)) || 0);
+      await fbPut(legacyUrl, cur + 1);
+    } catch (e) {
+      console.error('recordWin failed on all leaderboard paths', e);
+    }
   }
 
   let lbLoading = false;
@@ -441,7 +446,15 @@
           }
         })
       );
-      const allData = Object.assign({}, ...trees);
+      const allData = {};
+      for (const tree of trees) {
+        for (const [weekKey, players] of Object.entries(tree || {})) {
+          if (!allData[weekKey]) allData[weekKey] = {};
+          for (const [name, wins] of Object.entries(players || {})) {
+            allData[weekKey][name] = (allData[weekKey][name] || 0) + Number(wins || 0);
+          }
+        }
+      }
       // Merge wins across ±1 day of the current week to tolerate timezone-offset keys
       const now  = new Date();
       const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
