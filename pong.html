@@ -599,11 +599,19 @@
   }
 
   function updateNameDisplays() {
-    const ln = mySide === 'left'  ? myName : opponentName;
-    const rn = mySide === 'right' ? myName : opponentName;
+    let ln = mySide === 'left'  ? myName : opponentName;
+    let rn = mySide === 'right' ? myName : opponentName;
+
+    // Avoid ambiguous UI when both ends have the same stored name (e.g. same browser profile/tab).
+    if (ln && rn && ln === rn) {
+      ln = `${ln} (L)`;
+      rn = `${rn} (R)`;
+    }
+
     document.getElementById('sl-left').textContent  = ln || 'Left';
     document.getElementById('sl-right').textContent = rn || 'Right';
-    document.getElementById('vs-display').textContent = opponentName ? `vs ${opponentName}` : '';
+    const vsName = (opponentName && opponentName !== myName) ? opponentName : 'Opponent';
+    document.getElementById('vs-display').textContent = `vs ${vsName}`;
     setStatus('');
   }
 
