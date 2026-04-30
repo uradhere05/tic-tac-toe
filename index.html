@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>FILO Gang Tictactoe</title>
+  <title>FILO GANG ARENA — Tictactoe</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -259,9 +259,9 @@
 
 <!-- ══ NAME SELECTION ══ -->
 <div class="screen active" id="s-name">
-  <h1>FILO Gang</h1>
+  <h1>FILO GANG ARENA</h1>
   <div class="game-title">Tictactoe</div>
-  <div class="slogan">Tic Tac Toe for the ADHD in you.</div>
+  <div class="slogan">Games for the ADHD in you.</div>
   <div class="best-of">Best of 3 Game Wins</div>
 
   <p class="pick-label">Who are you?</p>
@@ -313,9 +313,9 @@
 
 <!-- ══ LOBBY ══ -->
 <div class="screen" id="s-lobby">
-  <h1>FILO Gang</h1>
+  <h1>FILO GANG ARENA</h1>
   <div class="game-title">Tictactoe</div>
-  <div class="slogan">Tic Tac Toe for the ADHD in you.</div>
+  <div class="slogan">Games for the ADHD in you.</div>
   <div class="best-of">Best of 3 Game Wins</div>
 
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;width:100%;justify-content:center;">
@@ -359,7 +359,7 @@
 
 <!-- ══ WAITING ══ -->
 <div class="screen" id="s-wait">
-  <h1>FILO Gang</h1>
+  <h1>FILO GANG ARENA</h1>
   <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
     <div class="code-label">You're in</div>
@@ -372,7 +372,7 @@
 
 <!-- ══ GAME ══ -->
 <div class="screen" id="s-game">
-  <h1 style="margin-bottom:2px;">FILO Gang</h1>
+  <h1 style="margin-bottom:2px;">FILO GANG ARENA</h1>
   <div class="game-title" style="margin-bottom:4px;">Tictactoe</div>
   <div class="best-of" style="margin-bottom:10px;">Best of 3 Game Wins</div>
 
@@ -416,7 +416,7 @@
 <!-- ══ CHAMPION ══ -->
 <div class="screen" id="s-champ">
   <div class="trophy-icon">🏆</div>
-  <h1>FILO Gang</h1>
+  <h1>FILO GANG ARENA</h1>
   <div class="game-title" style="margin-bottom:8px;">Champion!</div>
   <div class="slogan" id="champ-sub" style="margin-bottom:28px;">First to 3 wins!</div>
   <div class="btn-row" style="width:100%;">
@@ -849,7 +849,7 @@
   function showChampionScreen(iAmWinner) {
     const winner = iAmWinner ? myName : (opponentName || 'Opponent');
     document.getElementById('champ-sub').textContent =
-      iAmWinner ? `${myName} is the FILO Gang Champion! 🎉` : `${winner} is the FILO Gang Champion!`;
+      iAmWinner ? `${myName} is the FILO GANG ARENA Champion! 🎉` : `${winner} is the FILO GANG ARENA Champion!`;
     if (iAmWinner) {
       recordWin(myName);
       setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
