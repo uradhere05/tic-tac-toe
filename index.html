@@ -24,6 +24,19 @@
     }
     .screen::-webkit-scrollbar { display: none; }
     .screen.active { display: flex; }
+    .app-version {
+      position: fixed;
+      left: 50%;
+      bottom: 10px;
+      transform: translateX(-50%);
+      font-size: 0.68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.45;
+      color: #fff;
+      pointer-events: none;
+      user-select: none;
+    }
 
     /* ── Title ── */
     h1 {
@@ -256,6 +269,7 @@
 <body>
 
 <div id="toast"></div>
+<div class="app-version">v1.20</div>
 
 <!-- ══ NAME SELECTION ══ -->
 <div class="screen active" id="s-name">
