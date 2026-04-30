@@ -19,8 +19,10 @@
     .screen {
       display: none; flex-direction: column; align-items: center;
       width: 100%; max-width: 380px;
-      overflow-y: auto; max-height: 100vh; padding-bottom: 36px;
+      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 60px;
+      scrollbar-width: none;
     }
+    .screen::-webkit-scrollbar { display: none; }
     .screen.active { display: flex; }
 
     /* ── Title ── */
@@ -248,7 +250,7 @@
     #toast.show { transform: translateX(-50%) translateY(0); }
 
     /* ── Footer ── */
-    footer { position: fixed; bottom: 14px; font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; }
+    footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -306,6 +308,7 @@
     <div id="lb-week-name" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list-name"><div class="lb-empty">Loading…</div></div>
   </div>
+  <footer>Created by ADML &mdash; 2026</footer>
 </div>
 
 <!-- ══ LOBBY ══ -->
@@ -448,8 +451,6 @@
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    const footer = document.querySelector('footer');
-    if (footer) footer.style.display = id === 's-name' ? '' : 'none';
   }
 
   /* ── Name selection ── */
