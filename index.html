@@ -444,10 +444,14 @@
   }
 
   /* ── Name selection ── */
-  function selectName(name) {
-    const card = document.querySelector(`.name-card[data-name="${name}"]`);
-    if (card && card.classList.contains('taken')) return;
-    if (myName && myName !== name) setOffline(myName); // logout old name immediately
+  async function selectName(name) {
+    if (name === myName) { show('s-lobby'); return; }
+    // Live check — DOM state may be stale if two players are on the screen at once
+    let online = [];
+    try { online = await fetchOnlineNames(); } catch {}
+    updateNameCards(online);
+    if (online.includes(name)) return; // taken right now
+    if (myName) setOffline(myName);
     myName = name;
     startOnlinePresence(name);
     show('s-lobby');
@@ -528,15 +532,16 @@
 
   function stopOnlinePoll() { clearInterval(onlineInterval); onlineInterval = null; }
 
+  async function fetchOnlineNames() {
+    const data = await fetch(`${DB}/online.json`).then(r => r.json()).catch(() => ({})) || {};
+    const now = Date.now();
+    return Object.entries(data)
+      .filter(([, v]) => v && (now - v.ts < ONLINE_STALE))
+      .map(([n]) => { try { return decodeURIComponent(n); } catch { return n; } });
+  }
+
   async function loadOnlineUsers() {
-    try {
-      const data = await fetch(`${DB}/online.json`).then(r => r.json()) || {};
-      const now = Date.now();
-      const names = Object.entries(data || {})
-        .filter(([, v]) => v && (now - v.ts < ONLINE_STALE))
-        .map(([n]) => n);
-      renderOnline(names);
-    } catch { renderOnline([]); }
+    try { renderOnline(await fetchOnlineNames()); } catch { renderOnline([]); }
   }
 
   function renderOnline(names) {
