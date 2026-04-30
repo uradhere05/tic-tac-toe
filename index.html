@@ -248,7 +248,7 @@
     #toast.show { transform: translateX(-50%) translateY(0); }
 
     /* ── Footer ── */
-    footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; margin-top: 24px; }
+    footer { position: fixed; bottom: 14px; font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; }
   </style>
 </head>
 <body>
@@ -300,7 +300,6 @@
     <div class="online-title">Online Now</div>
     <div id="ol-name"><div class="online-empty">Checking…</div></div>
   </div>
-  <footer>Created by ADML &mdash; 2026</footer>
 </div>
 
 <!-- ══ LOBBY ══ -->
@@ -346,7 +345,6 @@
     <div class="lb-title">Weekly Leaderboard</div>
     <div id="lb-list"><div class="lb-empty">Loading…</div></div>
   </div>
-  <footer>Created by ADML &mdash; 2026</footer>
 </div>
 
 <!-- ══ WAITING ══ -->
@@ -416,6 +414,8 @@
     <button class="btn btn-secondary" onclick="goHome()">Home</button>
   </div>
 </div>
+
+<footer>Created by ADML &mdash; 2026</footer>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
