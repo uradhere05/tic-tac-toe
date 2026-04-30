@@ -510,17 +510,37 @@
     listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Loading…</div>');
     weekEls.forEach(el => el.textContent = getWeekLabel());
     try {
-      const data = await fetch(`${DB}/leaderboard/${getWeekKey()}.json`).then(r => r.json());
+      // Fetch all leaderboard data and merge wins from any key within the current week
+      // (±1 day tolerance catches data written under wrong UTC keys from the old timezone bug)
+      const allData = await fetch(`${DB}/leaderboard.json`).then(r => r.json()) || {};
+      const now = new Date();
+      const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+      const mon = new Date(now); mon.setDate(now.getDate() + diff); mon.setHours(0,0,0,0);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999);
+      const rangeStart = new Date(mon); rangeStart.setDate(mon.getDate() - 1);
+      const rangeEnd   = new Date(sun); rangeEnd.setDate(sun.getDate() + 1);
+
+      const totals = {};
+      for (const [key, players] of Object.entries(allData || {})) {
+        const d = new Date(key);
+        if (d >= rangeStart && d <= rangeEnd && players) {
+          for (const [name, wins] of Object.entries(players)) {
+            const n = decodeURIComponent(name);
+            totals[n] = (totals[n] || 0) + wins;
+          }
+        }
+      }
+
+      const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
       const medals = ['🥇','🥈','🥉'];
-      const html = !data
-        ? '<div class="lb-empty">No wins yet this week</div>'
-        : Object.entries(data).sort((a, b) => b[1] - a[1]).map(([name, w], i) =>
+      const html = sorted.length
+        ? sorted.map(([name, w], i) =>
             `<div class="lb-row ${i===0?'gold':''}">
               <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
               <span class="lb-name">${name}</span>
               <span class="lb-wins">${w} win${w!==1?'s':''}</span>
-            </div>`
-          ).join('');
+            </div>`).join('')
+        : '<div class="lb-empty">No wins yet this week</div>';
       listEls.forEach(el => el.innerHTML = html);
     } catch { listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'); }
   }
