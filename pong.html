@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pong Game</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff; padding: 20px;
+    }
+
+    /* ── Screens ── */
+    .screen {
+      display: none; flex-direction: column; align-items: center;
+      width: 100%; max-width: 380px;
+      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 60px;
+      scrollbar-width: none;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active { display: flex; }
+
+    /* ── Title ── */
+    h1 {
+      font-size: 2.2rem; letter-spacing: 5px; text-transform: uppercase;
+      background: linear-gradient(90deg, #f7971e, #ffd200);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 6px;
+    }
+    .game-title {
+      font-size: 1.1rem; letter-spacing: 6px; text-transform: uppercase;
+      color: #fff; opacity: 0.75; margin-bottom: 8px;
+    }
+    .slogan {
+      font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
+      color: #ffd200; opacity: 0.85; margin-bottom: 30px; text-align: center;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; padding: 15px; border: none; border-radius: 50px;
+      font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; font-weight: 700;
+      transition: transform 0.1s, opacity: 0.12s;
+      margin-bottom: 12px; -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary  { background: linear-gradient(90deg, #f7971e, #ffd200); color: #1a1a2e; }
+    .btn-secondary{ background: rgba(255,255,255,0.09); color: #fff; border: 1.5px solid rgba(255,255,255,0.2); }
+    .btn-danger   { background: rgba(255,80,80,0.12); color: #ff8888; border: 1.5px solid rgba(255,80,80,0.25); }
+    .btn-sm { width: auto; padding: 10px 22px; font-size: 0.75rem; margin-bottom: 0; }
+
+    /* ── Scoreboard ── */
+    .scoreboard {
+      display: flex;
+      gap: 50px;
+      margin-bottom: 20px;
+    }
+
+    .score-box {
+      text-align: center;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 10px 24px;
+      min-width: 90px;
+    }
+
+    .score-label {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-bottom: 5px;
+    }
+
+    .score {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    canvas {
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+    }
+
+    /* ── Player badge ── */
+    .player-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 30px; padding: 7px 18px;
+      font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-left { background: #f7971e; }
+    .dot-right { background: #56ccf2; }
+
+    /* ── VS display ── */
+    .vs-display {
+      font-size: 0.72rem; letter-spacing: 1px; opacity: 0.5;
+      margin-bottom: 12px; text-align: center;
+    }
+
+    /* ── Status ── */
+    .status { font-size: 0.95rem; letter-spacing: 2px; height: 26px; margin-bottom: 14px; text-align: center; }
+    .left { color: #f7971e; font-weight: 700; }
+    .right { color: #56ccf2; font-weight: 700; }
+    .wt { color: #ffd200; font-weight: 700; }
+    .dt { color: #aaa;    font-weight: 700; }
+
+    /* ── Connection indicator ── */
+    .conn-bar {
+      display: flex; align-items: center; gap: 6px; margin-top: 14px;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.45;
+    }
+    .cdot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
+    .cdot.off { background: #f44336; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.2; } }
+
+    /* ── Champion ── */
+    .trophy-icon { font-size: 3.6rem; margin-bottom: 4px; animation: tbounce 1.2s ease-in-out infinite alternate; }
+    @keyframes tbounce { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-10px) rotate(5deg); } }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; top: 18px; left: 50%;
+      transform: translateX(-50%) translateY(-70px);
+      background: #ffd200; color: #1a1a2e;
+      padding: 10px 22px; border-radius: 30px;
+      font-weight: 700; font-size: 0.82rem; letter-spacing: 1px;
+      transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999; pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffd200; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 18px auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ── */
+    .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ══ WAITING ══ -->
+<div class="screen active" id="s-wait">
+  <h1>Pong</h1>
+  <div class="game-title">FILO Gang</div>
+  <div class="slogan">Real-time Pong battles!</div>
+  <div class="code-box">
+    <div class="code-label">Finding opponent…</div>
+    <div class="spinner"></div>
+  </div>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;">Waiting for another player to join Pong!</p>
+  <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="screen" id="s-game">
+  <h1 style="margin-bottom:2px;">Pong</h1>
+  <div class="game-title" style="margin-bottom:4px;">FILO Gang</div>
+
+  <div class="player-badge" id="badge">
+    <span class="dot dot-left" id="bdot"></span>
+    <span id="btext">You (Left)</span>
+  </div>
+  <div class="vs-display" id="vs-display"></div>
+
+  <div class="scoreboard">
+    <div class="score-box">
+      <div class="score-label" id="sl-left">Left</div>
+      <div class="score" id="sc-left">0</div>
+    </div>
+    <div class="score-box">
+      <div class="score-label" id="sl-right">Right</div>
+      <div class="score" id="sc-right">0</div>
+    </div>
+  </div>
+
+  <div class="status" id="status"><span class="left">Game Starting...</span></div>
+
+  <canvas id="pongCanvas" width="800" height="400"></canvas>
+
+  <div class="conn-bar">
+    <span class="cdot" id="cdot"></span>
+    <span id="ctext">Connected</span>
+  </div>
+</div>
+
+<!-- ══ CHAMPION ══ -->
+<div class="screen" id="s-champ">
+  <div class="trophy-icon">🏆</div>
+  <h1>Pong</h1>
+  <div class="game-title" style="margin-bottom:8px;">Champion!</div>
+  <div class="slogan" id="champ-sub" style="margin-bottom:28px;">First to 5 wins!</div>
+  <div class="btn-row" style="width:100%;">
+    <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
+    <button class="btn btn-secondary" onclick="goHome()">Home</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+  /* ── Constants ── */
+  const PREFIX    = 'filo-gang-pong-';
+  const WINS_NEED = 5;
+  const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+
+  /* ── State ── */
+  let myName = localStorage.getItem('filoName') || 'Anonymous';
+  let opponentName = '';
+  let peer = null, conn = null;
+  let mySide = null; // 'left' or 'right'
+  let gameRunning = false;
+  let scores = {left: 0, right: 0};
+  let wantsRematch = false;
+
+  /* ── Game variables ── */
+  const canvas = document.getElementById('pongCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Ball properties
+  const ball = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    radius: 10,
+    speed: 5,
+    velocityX: 5,
+    velocityY: 5
+  };
+
+  // Paddle properties
+  const paddleWidth = 10;
+  const paddleHeight = 80;
+  const paddleSpeed = 8;
+
+  const leftPaddle = {
+    x: 10,
+    y: canvas.height / 2 - paddleHeight / 2,
+    width: paddleWidth,
+    height: paddleHeight,
+    velocity: 0
+  };
+
+  const rightPaddle = {
+    x: canvas.width - paddleWidth - 10,
+    y: canvas.height / 2 - paddleHeight / 2,
+    width: paddleWidth,
+    height: paddleHeight,
+    velocity: 0
+  };
+
+  // Keys
+  const keys = {
+    w: false,
+    s: false,
+    ArrowUp: false,
+    ArrowDown: false
+  };
+
+  /* ── Screens ── */
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ── Event listeners ── */
+  document.addEventListener('keydown', (e) => {
+    if (e.key in keys) {
+      keys[e.key] = true;
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.key in keys) {
+      keys[e.key] = false;
+      e.preventDefault();
+    }
+  });
+
+  /* ── Firebase — leaderboard ── */
+  function getWeekKey() {
+    const now = new Date();
+    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate() + diff);
+    const y = mon.getFullYear();
+    const m = String(mon.getMonth() + 1).padStart(2, '0');
+    const d = String(mon.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  async function recordWin(name) {
+    const url = `${DB}/pong-leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
+    try {
+      const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
+      await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
+    } catch(e) { console.error('Firebase write error', e); }
+  }
+
+  /* ── Helpers ── */
+  function send(data) { if (conn && conn.open) conn.send(data); }
+  function setConn(on) {
+    document.getElementById('cdot').className = 'cdot' + (on ? '' : ' off');
+    document.getElementById('ctext').textContent = on ? 'Connected' : 'Disconnected';
+  }
+
+  let toastT;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  /* ── PeerJS config ── */
+  const PEER_CFG = {
+    debug: 0,
+    config: { iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ]}
+  };
+
+  /* ── Heartbeat ── */
+  let heartbeat;
+  function startHeartbeat() {
+    clearInterval(heartbeat);
+    heartbeat = setInterval(() => send({ type: 'ping' }), 6000);
+  }
+  function stopHeartbeat() { clearInterval(heartbeat); }
+
+  function destroyPeer() {
+    stopHeartbeat();
+    try { conn && conn.close(); } catch(_){}
+    try { peer && peer.destroy(); } catch(_){}
+    conn = null; peer = null;
+  }
+
+  /* ── Start Pong game ── */
+  function startPongGame() {
+    // Determine sides - host is left, guest is right
+    mySide = 'left';
+    document.getElementById('bdot').className = 'dot dot-left';
+    document.getElementById('btext').textContent = myName + ' (Left)';
+    updateNameDisplays();
+    setConn(true);
+    show('s-game');
+    gameRunning = true;
+    resetBall();
+    gameLoop();
+  }
+
+  function joinPongGame() {
+    // Guest joins as right player
+    mySide = 'right';
+    document.getElementById('bdot').className = 'dot dot-right';
+    document.getElementById('btext').textContent = myName + ' (Right)';
+    updateNameDisplays();
+    setConn(true);
+    show('s-game');
+    gameRunning = true;
+    gameLoop();
+  }
+
+  function updateNameDisplays() {
+    const leftName = mySide === 'left' ? myName : opponentName;
+    const rightName = mySide === 'right' ? myName : opponentName;
+    document.getElementById('sl-left').textContent = leftName || 'Left';
+    document.getElementById('sl-right').textContent = rightName || 'Right';
+    const vs = opponentName ? `vs ${opponentName}` : '';
+    document.getElementById('vs-display').textContent = vs;
+  }
+
+  /* ── Room entry ── */
+  function enterPongRoom() {
+    show('s-wait');
+
+    peer = new Peer(PREFIX + 'pong', PEER_CFG);
+
+    peer.on('open', () => {
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+      peer.on('connection', c => {
+        conn = c; wireConn();
+        conn.on('open', () => {
+          conn.send({ type: 'start', hostName: myName });
+          startPongGame();
+          startHeartbeat();
+        });
+      });
+    });
+
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id') {
+        destroyPeer(); joinPongRoom();
+      } else {
+        destroyPeer();
+        toast('Connection error — try again.');
+        setTimeout(() => window.location.href = 'index.html', 2000);
+      }
+    });
+  }
+
+  function joinPongRoom() {
+    peer = new Peer(PEER_CFG);
+
+    let giveUp = setTimeout(() => {
+      destroyPeer();
+      toast('No host found — try again.');
+      setTimeout(() => window.location.href = 'index.html', 2000);
+    }, 10000);
+
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+
+    peer.on('open', () => {
+      conn = peer.connect(PREFIX + 'pong', { reliable: true, serialization: 'json' });
+      wireConn();
+      conn.on('open', () => {
+        clearTimeout(giveUp);
+        startHeartbeat();
+      });
+    });
+
+    peer.on('error', () => {
+      clearTimeout(giveUp); destroyPeer();
+      toast('Could not join Pong — try again.');
+      setTimeout(() => window.location.href = 'index.html', 2000);
+    });
+  }
+
+  function wireConn() {
+    conn.on('data',  handleData);
+    conn.on('close', onDrop);
+    conn.on('error', onDrop);
+  }
+
+  /* ── Incoming messages ── */
+  function handleData(msg) {
+    if      (msg.type === 'ping')        { send({ type: 'pong' }); }
+    else if (msg.type === 'pong')        { /* alive */ }
+    else if (msg.type === 'start')       {
+      opponentName = msg.hostName || '?';
+      joinPongGame();
+      send({ type: 'player-name', name: myName });
+    }
+    else if (msg.type === 'player-name') {
+      opponentName = msg.name;
+      updateNameDisplays();
+    }
+    else if (msg.type === 'paddle-pos')  {
+      // Update opponent's paddle position
+      if (mySide === 'left') {
+        rightPaddle.y = msg.y;
+      } else {
+        leftPaddle.y = msg.y;
+      }
+    }
+    else if (msg.type === 'ball-state')  {
+      // Sync ball state
+      ball.x = msg.x;
+      ball.y = msg.y;
+      ball.velocityX = msg.vx;
+      ball.velocityY = msg.vy;
+    }
+    else if (msg.type === 'score')       {
+      scores.left = msg.left;
+      scores.right = msg.right;
+      refreshScores();
+      if (msg.reset) {
+        resetBall();
+      }
+    }
+    else if (msg.type === 'game-over')   {
+      gameRunning = false;
+      const iAmWinner = (mySide === 'left' && scores.left >= WINS_NEED) ||
+                       (mySide === 'right' && scores.right >= WINS_NEED);
+      showChampion(iAmWinner);
+    }
+    else if (msg.type === 'rematch')     { doRematch(); }
+  }
+
+  /* ── Game logic ── */
+  function update() {
+    // Update my paddle
+    let myPaddle = mySide === 'left' ? leftPaddle : rightPaddle;
+    if ((keys.w || keys.ArrowUp) && myPaddle.y > 0) {
+      myPaddle.y -= paddleSpeed;
+    }
+    if ((keys.s || keys.ArrowDown) && myPaddle.y < canvas.height - paddleHeight) {
+      myPaddle.y += paddleSpeed;
+    }
+
+    // Send paddle position to opponent
+    send({ type: 'paddle-pos', y: myPaddle.y });
+
+    // Update ball (only host controls ball physics)
+    if (mySide === 'left') {
+      // Ball movement
+      ball.x += ball.velocityX;
+      ball.y += ball.velocityY;
+
+      // Ball collision with top and bottom walls
+      if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= canvas.height) {
+        ball.velocityY = -ball.velocityY;
+      }
+
+      // Ball collision with paddles
+      if (ball.x - ball.radius <= leftPaddle.x + leftPaddle.width &&
+          ball.y >= leftPaddle.y && ball.y <= leftPaddle.y + leftPaddle.height &&
+          ball.velocityX < 0) {
+        ball.velocityX = -ball.velocityX;
+      }
+
+      if (ball.x + ball.radius >= rightPaddle.x &&
+          ball.y >= rightPaddle.y && ball.y <= rightPaddle.y + rightPaddle.height &&
+          ball.velocityX > 0) {
+        ball.velocityX = -ball.velocityX;
+      }
+
+      // Score points
+      let scored = false;
+      if (ball.x < 0) {
+        scores.right++;
+        scored = true;
+      } else if (ball.x > canvas.width) {
+        scores.left++;
+        scored = true;
+      }
+
+      if (scored) {
+        refreshScores();
+        send({ type: 'score', left: scores.left, right: scores.right, reset: true });
+
+        if (scores.left >= WINS_NEED || scores.right >= WINS_NEED) {
+          gameRunning = false;
+          send({ type: 'game-over' });
+          const iAmWinner = (mySide === 'left' && scores.left >= WINS_NEED) ||
+                           (mySide === 'right' && scores.right >= WINS_NEED);
+          showChampion(iAmWinner);
+        } else {
+          resetBall();
+        }
+      }
+
+      // Send ball state to opponent
+      send({ type: 'ball-state', x: ball.x, y: ball.y, vx: ball.velocityX, vy: ball.velocityY });
+    }
+  }
+
+  function draw() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw center line
+    ctx.setLineDash([5, 15]);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw paddles
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+    ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+
+    // Draw ball
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffd200';
+    ctx.fill();
+  }
+
+  function gameLoop() {
+    if (gameRunning) {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+  }
+
+  function resetBall() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.velocityX = Math.random() > 0.5 ? ball.speed : -ball.speed;
+    ball.velocityY = Math.random() > 0.5 ? ball.speed : -ball.speed;
+  }
+
+  function refreshScores() {
+    document.getElementById('sc-left').textContent = scores.left;
+    document.getElementById('sc-right').textContent = scores.right;
+  }
+
+  /* ── Champion ── */
+  function showChampion(iAmWinner) {
+    const winner = iAmWinner ? myName : (opponentName || 'Opponent');
+    document.getElementById('champ-sub').textContent =
+      iAmWinner ? `${myName} is the Pong Champion! 🎉` : `${winner} is the Pong Champion!`;
+    if (iAmWinner) {
+      recordWin(myName);
+      setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
+    }
+    show('s-champ');
+  }
+
+  function requestRematch() {
+    send({ type: 'rematch' });
+    doRematch();
+  }
+
+  function doRematch() {
+    wantsRematch = false;
+    scores = {left: 0, right: 0};
+    refreshScores();
+    show('s-game');
+    gameRunning = true;
+    resetBall();
+    gameLoop();
+  }
+
+  function goHome() {
+    destroyPeer();
+    opponentName = '';
+    scores = {left: 0, right: 0};
+    refreshScores();
+    window.location.href = 'index.html';
+  }
+
+  function cancelGame() {
+    destroyPeer();
+    window.location.href = 'index.html';
+  }
+
+  function onDrop() {
+    stopHeartbeat(); setConn(false); gameRunning = false;
+    document.getElementById('status').innerHTML = `<span class='dt'>Opponent disconnected</span>`;
+  }
+
+  // Start the game when page loads
+  enterPongRoom();
+
+  // Initial draw
+  draw();
+</script>
+</body>
+</html>
