@@ -434,7 +434,7 @@
   const PREFIX    = 'filo-gang-room-';
   const WINS_NEED = 2;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
-  const STALE_MS  = 8 * 60 * 1000; // 8 min — treat older presence as stale
+  const STALE_MS  = 30 * 1000; // 30 sec — treat older presence as stale
 
   /* ── State ── */
   let myName = '', opponentName = '';
@@ -653,7 +653,7 @@
     stopPresencePoll();
     loadRoomPresence();
     loadOnlineUsers();
-    presenceInterval = setInterval(() => { loadRoomPresence(); loadOnlineUsers(); }, 4000);
+    presenceInterval = setInterval(() => { loadRoomPresence(); loadOnlineUsers(); }, 2000);
   }
 
   function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; }
@@ -718,7 +718,13 @@
   let heartbeat;
   function startHeartbeat() {
     clearInterval(heartbeat);
-    heartbeat = setInterval(() => send({ type: 'ping' }), 6000);
+    heartbeat = setInterval(() => {
+      send({ type: 'ping' });
+      // Refresh room presence to keep it alive
+      if (currentRoom && myRole) {
+        writePresence(currentRoom, myRole);
+      }
+    }, 10000); // Refresh presence every 10 seconds
   }
   function stopHeartbeat() { clearInterval(heartbeat); }
 
@@ -997,7 +1003,12 @@
 
   // Properly DELETE presence on close/refresh (keepalive lets it outlive the page)
   window.addEventListener('beforeunload', () => {
-    if (myName) fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
+    if (myName) {
+      fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
+      if (currentRoom && myRole) {
+        fetch(`${DB}/rooms/room-${currentRoom}/${myRole}.json`, { method: 'DELETE', keepalive: true });
+      }
+    }
   });
 </script>
 </body>
