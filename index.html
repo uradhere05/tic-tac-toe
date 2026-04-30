@@ -20,11 +20,12 @@
       display: none; flex-direction: column; align-items: center;
       width: 100%; max-width: 380px;
       overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 60px;
-      scrollbar-width: none;
+      scrollbar-width: none; text-align: center;
     }
     .screen::-webkit-scrollbar { display: none; }
     .screen.active { display: flex; }
     .app-version { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.38; margin-top: 4px; text-align: center; width: 100%; }
+    .credits { width: 100%; text-align: center; margin-top: 8px; }
 
     /* ── Title ── */
     h1 {
@@ -309,8 +310,6 @@
     <div id="lb-week-name" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list-name"><div class="lb-empty">Loading…</div></div>
   </div>
-  <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.21</div>
 </div>
 
 <!-- ══ LOBBY ══ -->
@@ -427,8 +426,10 @@
   </div>
 </div>
 
-<footer>Created by ADML &mdash; 2026</footer>
-<div class="app-version">v1.21</div>
+<div class="credits">
+  <footer>Created by ADML &mdash; 2026</footer>
+  <div class="app-version">v1.22</div>
+</div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
