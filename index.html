@@ -444,6 +444,7 @@
   let scores = {X:0, O:0, D:0};
   let wantsRestart = false;
   let presenceInterval = null;
+  let nameRoomMap = {}; // name → { room, playing }
 
   const cells = document.querySelectorAll('.cell');
 
@@ -571,12 +572,22 @@
   }
 
   function startOnlinePoll() {
-    loadOnlineUsers();
+    loadOnlineAndRooms();
     clearInterval(onlineInterval);
-    onlineInterval = setInterval(loadOnlineUsers, 5000);
+    onlineInterval = setInterval(loadOnlineAndRooms, 5000);
   }
 
   function stopOnlinePoll() { clearInterval(onlineInterval); onlineInterval = null; }
+
+  async function loadOnlineAndRooms() {
+    try {
+      const [roomsData] = await Promise.all([
+        fetch(`${DB}/rooms.json`).then(r => r.json()).catch(() => ({})),
+        loadOnlineUsers()
+      ]);
+      renderRooms(roomsData || {});
+    } catch {}
+  }
 
   async function fetchOnlineNames() {
     const data = await fetch(`${DB}/online.json`).then(r => r.json()).catch(() => ({})) || {};
@@ -606,12 +617,19 @@
   function updateNameCards(onlineNames) {
     document.querySelectorAll('.name-card[data-name]').forEach(card => {
       const n = card.dataset.name;
-      const status = card.querySelector('.nc-status');
+      const statusEl = card.querySelector('.nc-status');
       const isMe = n === myName;
       const isTaken = !isMe && onlineNames.includes(n);
+      const roomInfo = nameRoomMap[n];
       card.classList.toggle('mine', isMe);
       card.classList.toggle('taken', isTaken);
-      if (status) status.textContent = isMe ? 'you' : isTaken ? 'taken' : '';
+      if (statusEl) {
+        if (isMe && roomInfo) statusEl.textContent = roomInfo.playing ? `you · room ${roomInfo.room} playing` : `you · room ${roomInfo.room}`;
+        else if (isMe)        statusEl.textContent = 'you';
+        else if (roomInfo)    statusEl.textContent = roomInfo.playing ? `room ${roomInfo.room} · playing` : `room ${roomInfo.room} · waiting`;
+        else if (isTaken)     statusEl.textContent = 'online';
+        else                  statusEl.textContent = '';
+      }
     });
   }
 
@@ -649,10 +667,14 @@
 
   function renderRooms(data) {
     const now = Date.now();
+    nameRoomMap = {};
     for (let n = 1; n <= 5; n++) {
       const room  = (data && data[`room-${n}`]) || {};
       const host  = room.host  && (now - room.host.ts  < STALE_MS) ? room.host  : null;
       const guest = room.guest && (now - room.guest.ts < STALE_MS) ? room.guest : null;
+      const playing = !!(host && guest);
+      if (host)  nameRoomMap[host.name]  = { room: n, playing };
+      if (guest) nameRoomMap[guest.name] = { room: n, playing };
       const el = document.getElementById(`rp-${n}`);
       if (!el) continue;
       if (host && guest) {
