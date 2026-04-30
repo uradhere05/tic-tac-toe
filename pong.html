@@ -24,30 +24,18 @@
     }
     .screen::-webkit-scrollbar { display: none; }
     .screen.active { display: flex; }
-    .app-version {
-      position: fixed;
-      left: 50%;
-      bottom: 10px;
-      transform: translateX(-50%);
-      font-size: 0.68rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      opacity: 0.45;
-      color: #fff;
-      pointer-events: none;
-      user-select: none;
-    }
+    .app-version { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.38; margin-top: 4px; text-align: center; width: 100%; }
 
     /* ── Title ── */
     h1 {
       font-size: 2.2rem; letter-spacing: 5px; text-transform: uppercase;
       background: linear-gradient(90deg, #f7971e, #ffd200);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-      margin-bottom: 6px;
+      margin-bottom: 6px; text-align: center; width: 100%;
     }
     .game-title {
       font-size: 1.1rem; letter-spacing: 6px; text-transform: uppercase;
-      color: #fff; opacity: 0.75; margin-bottom: 8px;
+      color: #fff; opacity: 0.75; margin-bottom: 8px; text-align: center; width: 100%;
     }
     .slogan {
       font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
@@ -190,7 +178,6 @@
 <body>
 
 <div id="toast"></div>
-<div class="app-version">v1.20</div>
 
 <!-- ══ WAITING ══ -->
 <div class="screen active" id="s-wait">
@@ -273,6 +260,9 @@
     <div class="lb-list"><div class="lb-empty">Loading…</div></div>
   </div>
 </div>
+
+<footer style="font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;opacity:0.25;margin-top:16px;">Created by ADML &mdash; 2026</footer>
+<div class="app-version">v1.21</div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
