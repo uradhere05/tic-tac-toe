@@ -471,7 +471,10 @@
     const now = new Date();
     const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
     const mon = new Date(now); mon.setDate(now.getDate() + diff);
-    return mon.toISOString().slice(0, 10);
+    const y = mon.getFullYear();
+    const m = String(mon.getMonth() + 1).padStart(2, '0');
+    const d = String(mon.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   async function recordWin(name) {
