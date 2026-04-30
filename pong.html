@@ -572,7 +572,7 @@
   function startPongGame() {
     mySide = 'left';
     document.getElementById('bdot').className    = 'dot dot-left';
-    document.getElementById('btext').textContent = myName + ' (Left)';
+    document.getElementById('btext').textContent = 'You • Left Paddle';
     updateNameDisplays();
     setConn(true);
     resetPositions();
@@ -584,7 +584,7 @@
   function joinPongGame() {
     mySide = 'right';
     document.getElementById('bdot').className    = 'dot dot-right';
-    document.getElementById('btext').textContent = myName + ' (Right)';
+    document.getElementById('btext').textContent = 'You • Right Paddle';
     updateNameDisplays();
     setConn(true);
     resetPositions();
@@ -879,7 +879,7 @@
     opponentName = '';
     scores = { left: 0, right: 0 };
     refreshScores();
-    window.location.href = 'index.html?screen=lobby';
+    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName || '')}`;
   }
 
   function cancelGame() {

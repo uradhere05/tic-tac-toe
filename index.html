@@ -999,13 +999,17 @@
 
   // Show online users and leaderboard on the name screen immediately
   const _startScreen = new URLSearchParams(window.location.search).get('screen');
-  if (_startScreen === 'lobby' && _prevName) {
-    myName = _prevName;
+  const _nameFromQuery = new URLSearchParams(window.location.search).get('name');
+  const _bootName = (_nameFromQuery || _prevName || '').trim();
+  if (_startScreen === 'lobby' && _bootName) {
+    myName = _bootName;
+    localStorage.setItem('filoName', myName);
     show('s-lobby');
     document.getElementById('lobby-greeting').textContent = 'Hi, ' + myName + '!';
     startOnlinePresence(myName);
     startPresencePoll();
     loadAndRenderLeaderboard();
+    history.replaceState(null, '', 'index.html');
   } else {
     startOnlinePoll();
     loadAndRenderLeaderboard();
