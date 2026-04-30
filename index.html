@@ -343,6 +343,7 @@
 
   <div class="lb-section">
     <div class="lb-title">Weekly Leaderboard</div>
+    <div id="lb-week" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list"><div class="lb-empty">Loading…</div></div>
   </div>
 </div>
@@ -422,7 +423,7 @@
   /* ── Constants ── */
   const WINS      = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
   const PREFIX    = 'filo-gang-room-';
-  const WINS_NEED = 3;
+  const WINS_NEED = 2;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 8 * 60 * 1000; // 8 min — treat older presence as stale
 
@@ -485,9 +486,20 @@
     } catch(e) { console.error('Firebase write error', e); }
   }
 
+  function getWeekLabel() {
+    const now = new Date();
+    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate() + diff);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const fmt = d => d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
+    return `${fmt(mon)} – ${fmt(sun)}`;
+  }
+
   async function loadAndRenderLeaderboard() {
     const el = document.getElementById('lb-list');
     el.innerHTML = '<div class="lb-empty">Loading…</div>';
+    const weekEl = document.getElementById('lb-week');
+    if (weekEl) weekEl.textContent = getWeekLabel();
     try {
       const data = await fetch(`${DB}/leaderboard/${getWeekKey()}.json`).then(r => r.json());
       if (!data) { el.innerHTML = '<div class="lb-empty">No wins yet this week</div>'; return; }
