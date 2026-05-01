@@ -107,7 +107,7 @@
     .room-card .rn { font-size: 2rem; font-weight: 900; color: #ffd200; line-height: 1; }
     .room-card .rg { font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; opacity: 0.75; margin-top: 4px; }
     .room-card .rl { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.5; margin-top: 4px; min-height: 28px; display:flex; align-items:center; justify-content:center; }
-    .room-card-5 { grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; }
+
     .rp-waiting { color: #ffd200 !important; opacity: 1 !important; font-style: italic; }
     .rp-playing { color: #56ccf2 !important; opacity: 1 !important; }
 
@@ -331,11 +331,14 @@
     <div class="room-card" onclick="window.location.href='connect5.html?room=3'">
       <div class="rn">3</div><div class="rg">⚫⚪ Connect 5</div><div class="rl" id="rp-3">Connect 5</div>
     </div>
-    <div class="room-card" onclick="window.location.href='pong.html?room=4'">
-      <div class="rn">4</div><div class="rg">🏓 Pong</div><div class="rl" id="rp-4">Pong Game</div>
+    <div class="room-card" onclick="window.location.href='connect5.html?room=4'">
+      <div class="rn">4</div><div class="rg">⚫⚪ Connect 5</div><div class="rl" id="rp-4">Connect 5</div>
     </div>
-    <div class="room-card room-card-5" onclick="window.location.href='pong.html?room=5'">
+    <div class="room-card" onclick="window.location.href='pong.html?room=5'">
       <div class="rn">5</div><div class="rg">🏓 Pong</div><div class="rl" id="rp-5">Pong Game</div>
+    </div>
+    <div class="room-card" onclick="window.location.href='pong.html?room=6'">
+      <div class="rn">6</div><div class="rg">🏓 Pong</div><div class="rl" id="rp-6">Pong Game</div>
     </div>
   </div>
 
@@ -427,7 +430,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.42</div>
+  <div class="app-version">v1.43</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -677,7 +680,7 @@
   function renderRooms(data) {
     const now = Date.now();
     nameRoomMap = {};
-    for (let n = 1; n <= 5; n++) {
+    for (let n = 1; n <= 6; n++) {
       const room  = (data && data[`room-${n}`]) || {};
       const host  = room.host  && (now - room.host.ts  < STALE_MS) ? room.host  : null;
       const guest = room.guest && (now - room.guest.ts < STALE_MS) ? room.guest : null;
