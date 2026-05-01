@@ -278,13 +278,13 @@
 
 <div class="credits">
   <footer style="font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;opacity:0.25;margin-top:16px;">Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.31</div>
+  <div class="app-version">v1.32</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
-  const PEER_ID   = 'filo-gang-pong-room';
+  const PEER_ID   = 'filo-gang-room-5';
   const WINS_NEED = 5;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 30 * 1000; // presence expires if not refreshed
@@ -534,7 +534,7 @@
   /* ── Firebase — room presence (mirrors TTT's /rooms/ pattern) ── */
   async function writePresence(role) {
     try {
-      await fetch(`${DB}/rooms/pong-room/${role}.json`, {
+      await fetch(`${DB}/rooms/room-5/${role}.json`, {
         method: 'PUT', body: JSON.stringify({ name: myName, ts: Date.now() })
       });
     } catch {}
@@ -542,7 +542,7 @@
 
   async function clearPresence(role) {
     try {
-      await fetch(`${DB}/rooms/pong-room/${role}.json`, { method: 'DELETE' });
+      await fetch(`${DB}/rooms/room-5/${role}.json`, { method: 'DELETE' });
     } catch {}
   }
 
@@ -950,7 +950,7 @@
   // Clean up Firebase presence if page closes mid-game (matches TTT pattern)
   window.addEventListener('beforeunload', () => {
     if (myRole) {
-      fetch(`${DB}/rooms/pong-room/${myRole}.json`, { method: 'DELETE', keepalive: true });
+      fetch(`${DB}/rooms/room-5/${myRole}.json`, { method: 'DELETE', keepalive: true });
     }
     if (myName) fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
   });
