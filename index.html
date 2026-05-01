@@ -10,9 +10,24 @@
     body {
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      background:
+        radial-gradient(ellipse 90% 50% at 50% -5%, rgba(255,90,0,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 70% 40% at 50% 105%, rgba(120,0,220,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(180,0,60,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 90% 50%, rgba(0,80,200,0.08) 0%, transparent 60%),
+        linear-gradient(160deg, #07020f 0%, #0e0420 40%, #130318 70%, #060110 100%);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #fff; padding: 20px;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 900;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 901;
+      background: radial-gradient(ellipse 120% 120% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
     }
 
     /* ── Screens ── */
@@ -69,26 +84,35 @@
 
     /* ── Name picker (name screen + champion) ── */
     .pick-label {
-      font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
-      opacity: 0.45; margin-bottom: 14px;
+      font-size: 0.72rem; letter-spacing: 4px; text-transform: uppercase;
+      color: #ff6a00; opacity: 0.9; margin-bottom: 14px; font-weight: 700;
+      text-shadow: 0 0 10px rgba(255,100,0,0.5);
     }
     .names-grid {
       display: grid; grid-template-columns: repeat(2, 1fr);
       gap: 10px; width: 100%; margin-bottom: 14px;
     }
     .name-card {
-      background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.14);
-      border-radius: 14px; padding: 14px 8px; text-align: center; cursor: pointer;
-      transition: background 0.14s, transform 0.1s, border-color 0.14s;
+      background: linear-gradient(160deg, rgba(80,15,5,0.55) 0%, rgba(12,4,30,0.85) 100%);
+      border: 1px solid rgba(255,80,0,0.3);
+      border-radius: 10px; padding: 14px 8px; text-align: center; cursor: pointer;
+      transition: all 0.15s; position: relative; overflow: hidden;
       -webkit-tap-highlight-color: transparent;
+      box-shadow: inset 0 1px 0 rgba(255,120,0,0.12);
     }
-    .name-card:hover:not(.taken)  { background: rgba(255,255,255,0.14); border-color: #ffd200; }
+    .name-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,120,0,0.12) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .name-card:hover:not(.taken)  { border-color: rgba(255,160,0,0.8); box-shadow: 0 0 16px rgba(255,100,0,0.25), inset 0 1px 0 rgba(255,160,0,0.2); transform: translateY(-2px); }
+    .name-card:hover:not(.taken)::before { opacity: 1; }
     .name-card:active:not(.taken) { transform: scale(0.93); }
-    .name-card .nc-num    { font-size: 0.58rem; letter-spacing: 2px; opacity: 0.35; text-transform: uppercase; }
-    .name-card .nc-name   { font-size: 0.92rem; font-weight: 700; margin-top: 4px; }
-    .name-card .nc-status { font-size: 0.55rem; letter-spacing: 1px; margin-top: 3px; color: #ff8888; }
-    .name-card.taken  { opacity: 0.35; cursor: not-allowed; border-color: rgba(255,255,255,0.06); }
-    .name-card.mine   { border-color: #4caf50 !important; opacity: 1 !important; }
+    .name-card .nc-num    { font-size: 0.55rem; letter-spacing: 3px; opacity: 0.4; text-transform: uppercase; color: #ff8844; }
+    .name-card .nc-name   { font-size: 0.92rem; font-weight: 700; margin-top: 4px; letter-spacing: 1px; }
+    .name-card .nc-status { font-size: 0.55rem; letter-spacing: 1px; margin-top: 3px; color: #ff6666; }
+    .name-card.taken  { opacity: 0.3; cursor: not-allowed; border-color: rgba(255,255,255,0.06); background: rgba(5,2,15,0.8); }
+    .name-card.mine   { border-color: #4caf50 !important; opacity: 1 !important; background: linear-gradient(160deg, rgba(0,60,20,0.5) 0%, rgba(5,20,10,0.9) 100%) !important; box-shadow: 0 0 14px rgba(76,175,80,0.25) !important; }
     .name-card.mine .nc-status { color: #4caf50; }
 
     /* ── Room picker ── */
@@ -97,14 +121,22 @@
       gap: 12px; width: 100%; margin-bottom: 14px;
     }
     .room-card {
-      background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.14);
-      border-radius: 18px; padding: 16px 10px; text-align: center; cursor: pointer;
-      transition: background 0.15s, transform 0.1s, border-color 0.15s;
+      background: linear-gradient(160deg, rgba(20,5,50,0.75) 0%, rgba(8,2,25,0.92) 100%);
+      border: 1px solid rgba(130,60,255,0.28);
+      border-radius: 14px; padding: 16px 10px; text-align: center; cursor: pointer;
+      transition: all 0.15s; position: relative; overflow: hidden;
       -webkit-tap-highlight-color: transparent;
+      box-shadow: inset 0 1px 0 rgba(160,100,255,0.1);
     }
-    .room-card:hover  { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+    .room-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(140,60,255,0.12) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .room-card:hover  { border-color: rgba(180,120,255,0.75); box-shadow: 0 0 18px rgba(130,60,255,0.28), inset 0 1px 0 rgba(180,120,255,0.18); transform: translateY(-2px); }
+    .room-card:hover::before { opacity: 1; }
     .room-card:active { transform: scale(0.94); }
-    .room-card .rn { font-size: 2rem; font-weight: 900; color: #ffd200; line-height: 1; }
+    .room-card .rn { font-size: 2rem; font-weight: 900; color: #ffd200; line-height: 1; text-shadow: 0 0 12px rgba(255,210,0,0.5); }
     .room-card .rg { font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; opacity: 0.75; margin-top: 4px; }
     .room-card .rl { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.5; margin-top: 4px; min-height: 28px; display:flex; align-items:center; justify-content:center; }
 
@@ -123,28 +155,31 @@
     @keyframes glowPulse    { 0%,100% { opacity: 0.45; } 50% { opacity: 0.85; } }
 
     #s-name h1 {
-      font-size: 2.8rem;
-      background: linear-gradient(90deg, #f7971e 0%, #ffd200 28%, #fff5b0 50%, #ffd200 72%, #f7971e 100%);
+      font-size: 2.8rem; letter-spacing: 6px;
+      background: linear-gradient(90deg, #ff4500 0%, #ff8c00 20%, #ffd200 40%, #fff5b0 50%, #ffd200 60%, #ff8c00 80%, #ff4500 100%);
       background-size: 250% auto;
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       animation: titleIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
                  titleShimmer 3.5s linear 0.7s infinite,
                  titleFloat 5s ease-in-out 0.7s infinite;
-      filter: drop-shadow(0 0 18px rgba(255,210,0,0.55));
+      filter: drop-shadow(0 0 24px rgba(255,120,0,0.65));
       position: relative;
     }
     #s-name .arena-glow {
-      display: block; width: 180px; height: 2px; margin: 0 auto 6px;
-      background: linear-gradient(90deg, transparent, #ffd200, transparent);
-      animation: glowPulse 2.5s ease-in-out infinite;
+      display: block; width: 220px; height: 2px; margin: 0 auto 8px;
+      background: linear-gradient(90deg, transparent, #ff6a00, #ffd200, #ff6a00, transparent);
+      animation: glowPulse 2s ease-in-out infinite;
       border-radius: 2px;
     }
     #s-name .slogan {
       animation: sloganIn 0.6s ease 0.5s both;
+      letter-spacing: 2px;
     }
     #s-name .name-card {
       animation: cardIn 0.4s ease both;
     }
+    .online-title { color: #ff9900; text-shadow: 0 0 8px rgba(255,150,0,0.4); }
+    .lb-title { color: #c87fff; text-shadow: 0 0 8px rgba(160,80,255,0.35); }
 
     /* ── Code box (waiting screen) ── */
     .code-box {
@@ -301,8 +336,8 @@
 <div class="screen active" id="s-name">
   <h1>FILO GANG ARENA</h1>
   <span class="arena-glow"></span>
-  <div class="slogan">Games for the ADHD in you.</div>
-  <p class="pick-label">Who are you?</p>
+  <div class="slogan">⚔️ &nbsp;Games for the ADHD in you.&nbsp; ⚔️</div>
+  <p class="pick-label">⚡ Choose Your Fighter ⚡</p>
   <div class="names-grid">
     <div class="name-card" data-name="Kuya AD"   onclick="selectName('Kuya AD')">
       <div class="nc-num">01</div><div class="nc-name">Kuya AD</div><div class="nc-status"></div>
@@ -351,13 +386,13 @@
 <!-- ══ LOBBY ══ -->
 <div class="screen" id="s-lobby">
   <h1>FILO GANG ARENA</h1>
-  <div class="slogan">Games for the ADHD in you.</div>
+  <div class="slogan">⚔️ &nbsp;Games for the ADHD in you.&nbsp; ⚔️</div>
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;width:100%;justify-content:center;">
     <span id="lobby-greeting" style="font-size:0.82rem;letter-spacing:1px;opacity:0.7;"></span>
     <button class="btn btn-secondary btn-sm" style="padding:6px 14px;font-size:0.65rem;" onclick="changeName()">Change</button>
   </div>
 
-  <p class="pick-label">Pick a Room</p>
+  <p class="pick-label">⚡ Select Your Arena ⚡</p>
 
   <div class="rooms-grid">
     <div class="room-card" onclick="enterRoom(1)">
@@ -468,7 +503,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.47</div>
+  <div class="app-version">v1.48</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
