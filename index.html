@@ -144,6 +144,11 @@
     .rp-playing { color: #56ccf2 !important; opacity: 1 !important; }
     @keyframes waitpulse { 0%,100% { border-color: rgba(255,210,0,0.3); box-shadow: 0 0 0 0 rgba(255,210,0,0.08); } 50% { border-color: rgba(255,210,0,0.75); box-shadow: 0 0 14px 3px rgba(255,210,0,0.18); } }
     .room-card.waiting { animation: waitpulse 1.6s ease-in-out infinite; }
+    .room-card.coming-soon { cursor: not-allowed; opacity: 0.6; grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; background: linear-gradient(160deg, rgba(10,10,20,0.8) 0%, rgba(5,5,15,0.95) 100%); border: 1px dashed rgba(255,255,255,0.2); pointer-events: none; }
+    .room-card.coming-soon .rn { color: rgba(255,255,255,0.35); text-shadow: none; }
+    .room-card.coming-soon .rg { opacity: 0.4; }
+    .coming-soon-badge { display: inline-block; font-size: 0.5rem; letter-spacing: 2px; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 20px; padding: 2px 8px; margin-bottom: 4px; opacity: 0.7; }
+    .coming-soon-slogan { font-size: 0.55rem; letter-spacing: 1.5px; font-style: italic; opacity: 0.4; margin-top: 3px; }
     #sound-btn { position:fixed; top:14px; right:14px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15); border-radius:50%; width:36px; height:36px; font-size:1.1rem; cursor:pointer; z-index:200; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; }
 
     /* ── Main screen dynamic title ── */
@@ -413,6 +418,12 @@
     <div class="room-card" onclick="window.location.href='pong.html?room=6'">
       <div class="rn">6</div><div class="rg">🏓 Pong</div><div class="rl" id="rp-6">Pong Game</div>
     </div>
+    <div class="room-card coming-soon">
+      <div class="coming-soon-badge">Coming Soon</div>
+      <div class="rn">7</div>
+      <div class="rg">🎭 Filo Mafia</div>
+      <div class="coming-soon-slogan">go to sleep. wake up.</div>
+    </div>
   </div>
 
   <div class="err" id="lobby-err"></div>
@@ -503,7 +514,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.49</div>
+  <div class="app-version">v1.50</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
