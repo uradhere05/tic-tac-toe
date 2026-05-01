@@ -308,7 +308,6 @@
     <div class="lb-title">Weekly Leaderboard</div>
     <div id="lb-week-name" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list-name"><div class="lb-empty">Loading…</div></div>
-    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="resetWeeklyScores()">Reset Weekly Scores</button>
   </div>
 </div>
 
@@ -354,7 +353,6 @@
     <div class="lb-title">Weekly Leaderboard</div>
     <div id="lb-week" style="font-size:0.6rem;letter-spacing:1.5px;text-align:center;opacity:0.35;margin-bottom:10px;"></div>
     <div id="lb-list"><div class="lb-empty">Loading…</div></div>
-    <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="resetWeeklyScores()">Reset Weekly Scores</button>
   </div>
 </div>
 
@@ -554,22 +552,6 @@
     try { localStorage.setItem(SCORE_SYNC_KEY, String(Date.now())); } catch {}
   }
 
-  async function resetWeeklyScores() {
-    if (!confirm('Reset all weekly leaderboard scores to zero?')) return;
-    const week = getWeekKey();
-    const targets = [`leaderboard/${week}`];
-    const results = await Promise.allSettled(
-      targets.map(path => fetch(`${DB}/${path}.json`, { method: 'DELETE' }))
-    );
-    const ok = results.some(r => r.status === 'fulfilled' && r.value && r.value.ok);
-    if (ok) {
-      toast('Weekly scores reset.');
-      loadAndRenderLeaderboard();
-      broadcastScoreSync();
-    } else {
-      toast('Could not reset scores.');
-    }
-  }
 
   /* ── Firebase — online presence ── */
   const ONLINE_STALE = 75 * 1000; // 75s — clears ~75s after crash/abandon
