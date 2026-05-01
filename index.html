@@ -144,6 +144,7 @@
     .rp-playing { color: #56ccf2 !important; opacity: 1 !important; }
     @keyframes waitpulse { 0%,100% { border-color: rgba(255,210,0,0.3); box-shadow: 0 0 0 0 rgba(255,210,0,0.08); } 50% { border-color: rgba(255,210,0,0.75); box-shadow: 0 0 14px 3px rgba(255,210,0,0.18); } }
     .room-card.waiting { animation: waitpulse 1.6s ease-in-out infinite; }
+    .room-card.full { cursor: not-allowed; opacity: 0.5; pointer-events: none; border-color: rgba(255,80,80,0.28); }
     .room-card.coming-soon { cursor: not-allowed; opacity: 0.6; grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; background: linear-gradient(160deg, rgba(10,10,20,0.8) 0%, rgba(5,5,15,0.95) 100%); border: 1px dashed rgba(255,255,255,0.2); pointer-events: none; }
     .room-card.coming-soon .rn { color: rgba(255,255,255,0.35); text-shadow: none; }
     .room-card.coming-soon .rg { opacity: 0.4; }
@@ -793,13 +794,16 @@
       const card = el.closest('.room-card');
       if (host && guest) {
         el.innerHTML = `<span class="rp-playing">${host.name} vs ${guest.name}</span>`;
+        card && card.classList.add('full');
         card && card.classList.remove('waiting');
       } else if (host) {
         el.innerHTML = `<span class="rp-waiting">${host.name} waiting…</span>`;
+        card && card.classList.remove('full');
         card && card.classList.add('waiting');
       } else {
         el.textContent = `Room ${n}`;
         el.className = 'rl';
+        card && card.classList.remove('full');
         card && card.classList.remove('waiting');
       }
     }
