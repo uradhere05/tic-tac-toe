@@ -503,7 +503,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.48</div>
+  <div class="app-version">v1.49</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -1098,7 +1098,14 @@
 
   function onDrop() {
     stopHeartbeat(); setConn(false); over = true;
-    setStatus(`<span class="dt">Opponent disconnected</span>`);
+    if (currentRoom && myRole) { clearPresence(currentRoom, myRole); currentRoom = null; myRole = null; }
+    let secs = 5;
+    const tick = () => {
+      setStatus(`<span class="dt">Opponent disconnected — returning in ${secs}s</span>`);
+      if (secs-- <= 0) { clearInterval(iv); leaveGame(); }
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
   }
 
   // Clear leftover presence from a previous session (refresh / crash)
