@@ -12,14 +12,14 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #fff; padding: 16px;
+      color: #fff; padding: 20px;
     }
 
     /* ── Screens ── */
     .screen {
       display: none; flex-direction: column; align-items: center;
       width: 100%; max-width: 640px;
-      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 40px;
+      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 60px;
       scrollbar-width: none; text-align: center;
     }
     .screen::-webkit-scrollbar { display: none; }
@@ -40,7 +40,11 @@
     }
     .slogan {
       font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
-      color: #ffd200; opacity: 0.85; margin-bottom: 24px; text-align: center;
+      color: #ffd200; opacity: 0.85; margin-bottom: 30px; text-align: center;
+    }
+    .subtitle {
+      font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase;
+      opacity: 0.45; margin-bottom: 36px;
     }
     .format-badge {
       display: inline-block;
@@ -172,6 +176,12 @@
     .trophy-icon { font-size: 3.6rem; margin-bottom: 4px; animation: tbounce 1.2s ease-in-out infinite alternate; }
     @keyframes tbounce { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-10px) rotate(5deg); } }
 
+    /* ── Error ── */
+    .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
+
+    /* ── Footer ── */
+    footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; margin-top: 20px; }
+
     /* ── Toast ── */
     #toast {
       position: fixed; top: 18px; left: 50%;
@@ -191,15 +201,16 @@
 
 <!-- ══ WAITING ══ -->
 <div class="screen active" id="s-wait">
-  <h1>Pong</h1>
-  <div class="game-title">FILO GANG ARENA</div>
+  <h1>FILO GANG ARENA</h1>
+  <div class="game-title" style="margin-bottom:6px;">🏓 Pong</div>
   <div class="format-badge" id="format-badge">First to 5 wins</div>
-  <div class="slogan">Games for the ADHD in you.</div>
+  <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
-    <div class="code-label">Finding opponent…</div>
-    <div class="spinner"></div>
+    <div class="code-label">You're in</div>
+    <div class="code-value">Room 5</div>
   </div>
-  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;">Waiting for another player to join Pong! First to 5 game wins is champion.</p>
+  <div class="spinner"></div>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;">Ask your friend to pick Room 5!</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
 
   <div class="online-section">
@@ -216,8 +227,8 @@
 
 <!-- ══ GAME ══ -->
 <div class="screen" id="s-game">
-  <h1 style="margin-bottom:2px;">Pong</h1>
-  <div class="game-title" style="margin-bottom:4px;">FILO GANG ARENA</div>
+  <h1 style="margin-bottom:2px;">FILO GANG ARENA</h1>
+  <div class="game-title" style="margin-bottom:4px;">🏓 Pong</div>
   <div class="format-badge" id="format-badge-game">First to 5 wins</div>
 
   <div class="player-badge">
@@ -261,8 +272,8 @@
 <!-- ══ CHAMPION ══ -->
 <div class="screen" id="s-champ">
   <div class="trophy-icon">🏆</div>
-  <h1>Pong</h1>
-  <div class="game-title" style="margin-bottom:8px;">Champion!</div>
+  <h1>FILO GANG ARENA</h1>
+  <div class="game-title" style="margin-bottom:8px;">🏓 Pong Champion!</div>
   <div class="slogan" id="champ-sub" style="margin-bottom:28px;"></div>
   <div class="btn-row" style="width:100%;">
     <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
@@ -277,8 +288,8 @@
 </div>
 
 <div class="credits">
-  <footer style="font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;opacity:0.25;margin-top:16px;">Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.33</div>
+  <footer>Created by ADML &mdash; 2026</footer>
+  <div class="app-version">v1.34</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
