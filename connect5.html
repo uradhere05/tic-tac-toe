@@ -187,6 +187,7 @@
 <body>
 
 <div id="toast"></div>
+<button id="sound-btn" onclick="toggleSound()" title="Toggle sound" style="position:fixed;top:14px;right:14px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:50%;width:36px;height:36px;font-size:1.1rem;cursor:pointer;z-index:200;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;">🔊</button>
 
 <!-- ══ WAITING ══ -->
 <div class="screen active" id="s-wait">
@@ -258,7 +259,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.43</div>
+  <div class="app-version">v1.45</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -336,6 +337,7 @@
     const cells = document.getElementById('board').children;
     cells[i].classList.add(piece.toLowerCase(), 'taken');
     if (animate) cells[i].classList.add('pop');
+    sndPlace();
 
     const win = checkWin(i, piece);
     if (win) {
@@ -409,6 +411,7 @@
   }
 
   function showChampionScreen(iWon) {
+    iWon ? sndWin() : sndLose();
     document.getElementById('champ-sub').textContent = iWon ? `${myName} is Champion!` : `${opponentName} is Champion!`;
     show('s-champ');
     if (iWon) {
@@ -752,6 +755,32 @@
   window.addEventListener('storage', e => {
     if (e.key === SCORE_SYNC_KEY) loadAndRenderLeaderboard(true);
   });
+
+  /* ── Sound ── */
+  let _actx = null;
+  let soundOn = localStorage.getItem('filoSound') !== 'off';
+  function _actxGet() { if (!_actx) _actx = new (window.AudioContext||window.webkitAudioContext)(); return _actx; }
+  function _tone(freq, dur, type='sine', vol=0.28) {
+    if (!soundOn) return;
+    try {
+      const ctx = _actxGet(), o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime);
+      g.gain.setValueAtTime(vol, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      o.start(); o.stop(ctx.currentTime + dur);
+    } catch(e) {}
+  }
+  function sndPlace() { _tone(380, 0.07, 'square', 0.12); }
+  function sndWin()   { [523,659,784,1047].forEach((f,i) => setTimeout(() => _tone(f,0.18,'sine',0.28), i*90)); }
+  function sndLose()  { [392,330,261].forEach((f,i) => setTimeout(() => _tone(f,0.2,'sine',0.18), i*110)); }
+  function toggleSound() {
+    soundOn = !soundOn;
+    localStorage.setItem('filoSound', soundOn ? 'on' : 'off');
+    document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
+    if (soundOn) _tone(440, 0.1);
+  }
+  document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
 
   document.getElementById('room-display').textContent = `Room ${roomNum}`;
   document.getElementById('room-hint').textContent = `Ask your friend to pick Room ${roomNum}!`;

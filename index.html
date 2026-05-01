@@ -110,6 +110,9 @@
 
     .rp-waiting { color: #ffd200 !important; opacity: 1 !important; font-style: italic; }
     .rp-playing { color: #56ccf2 !important; opacity: 1 !important; }
+    @keyframes waitpulse { 0%,100% { border-color: rgba(255,210,0,0.3); box-shadow: 0 0 0 0 rgba(255,210,0,0.08); } 50% { border-color: rgba(255,210,0,0.75); box-shadow: 0 0 14px 3px rgba(255,210,0,0.18); } }
+    .room-card.waiting { animation: waitpulse 1.6s ease-in-out infinite; }
+    #sound-btn { position:fixed; top:14px; right:14px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15); border-radius:50%; width:36px; height:36px; font-size:1.1rem; cursor:pointer; z-index:200; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; }
 
     /* ── Code box (waiting screen) ── */
     .code-box {
@@ -259,6 +262,8 @@
 <body>
 
 <div id="toast"></div>
+<button id="sound-btn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+
 
 <!-- ══ NAME SELECTION ══ -->
 <div class="screen active" id="s-name">
@@ -430,7 +435,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.44</div>
+  <div class="app-version">v1.45</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -689,13 +694,17 @@
       if (guest) nameRoomMap[guest.name] = { room: n, playing };
       const el = document.getElementById(`rp-${n}`);
       if (!el) continue;
+      const card = el.closest('.room-card');
       if (host && guest) {
         el.innerHTML = `<span class="rp-playing">${host.name} vs ${guest.name}</span>`;
+        card && card.classList.remove('waiting');
       } else if (host) {
         el.innerHTML = `<span class="rp-waiting">${host.name} waiting…</span>`;
+        card && card.classList.add('waiting');
       } else {
         el.textContent = `Room ${n}`;
         el.className = 'rl';
+        card && card.classList.remove('waiting');
       }
     }
   }
@@ -917,6 +926,7 @@
     const cell = cells[i];
     cell.classList.add(current.toLowerCase(), 'taken');
     cell.innerHTML = `<span class="mark">${current}</span>`;
+    sndPlace();
 
     const win = findWin();
     if (win) {
@@ -924,6 +934,7 @@
       scores[win.p]++; refreshScores();
       win.line.forEach(j => cells[j].classList.add('winning'));
       const mine = win.p === myPiece;
+      mine ? sndWin() : sndLose();
       if (scores[win.p] >= WINS_NEED) {
         setStatus(`<span class="wt">${mine ? '🏆 You are the Champion!' : '🏆 Opponent is the Champion!'}</span>`);
         setTimeout(() => showChampionScreen(mine), 1600);
@@ -1042,6 +1053,32 @@
       loadAndRenderLeaderboard();
     }
   });
+
+  /* ── Sound ── */
+  let _actx = null;
+  let soundOn = localStorage.getItem('filoSound') !== 'off';
+  function _actxGet() { if (!_actx) _actx = new (window.AudioContext||window.webkitAudioContext)(); return _actx; }
+  function _tone(freq, dur, type='sine', vol=0.28) {
+    if (!soundOn) return;
+    try {
+      const ctx = _actxGet(), o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime);
+      g.gain.setValueAtTime(vol, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      o.start(); o.stop(ctx.currentTime + dur);
+    } catch(e) {}
+  }
+  function sndPlace() { _tone(380, 0.07, 'square', 0.12); }
+  function sndWin()   { [523,659,784,1047].forEach((f,i) => setTimeout(() => _tone(f,0.18,'sine',0.28), i*90)); }
+  function sndLose()  { [392,330,261].forEach((f,i) => setTimeout(() => _tone(f,0.2,'sine',0.18), i*110)); }
+  function toggleSound() {
+    soundOn = !soundOn;
+    localStorage.setItem('filoSound', soundOn ? 'on' : 'off');
+    document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
+    if (soundOn) _tone(440, 0.1);
+  }
+  document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
 </script>
 </body>
 </html>
