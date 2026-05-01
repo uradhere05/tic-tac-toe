@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Pong — FILO GANG ARENA</title>
+  <title>Pickelbol — FILO GANG ARENA</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -222,7 +222,7 @@
 <!-- ══ WAITING ══ -->
 <div class="screen active" id="s-wait">
   <h1>FILO GANG ARENA</h1>
-  <div class="game-title" style="margin-bottom:6px;">🏓 Pong</div>
+  <div class="game-title" style="margin-bottom:6px;">🏓 Pickelbol</div>
   <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
     <div class="code-label">You're in</div>
@@ -234,14 +234,14 @@
 
   <div class="online-section">
     <div class="online-title">Online Now</div>
-    <div id="ol-pong"><div class="online-empty">Checking…</div></div>
+    <div id="ol-pickelbol"><div class="online-empty">Checking…</div></div>
   </div>
 </div>
 
 <!-- ══ GAME ══ -->
 <div class="screen" id="s-game">
   <h1 style="margin-bottom:2px;">FILO GANG ARENA</h1>
-  <div class="game-title" style="margin-bottom:4px;">🏓 Pong</div>
+  <div class="game-title" style="margin-bottom:4px;">🏓 Pickelbol</div>
   <div class="format-badge" id="format-badge-game">First to 5 wins</div>
 
   <div class="player-badge">
@@ -263,7 +263,7 @@
 
   <div class="status" id="status"></div>
 
-  <canvas id="pongCanvas"></canvas>
+  <canvas id="pickelbolCanvas"></canvas>
 
   <div class="touch-controls">
     <button class="touch-btn" id="btn-up">▲</button>
@@ -286,7 +286,7 @@
 <div class="screen" id="s-champ">
   <div class="trophy-icon">🏆</div>
   <h1>FILO GANG ARENA</h1>
-  <div class="game-title" style="margin-bottom:8px;">🏓 Pong Champion!</div>
+  <div class="game-title" style="margin-bottom:8px;">🏓 Pickelbol Champion!</div>
   <div class="slogan" id="champ-sub" style="margin-bottom:28px;"></div>
   <div class="btn-row" style="width:100%;">
     <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
@@ -307,7 +307,7 @@
 <script>
   /* ── Constants ── */
   const roomNum   = parseInt(new URLSearchParams(window.location.search).get('room') || '5', 10);
-  const PEER_ID   = `filo-gang-pong-${roomNum}`;
+  const PEER_ID   = `filo-gang-pickelbol-${roomNum}`;
   const WINS_NEED = 5;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 30 * 1000; // presence expires if not refreshed
@@ -342,7 +342,7 @@
   }
 
   /* ── Canvas — logical size fixed; CSS size set by fitCanvas() ── */
-  const canvas = document.getElementById('pongCanvas');
+  const canvas = document.getElementById('pickelbolCanvas');
   const ctx    = canvas.getContext('2d');
   canvas.width  = CW;
   canvas.height = CH;
@@ -497,7 +497,7 @@
               <span class="lb-name">${name}</span>
               <span class="lb-wins">${w} win${w!==1?'s':''}</span>
             </div>`).join('')
-        : '<div class="lb-empty">No pong wins yet this week</div>';
+        : '<div class="lb-empty">No pickelbol wins yet this week</div>';
       listEls.forEach(el => { el.innerHTML = html; });
       lbLastLoad = Date.now();
     } catch {
@@ -544,7 +544,7 @@
     try { renderOnline(await fetchOnlineNames()); } catch { renderOnline([]); }
   }
   function renderOnline(names) {
-    const el = document.getElementById('ol-pong');
+    const el = document.getElementById('ol-pickelbol');
     if (!el) return;
     el.innerHTML = names.length
       ? `<div class="online-pills">${names.map(n => `<div class="online-pill"><span class="online-dot"></span>${n}</div>`).join('')}</div>`
@@ -660,7 +660,7 @@
   }
 
   /* ── Game start ── */
-  function startPongGame() {
+  function startPickelbolGame() {
     mySide = 'left';
     document.getElementById('bdot').className    = 'dot dot-left';
     document.getElementById('btext').textContent = 'You • Left Paddle';
@@ -672,7 +672,7 @@
     startLoop();
   }
 
-  function joinPongGame() {
+  function joinPickelbolGame() {
     mySide = 'right';
     document.getElementById('bdot').className    = 'dot dot-right';
     document.getElementById('btext').textContent = 'You • Right Paddle';
@@ -707,7 +707,7 @@
   }
 
   /* ── Room entry — exact mirror of TTT's enterRoom / joinRoomN ── */
-  function enterPongRoom() {
+  function enterPickelbolRoom() {
     show('s-wait');
 
     peer = new Peer(PEER_ID, PEER_CFG);
@@ -722,7 +722,7 @@
         conn.on('open', () => {
           send({ type: 'start', hostName: myName });
           writePresence('host'); // refresh ts
-          startPongGame();
+          startPickelbolGame();
           startHeartbeat();
         });
       });
@@ -730,7 +730,7 @@
 
     peer.on('error', err => {
       if (err.type === 'unavailable-id') {
-        destroyPeer(); joinPongRoom();
+        destroyPeer(); joinPickelbolRoom();
       } else {
         destroyPeer();
         toast('Connection error — try again.');
@@ -739,7 +739,7 @@
     });
   }
 
-  function joinPongRoom() {
+  function joinPickelbolRoom() {
     peer = new Peer(PEER_CFG);
     myRole = 'guest';
     writePresence('guest');
@@ -765,7 +765,7 @@
 
     peer.on('error', () => {
       clearTimeout(giveUp); destroyPeer();
-      toast('Could not join Pong — try again.');
+      toast('Could not join Pickelbol — try again.');
       setTimeout(() => window.location.href = 'index.html', 2500);
     });
   }
@@ -780,13 +780,13 @@
   function handleData(msg) {
     switch (msg.type) {
       case 'ping':
-        send({ type: 'pong' });
+        send({ type: 'pickelbol' });
         break;
-      case 'pong':
+      case 'pickelbol':
         break;
       case 'start':
         opponentName = msg.hostName || '?';
-        joinPongGame();
+        joinPickelbolGame();
         send({ type: 'player-name', name: myName });
         break;
       case 'player-name':
@@ -947,7 +947,7 @@
     iAmWinner ? sndWin() : sndLose();
     const winner = iAmWinner ? myName : (opponentName || 'Opponent');
     document.getElementById('champ-sub').textContent =
-      iAmWinner ? `${myName} is the Pong Champion! 🎉` : `${winner} is the Pong Champion!`;
+      iAmWinner ? `${myName} is the Pickelbol Champion! 🎉` : `${winner} is the Pickelbol Champion!`;
     if (iAmWinner) {
       recordWin(myName).then(() => loadAndRenderLeaderboard(true));
       setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
@@ -1046,7 +1046,7 @@
   clearStalePresence();
   startOnlinePresence(myName);
   startOnlinePoll();
-  enterPongRoom();
+  enterPickelbolRoom();
 </script>
 </body>
 </html>
