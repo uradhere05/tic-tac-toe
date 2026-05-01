@@ -13,9 +13,24 @@
     body {
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      background:
+        radial-gradient(ellipse 90% 50% at 50% -5%, rgba(255,90,0,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 70% 40% at 50% 105%, rgba(120,0,220,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(180,0,60,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 90% 50%, rgba(0,80,200,0.08) 0%, transparent 60%),
+        linear-gradient(160deg, #07020f 0%, #0e0420 40%, #130318 70%, #060110 100%);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #fff; padding: 20px;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 900;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 901;
+      background: radial-gradient(ellipse 120% 120% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
     }
 
     /* ── Screens ── */
