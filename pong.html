@@ -278,7 +278,7 @@
 
 <div class="credits">
   <footer style="font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;opacity:0.25;margin-top:16px;">Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.32</div>
+  <div class="app-version">v1.33</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -581,7 +581,9 @@
 
   /* ── Heartbeat — pings opponent AND refreshes Firebase presence ── */
   let heartbeat;
+  let waitHeartbeat;
   function startHeartbeat() {
+    stopWaitHeartbeat();
     clearInterval(heartbeat);
     heartbeat = setInterval(() => {
       send({ type: 'ping' });
@@ -589,6 +591,11 @@
     }, 10000);
   }
   function stopHeartbeat() { clearInterval(heartbeat); }
+  function startWaitHeartbeat() {
+    clearInterval(waitHeartbeat);
+    waitHeartbeat = setInterval(() => { if (myRole) writePresence(myRole); }, 10000);
+  }
+  function stopWaitHeartbeat() { clearInterval(waitHeartbeat); }
 
   function destroyPeer() {
     stopHeartbeat(); stopLoop();
@@ -675,6 +682,7 @@
     peer.on('open', () => {
       myRole = 'host';
       writePresence('host');
+      startWaitHeartbeat();
       peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
       peer.on('connection', c => {
         conn = c; wireConn();
@@ -702,6 +710,7 @@
     peer = new Peer(PEER_CFG);
     myRole = 'guest';
     writePresence('guest');
+    startWaitHeartbeat();
 
     const giveUp = setTimeout(() => {
       destroyPeer();
