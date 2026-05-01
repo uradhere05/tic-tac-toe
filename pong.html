@@ -210,10 +210,10 @@
   <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
     <div class="code-label">You're in</div>
-    <div class="code-value">Room 5</div>
+    <div class="code-value" id="room-display">Room 5</div>
   </div>
   <div class="spinner"></div>
-  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;">Ask your friend to pick Room 5!</p>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;" id="room-hint">Ask your friend to pick Room 5!</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
 
   <div class="online-section">
@@ -286,13 +286,14 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.38</div>
+  <div class="app-version">v1.39</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
-  const PEER_ID   = 'filo-gang-room-5';
+  const roomNum   = parseInt(new URLSearchParams(window.location.search).get('room') || '5', 10);
+  const PEER_ID   = `filo-gang-pong-${roomNum}`;
   const WINS_NEED = 5;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 30 * 1000; // presence expires if not refreshed
@@ -542,7 +543,7 @@
   /* ── Firebase — room presence (mirrors TTT's /rooms/ pattern) ── */
   async function writePresence(role) {
     try {
-      await fetch(`${DB}/rooms/room-5/${role}.json`, {
+      await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, {
         method: 'PUT', body: JSON.stringify({ name: myName, ts: Date.now() })
       });
     } catch {}
@@ -550,7 +551,7 @@
 
   async function clearPresence(role) {
     try {
-      await fetch(`${DB}/rooms/room-5/${role}.json`, { method: 'DELETE' });
+      await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, { method: 'DELETE' });
     } catch {}
   }
 
@@ -967,7 +968,7 @@
   // Clean up Firebase presence if page closes mid-game (matches TTT pattern)
   window.addEventListener('beforeunload', () => {
     if (myRole) {
-      fetch(`${DB}/rooms/room-5/${myRole}.json`, { method: 'DELETE', keepalive: true });
+      fetch(`${DB}/rooms/room-${roomNum}/${myRole}.json`, { method: 'DELETE', keepalive: true });
     }
     if (myName) fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
   });
@@ -980,6 +981,8 @@
 
   draw();
   updateFormatBadge();
+  document.getElementById('room-display').textContent = `Room ${roomNum}`;
+  document.getElementById('room-hint').textContent = `Ask your friend to pick Room ${roomNum}!`;
   startOnlinePresence(myName);
   startOnlinePoll();
   enterPongRoom();
