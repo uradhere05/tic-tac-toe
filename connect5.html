@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Connect 5 — FILO GANG ARENA</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff; padding: 20px;
+    }
+
+    .screen {
+      display: none; flex-direction: column; align-items: center;
+      width: 100%; max-width: 420px;
+      overflow-y: auto; max-height: 100vh; max-height: 100dvh; padding-bottom: 60px;
+      scrollbar-width: none; text-align: center;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active { display: flex; }
+    .app-version { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.38; margin-top: 4px; text-align: center; width: 100%; }
+    .credits { width: 100%; text-align: center; margin-top: 8px; }
+
+    h1 {
+      font-size: 2.2rem; letter-spacing: 5px; text-transform: uppercase;
+      background: linear-gradient(90deg, #f7971e, #ffd200);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 6px; text-align: center; width: 100%;
+    }
+    .game-title {
+      font-size: 1.1rem; letter-spacing: 6px; text-transform: uppercase;
+      color: #fff; opacity: 0.75; margin-bottom: 8px; text-align: center; width: 100%;
+    }
+    .slogan {
+      font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
+      color: #ffd200; opacity: 0.85; margin-bottom: 30px; text-align: center;
+    }
+    .subtitle {
+      font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase;
+      opacity: 0.45; margin-bottom: 36px;
+    }
+
+    .btn {
+      width: 100%; padding: 15px; border: none; border-radius: 50px;
+      font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; font-weight: 700;
+      transition: transform 0.1s, opacity 0.12s;
+      margin-bottom: 12px; -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary  { background: linear-gradient(90deg, #f7971e, #ffd200); color: #1a1a2e; }
+    .btn-secondary{ background: rgba(255,255,255,0.09); color: #fff; border: 1.5px solid rgba(255,255,255,0.2); }
+    .btn-danger   { background: rgba(255,80,80,0.12); color: #ff8888; border: 1.5px solid rgba(255,80,80,0.25); }
+    .btn-sm { width: auto; padding: 10px 22px; font-size: 0.75rem; margin-bottom: 0; }
+    .btn-row { display: flex; gap: 10px; width: 100%; }
+    .btn-row .btn { margin-bottom: 0; }
+
+    .code-box {
+      width: 100%; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 22px; text-align: center; margin-bottom: 18px;
+    }
+    .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
+    .code-value { font-size: 2.4rem; font-weight: 900; letter-spacing: 4px; color: #ffd200; }
+
+    .spinner {
+      width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffd200; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 18px auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .player-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 30px; padding: 7px 18px;
+      font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-x { background: #f7971e; }
+    .dot-o { background: #56ccf2; }
+
+    .vs-display {
+      font-size: 0.72rem; letter-spacing: 1px; opacity: 0.5;
+      margin-bottom: 12px; text-align: center;
+    }
+
+    .scoreboard { display: flex; gap: 10px; width: 100%; margin-bottom: 14px; }
+    .score-box {
+      flex: 1; text-align: center; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 9px 4px;
+    }
+    .score-box .sl { font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; opacity: 0.55; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+    .score-box .sv { font-size: 1.6rem; font-weight: 700; }
+    .score-box.sx .sv { color: #f7971e; }
+    .score-box.so .sv { color: #56ccf2; }
+
+    .status { font-size: 0.95rem; letter-spacing: 2px; height: 26px; margin-bottom: 10px; text-align: center; }
+    .xt { color: #f7971e; font-weight: 700; }
+    .ot { color: #56ccf2; font-weight: 700; }
+    .wt { color: #ffd200; font-weight: 700; }
+    .dt { color: #aaa;    font-weight: 700; }
+
+    /* ── Connect 5 Board ── */
+    .c5-board {
+      display: grid;
+      grid-template-columns: repeat(13, 1fr);
+      gap: 3px;
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 6px;
+      margin-bottom: 14px;
+    }
+    .c5-cell {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      cursor: pointer;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: background 0.1s, transform 0.08s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .c5-cell:active:not(.taken) { transform: scale(0.88); }
+    .c5-cell:hover:not(.taken) { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.3); }
+    .c5-cell.not-your-turn { cursor: not-allowed; }
+    .c5-cell.x { background: #f7971e; border-color: #f7971e; box-shadow: 0 0 6px #f7971e55; cursor: default; }
+    .c5-cell.o { background: #56ccf2; border-color: #56ccf2; box-shadow: 0 0 6px #56ccf255; cursor: default; }
+    .c5-cell.taken { cursor: default; }
+    .c5-cell.winning { animation: cpulse 0.6s ease-in-out infinite alternate; }
+    @keyframes cpulse { from { box-shadow: 0 0 4px #ffd20044; } to { box-shadow: 0 0 16px #ffd200cc; border-color: #ffd200; } }
+    .c5-cell.pop { animation: cpop 0.18s ease-out; }
+    @keyframes cpop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+    .conn-bar {
+      display: flex; align-items: center; gap: 6px; margin-top: 10px;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.45;
+    }
+    .cdot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
+    .cdot.off { background: #f44336; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.2; } }
+
+    .trophy-icon { font-size: 3.6rem; margin-bottom: 4px; animation: tbounce 1.2s ease-in-out infinite alternate; }
+    @keyframes tbounce { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-10px) rotate(5deg); } }
+
+    .lb-section { width: 100%; margin-top: 22px; }
+    .lb-title { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
+    .lb-week  { font-size: 0.6rem; letter-spacing: 1.5px; text-align: center; opacity: 0.35; margin-bottom: 10px; }
+    .lb-row { display: flex; align-items: center; padding: 9px 14px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 6px; }
+    .lb-row.gold { background: rgba(255,210,0,0.1); border: 1px solid rgba(255,210,0,0.22); }
+    .lb-rank { font-size: 0.9rem; min-width: 28px; }
+    .lb-name { font-size: 0.88rem; font-weight: 600; flex: 1; margin-left: 6px; }
+    .lb-wins { font-size: 1rem; font-weight: 700; color: #ffd200; }
+    .lb-empty { font-size: 0.75rem; opacity: 0.3; text-align: center; letter-spacing: 1px; padding: 14px 0; }
+
+    .online-section { width: 100%; margin-top: 20px; }
+    .online-title { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
+    .online-pills { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+    .online-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 5px 13px; font-size: 0.8rem; font-weight: 600; }
+    .online-dot { width: 7px; height: 7px; border-radius: 50%; background: #4caf50; animation: pdot 1.8s ease-in-out infinite; }
+    @keyframes pdot { 0%,100% { opacity:1; box-shadow:0 0 0 0 #4caf5066; } 50% { opacity:.6; box-shadow:0 0 0 4px #4caf5000; } }
+    .online-empty { font-size: 0.72rem; opacity: 0.28; text-align: center; letter-spacing: 1px; padding: 6px 0; }
+
+    footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; margin-top: 20px; }
+
+    #toast {
+      position: fixed; top: 18px; left: 50%;
+      transform: translateX(-50%) translateY(-70px);
+      background: #ffd200; color: #1a1a2e;
+      padding: 10px 22px; border-radius: 30px;
+      font-weight: 700; font-size: 0.82rem; letter-spacing: 1px;
+      transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999; pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ══ WAITING ══ -->
+<div class="screen active" id="s-wait">
+  <h1>FILO GANG ARENA</h1>
+  <div class="game-title" style="margin-bottom:6px;">⚫⚪ Connect 5</div>
+  <div class="subtitle">Waiting for opponent…</div>
+  <div class="code-box">
+    <div class="code-label">You're in</div>
+    <div class="code-value" id="room-display">Room 3</div>
+  </div>
+  <div class="spinner"></div>
+  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;" id="room-hint">Ask your friend to pick Room 3!</p>
+  <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
+
+  <div class="online-section">
+    <div class="online-title">Online Now</div>
+    <div id="ol-c5"><div class="online-empty">Checking…</div></div>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="screen" id="s-game">
+  <h1 style="margin-bottom:2px;">FILO GANG ARENA</h1>
+  <div class="game-title" style="margin-bottom:10px;">⚫⚪ Connect 5</div>
+
+  <div class="player-badge" id="badge">
+    <span class="dot dot-x" id="bdot"></span>
+    <span id="btext">You</span>
+  </div>
+  <div class="vs-display" id="vs-display"></div>
+
+  <div class="scoreboard">
+    <div class="score-box sx"><div class="sl" id="sl-x">X</div><div class="sv" id="sc-x">0</div></div>
+    <div class="score-box so"><div class="sl" id="sl-o">O</div><div class="sv" id="sc-o">0</div></div>
+  </div>
+
+  <div class="status" id="status"><span class="xt">X's Turn</span></div>
+
+  <div class="c5-board" id="board"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary"   onclick="requestRestart()">Play Again</button>
+    <button class="btn btn-danger"    onclick="leaveGame()">Leave</button>
+  </div>
+
+  <div class="conn-bar">
+    <span class="cdot" id="cdot"></span>
+    <span id="ctext">Connected</span>
+  </div>
+</div>
+
+<!-- ══ CHAMPION ══ -->
+<div class="screen" id="s-champ">
+  <div class="trophy-icon">🏆</div>
+  <h1>FILO GANG ARENA</h1>
+  <div class="game-title" style="margin-bottom:8px;">⚫⚪ Connect 5 Champion!</div>
+  <div class="slogan" id="champ-sub" style="margin-bottom:28px;"></div>
+  <div class="btn-row" style="width:100%;">
+    <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
+    <button class="btn btn-secondary" onclick="goHome()">Home</button>
+  </div>
+
+  <div class="lb-section">
+    <div class="lb-title">Weekly Leaderboard</div>
+    <div class="lb-week" id="lb-week-champ"></div>
+    <div id="lb-list-champ"><div class="lb-empty">Loading…</div></div>
+  </div>
+</div>
+
+<div class="credits">
+  <footer>Created by ADML &mdash; 2026</footer>
+  <div class="app-version">v1.39</div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+  /* ── Constants ── */
+  const roomNum   = parseInt(new URLSearchParams(window.location.search).get('room') || '3', 10);
+  const PEER_ID   = `filo-gang-connect5-${roomNum}`;
+  const BOARD_SIZE = 13;
+  const WIN_LEN   = 5;
+  const WINS_NEED = 2;
+  const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+  const STALE_MS  = 30 * 1000;
+  const SCORE_SYNC_KEY = 'filo-score-sync';
+
+  /* ── State ── */
+  let myName = localStorage.getItem('filoName') || '';
+  if (!myName) { window.location.href = 'index.html'; }
+
+  let opponentName = '';
+  let peer = null, conn = null;
+  let myPiece = null;   // 'X' | 'O'
+  let myRole  = null;   // 'host' | 'guest'
+  let currentRoom = roomNum;
+  let board = [];
+  let currentTurn = 'X';
+  let gameOver = false;
+  let scores = { X: 0, O: 0 };
+  let wantsRestart = false;
+  let over = false;
+
+  /* ── Board ── */
+  function initBoard() {
+    board = new Array(BOARD_SIZE * BOARD_SIZE).fill(null);
+    currentTurn = 'X';
+    gameOver = false;
+    wantsRestart = false;
+    over = false;
+    renderBoard();
+    updateStatus();
+  }
+
+  function renderBoard() {
+    const el = document.getElementById('board');
+    el.innerHTML = '';
+    for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'c5-cell';
+      if (board[i]) cell.classList.add(board[i].toLowerCase(), 'taken');
+      cell.addEventListener('click', () => tap(i));
+      el.appendChild(cell);
+    }
+    updateCellCursors();
+  }
+
+  function updateCellCursors() {
+    const isMyTurn = currentTurn === myPiece && !gameOver && !over;
+    document.querySelectorAll('.c5-cell:not(.taken)').forEach(c => {
+      c.classList.toggle('not-your-turn', !isMyTurn);
+    });
+  }
+
+  function tap(i) {
+    if (gameOver || over || board[i] || currentTurn !== myPiece) {
+      if (!gameOver && !over && !board[i] && currentTurn !== myPiece) {
+        toast("⏳ Wait for opponent's turn!");
+      }
+      return;
+    }
+    placeStone(i, myPiece, true);
+    send({ type: 'move', idx: i });
+  }
+
+  function placeStone(i, piece, animate) {
+    board[i] = piece;
+    const cells = document.getElementById('board').children;
+    cells[i].classList.add(piece.toLowerCase(), 'taken');
+    if (animate) cells[i].classList.add('pop');
+
+    const win = checkWin(i, piece);
+    if (win) {
+      highlightWin(win);
+      endGame(piece);
+      return;
+    }
+    if (board.every(c => c !== null)) {
+      gameOver = true;
+      setStatus(`<span class="dt">Draw!</span>`);
+      return;
+    }
+    currentTurn = currentTurn === 'X' ? 'O' : 'X';
+    updateStatus();
+    updateCellCursors();
+  }
+
+  function checkWin(idx, piece) {
+    const row = Math.floor(idx / BOARD_SIZE);
+    const col = idx % BOARD_SIZE;
+    const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+    for (const [dr, dc] of dirs) {
+      const cells = [idx];
+      for (let s = 1; s < WIN_LEN; s++) {
+        const r = row + dr*s, c = col + dc*s;
+        if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break;
+        if (board[r*BOARD_SIZE+c] !== piece) break;
+        cells.push(r*BOARD_SIZE+c);
+      }
+      for (let s = 1; s < WIN_LEN; s++) {
+        const r = row - dr*s, c = col - dc*s;
+        if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) break;
+        if (board[r*BOARD_SIZE+c] !== piece) break;
+        cells.push(r*BOARD_SIZE+c);
+      }
+      if (cells.length >= WIN_LEN) return cells;
+    }
+    return null;
+  }
+
+  function highlightWin(cells) {
+    const boardCells = document.getElementById('board').children;
+    cells.forEach(i => boardCells[i].classList.add('winning'));
+  }
+
+  function endGame(winner) {
+    gameOver = true;
+    scores[winner]++;
+    refreshScores();
+    const winnerName = winner === myPiece ? myName : opponentName;
+    setStatus(`<span class="${winner==='X'?'xt':'ot'}">${winnerName} wins!</span>`);
+
+    if (scores[winner] >= WINS_NEED) {
+      const iWon = winner === myPiece;
+      setTimeout(() => showChampionScreen(iWon), 1200);
+      if (iWon) recordWin(myName).then(() => loadAndRenderLeaderboard(true));
+    }
+  }
+
+  function updateStatus() {
+    const isMyTurn = currentTurn === myPiece;
+    const name = isMyTurn ? 'Your' : `${opponentName}'s`;
+    const cls  = currentTurn === 'X' ? 'xt' : 'ot';
+    setStatus(`<span class="${cls}">${name} Turn</span>`);
+  }
+
+  function setStatus(html) { document.getElementById('status').innerHTML = html; }
+
+  function refreshScores() {
+    document.getElementById('sc-x').textContent = scores.X;
+    document.getElementById('sc-o').textContent = scores.O;
+  }
+
+  function showChampionScreen(iWon) {
+    document.getElementById('champ-sub').textContent = iWon ? `${myName} is Champion!` : `${opponentName} is Champion!`;
+    show('s-champ');
+    loadAndRenderLeaderboard(true);
+  }
+
+  /* ── Restart ── */
+  function requestRestart() {
+    if (wantsRestart) { doRestart(); return; }
+    wantsRestart = true;
+    send({ type: 'restart-req' });
+    toast('Waiting for opponent to accept…');
+  }
+
+  function requestRematch() {
+    scores = { X: 0, O: 0 };
+    refreshScores();
+    requestRestart();
+  }
+
+  function doRestart() {
+    wantsRestart = false;
+    initBoard();
+    show('s-game');
+  }
+
+  /* ── Screen ── */
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ── Firebase — leaderboard ── */
+  function getWeekKey() {
+    const now = new Date();
+    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+    const mon  = new Date(now); mon.setDate(now.getDate() + diff);
+    return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
+  }
+
+  function getWeekLabel() {
+    const now = new Date();
+    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+    const mon  = new Date(now); mon.setDate(now.getDate() + diff);
+    const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const fmt  = d => d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
+    return `${fmt(mon)} – ${fmt(sun)}`;
+  }
+
+  async function fbGet(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+  }
+
+  async function fbPut(url, value) {
+    const res = await fetch(url, { method: 'PUT', body: JSON.stringify(value) });
+    if (!res.ok) throw new Error(res.status);
+  }
+
+  async function recordWin(name) {
+    const week = getWeekKey();
+    const safe = encodeURIComponent(name);
+    try {
+      const url = `${DB}/leaderboard/${week}/${safe}.json`;
+      const cur = Number((await fbGet(url)) || 0);
+      await fbPut(url, cur + 1);
+      broadcastScoreSync();
+    } catch(e) { console.error('recordWin failed', e); }
+  }
+
+  let lbLoading = false, lbLastLoad = 0;
+  const LB_REFRESH_MS = 5000;
+
+  async function loadAndRenderLeaderboard(force = false) {
+    if (lbLoading) return;
+    if (!force && Date.now() - lbLastLoad < LB_REFRESH_MS) return;
+    lbLoading = true;
+    const listEl = document.getElementById('lb-list-champ');
+    const weekEl = document.getElementById('lb-week-champ');
+    if (weekEl) weekEl.textContent = getWeekLabel();
+    if (listEl) listEl.innerHTML = '<div class="lb-empty">Loading…</div>';
+    try {
+      const allData = (await fbGet(`${DB}/leaderboard.json`)) || {};
+      const now  = new Date();
+      const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+      const mon  = new Date(now); mon.setDate(now.getDate() + diff); mon.setHours(0,0,0,0);
+      const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);    sun.setHours(23,59,59,999);
+      const rs   = new Date(mon); rs.setDate(mon.getDate() - 1);
+      const re   = new Date(sun); re.setDate(sun.getDate() + 1);
+      const totals = {};
+      for (const [key, players] of Object.entries(allData || {})) {
+        const d = new Date(key);
+        if (d >= rs && d <= re && players) {
+          for (const [n, w] of Object.entries(players)) {
+            const name = decodeURIComponent(n);
+            totals[name] = (totals[name] || 0) + w;
+          }
+        }
+      }
+      const sorted = Object.entries(totals).sort((a,b) => b[1]-a[1]);
+      const medals = ['🥇','🥈','🥉'];
+      const html = sorted.length
+        ? sorted.map(([n,w],i) =>
+            `<div class="lb-row ${i===0?'gold':''}">
+              <span class="lb-rank">${medals[i]||(i+1)+'.'}</span>
+              <span class="lb-name">${n}</span>
+              <span class="lb-wins">${w} win${w!==1?'s':''}</span>
+            </div>`).join('')
+        : '<div class="lb-empty">No wins yet this week</div>';
+      if (listEl) listEl.innerHTML = html;
+      lbLastLoad = Date.now();
+    } catch {
+      if (listEl) listEl.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>';
+    } finally { lbLoading = false; }
+  }
+
+  function broadcastScoreSync() {
+    try { localStorage.setItem(SCORE_SYNC_KEY, String(Date.now())); } catch {}
+  }
+
+  /* ── Firebase — online presence ── */
+  const ONLINE_STALE = 75 * 1000;
+  let onlineHeartbeat = null, onlineInterval = null;
+
+  async function setOnline(name) {
+    try { await fetch(`${DB}/online/${encodeURIComponent(name)}.json`, { method: 'PUT', body: JSON.stringify({ ts: Date.now() }) }); } catch {}
+  }
+  async function setOffline(name) {
+    try { await fetch(`${DB}/online/${encodeURIComponent(name)}.json`, { method: 'DELETE' }); } catch {}
+  }
+  function startOnlinePresence(name) {
+    setOnline(name);
+    clearInterval(onlineHeartbeat);
+    onlineHeartbeat = setInterval(() => setOnline(name), 30000);
+  }
+  function startOnlinePoll() {
+    loadOnlineUsers();
+    clearInterval(onlineInterval);
+    onlineInterval = setInterval(loadOnlineUsers, 5000);
+  }
+  async function fetchOnlineNames() {
+    const data = (await fetch(`${DB}/online.json`).then(r=>r.json()).catch(()=>({}))) || {};
+    const now = Date.now();
+    return Object.entries(data)
+      .filter(([,v]) => v && (now - v.ts < ONLINE_STALE))
+      .map(([n]) => { try { return decodeURIComponent(n); } catch { return n; } });
+  }
+  async function loadOnlineUsers() {
+    try { renderOnline(await fetchOnlineNames()); } catch { renderOnline([]); }
+  }
+  function renderOnline(names) {
+    const el = document.getElementById('ol-c5');
+    if (!el) return;
+    el.innerHTML = names.length
+      ? `<div class="online-pills">${names.map(n=>`<div class="online-pill"><span class="online-dot"></span>${n}</div>`).join('')}</div>`
+      : '<div class="online-empty">No one online yet</div>';
+  }
+
+  /* ── Firebase — room presence ── */
+  async function writePresence(role) {
+    try {
+      await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, {
+        method: 'PUT', body: JSON.stringify({ name: myName, ts: Date.now() })
+      });
+    } catch {}
+  }
+  async function clearPresence(role) {
+    try { await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, { method: 'DELETE' }); } catch {}
+  }
+
+  /* ── Helpers ── */
+  function send(data) { if (conn && conn.open) conn.send(data); }
+  function setConn(on) {
+    document.getElementById('cdot').className = 'cdot' + (on ? '' : ' off');
+    document.getElementById('ctext').textContent = on ? 'Connected' : 'Disconnected';
+  }
+
+  let toastT;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  /* ── PeerJS config ── */
+  const PEER_CFG = {
+    debug: 0,
+    config: { iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ]}
+  };
+
+  /* ── Heartbeat ── */
+  let heartbeat, waitHeartbeat;
+  function startHeartbeat() {
+    stopWaitHeartbeat();
+    clearInterval(heartbeat);
+    heartbeat = setInterval(() => {
+      send({ type: 'ping' });
+      writePresence(myRole);
+    }, 10000);
+  }
+  function stopHeartbeat() { clearInterval(heartbeat); }
+  function startWaitHeartbeat() {
+    clearInterval(waitHeartbeat);
+    waitHeartbeat = setInterval(() => { if (myRole) writePresence(myRole); }, 10000);
+  }
+  function stopWaitHeartbeat() { clearInterval(waitHeartbeat); }
+
+  function destroyPeer() {
+    stopHeartbeat(); stopWaitHeartbeat();
+    try { conn && conn.close(); } catch {}
+    try { peer && peer.destroy(); } catch {}
+    conn = null; peer = null;
+  }
+
+  /* ── Game start ── */
+  function startGame() {
+    const xName = myPiece === 'X' ? myName : opponentName;
+    const oName = myPiece === 'O' ? myName : opponentName;
+    document.getElementById('sl-x').textContent = xName;
+    document.getElementById('sl-o').textContent = oName;
+    document.getElementById('vs-display').textContent = `${xName} vs ${oName}`;
+    const bdot = document.getElementById('bdot');
+    bdot.className = `dot dot-${myPiece.toLowerCase()}`;
+    document.getElementById('btext').textContent = `${myName} (${myPiece})`;
+    scores = { X: 0, O: 0 };
+    refreshScores();
+    initBoard();
+    show('s-game');
+    setConn(true);
+  }
+
+  /* ── Data handler ── */
+  function handleData(msg) {
+    if (msg.type === 'ping') return;
+    if (msg.type === 'start') {
+      opponentName = msg.hostName;
+      myPiece = 'O';
+      startGame();
+    }
+    if (msg.type === 'move') {
+      placeStone(msg.idx, currentTurn, true);
+    }
+    if (msg.type === 'restart-req') {
+      if (wantsRestart) { doRestart(); send({ type: 'restart-ok' }); }
+      else { wantsRestart = true; toast(`${opponentName} wants to play again! Click Play Again.`); }
+    }
+    if (msg.type === 'restart-ok') { doRestart(); }
+    if (msg.type === 'rematch') { scores = { X: 0, O: 0 }; refreshScores(); doRestart(); }
+  }
+
+  function wireConn() {
+    conn.on('data',  handleData);
+    conn.on('close', onDrop);
+    conn.on('error', onDrop);
+  }
+
+  /* ── Room entry ── */
+  function enterRoom() {
+    peer = new Peer(PEER_ID, PEER_CFG);
+    peer.on('open', () => {
+      myRole = 'host'; myPiece = 'X';
+      writePresence('host');
+      startWaitHeartbeat();
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
+      peer.on('connection', c => {
+        conn = c; wireConn();
+        conn.on('open', () => {
+          opponentName = '';
+          send({ type: 'start', hostName: myName });
+          writePresence('host');
+          startGame();
+          startHeartbeat();
+        });
+      });
+    });
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id') { destroyPeer(); joinRoom(); }
+      else { destroyPeer(); toast('Connection error — try again.'); setTimeout(() => window.location.href = 'index.html', 2000); }
+    });
+  }
+
+  function joinRoom() {
+    peer = new Peer(PEER_CFG);
+    myRole = 'guest'; myPiece = 'O';
+    writePresence('guest');
+    startWaitHeartbeat();
+    const giveUp = setTimeout(() => {
+      destroyPeer();
+      toast('No host found — try again.');
+      setTimeout(() => window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName)}`, 2500);
+    }, 12000);
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
+    peer.on('open', () => {
+      conn = peer.connect(PEER_ID, { reliable: true, serialization: 'json' });
+      wireConn();
+      conn.on('open', () => {
+        clearTimeout(giveUp);
+        writePresence('guest');
+        startHeartbeat();
+      });
+    });
+    peer.on('error', () => {
+      clearTimeout(giveUp); destroyPeer();
+      toast('Could not join — try again.');
+      setTimeout(() => window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName)}`, 2500);
+    });
+  }
+
+  /* ── Navigation ── */
+  function leaveGame() {
+    if (myRole) clearPresence(myRole);
+    destroyPeer();
+    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName)}`;
+  }
+
+  function cancelGame() {
+    if (myRole) clearPresence(myRole);
+    destroyPeer();
+    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName)}`;
+  }
+
+  function goHome() {
+    if (myRole) clearPresence(myRole);
+    destroyPeer();
+    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName)}`;
+  }
+
+  function onDrop() {
+    stopHeartbeat();
+    if (myRole) { clearPresence(myRole); myRole = null; }
+    over = true;
+    setConn(false);
+    setStatus(`<span class="dt">Opponent disconnected</span>`);
+  }
+
+  /* ── Boot ── */
+  window.addEventListener('beforeunload', () => {
+    if (myRole) fetch(`${DB}/rooms/room-${roomNum}/${myRole}.json`, { method: 'DELETE', keepalive: true });
+    if (myName) fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
+  });
+
+  window.addEventListener('storage', e => {
+    if (e.key === SCORE_SYNC_KEY) loadAndRenderLeaderboard(true);
+  });
+
+  document.getElementById('room-display').textContent = `Room ${roomNum}`;
+  document.getElementById('room-hint').textContent = `Ask your friend to pick Room ${roomNum}!`;
+  startOnlinePresence(myName);
+  startOnlinePoll();
+  enterRoom();
+</script>
+</body>
+</html>
