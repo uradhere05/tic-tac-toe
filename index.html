@@ -435,7 +435,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.45</div>
+  <div class="app-version">v1.46</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -685,10 +685,27 @@
   function renderRooms(data) {
     const now = Date.now();
     nameRoomMap = {};
+
+    // Build a map of each player's most recent room so they only appear once
+    const latestRoom = {};
+    for (let n = 1; n <= 6; n++) {
+      const room = (data && data[`room-${n}`]) || {};
+      for (const role of ['host', 'guest']) {
+        const e = room[role];
+        if (e && (now - e.ts < STALE_MS)) {
+          if (!latestRoom[e.name] || e.ts > latestRoom[e.name].ts) {
+            latestRoom[e.name] = { room: n, ts: e.ts };
+          }
+        }
+      }
+    }
+
     for (let n = 1; n <= 6; n++) {
       const room  = (data && data[`room-${n}`]) || {};
-      const host  = room.host  && (now - room.host.ts  < STALE_MS) ? room.host  : null;
-      const guest = room.guest && (now - room.guest.ts < STALE_MS) ? room.guest : null;
+      // Only show entry if this is the player's most recent room
+      const he = room.host,  ge = room.guest;
+      const host  = he && (now - he.ts < STALE_MS) && latestRoom[he.name]?.room === n ? he : null;
+      const guest = ge && (now - ge.ts < STALE_MS) && latestRoom[ge.name]?.room === n ? ge : null;
       const playing = !!(host && guest);
       if (host)  nameRoomMap[host.name]  = { room: n, playing };
       if (guest) nameRoomMap[guest.name] = { room: n, playing };

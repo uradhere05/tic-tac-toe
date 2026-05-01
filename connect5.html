@@ -259,7 +259,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.45</div>
+  <div class="app-version">v1.46</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -576,6 +576,19 @@
     try { await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, { method: 'DELETE' }); } catch {}
   }
 
+  async function clearStalePresence() {
+    try {
+      const data = await fetch(`${DB}/rooms.json`).then(r => r.json()).catch(() => ({})) || {};
+      for (const [key, room] of Object.entries(data)) {
+        if (key === `room-${roomNum}`) continue;
+        for (const role of ['host', 'guest']) {
+          if (room[role] && room[role].name === myName)
+            fetch(`${DB}/rooms/${key}/${role}.json`, { method: 'DELETE' });
+        }
+      }
+    } catch {}
+  }
+
   /* ── Helpers ── */
   function send(data) { if (conn && conn.open) conn.send(data); }
   function setConn(on) {
@@ -784,6 +797,7 @@
 
   document.getElementById('room-display').textContent = `Room ${roomNum}`;
   document.getElementById('room-hint').textContent = `Ask your friend to pick Room ${roomNum}!`;
+  clearStalePresence();
   startOnlinePresence(myName);
   startOnlinePoll();
   enterRoom();
