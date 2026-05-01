@@ -364,6 +364,11 @@
   <div class="spinner"></div>
   <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;">Ask your friend to pick the same room!</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
+
+  <div class="online-section">
+    <div class="online-title">Online Now</div>
+    <div id="ol-wait"><div class="online-empty">Checking…</div></div>
+  </div>
 </div>
 
 <!-- ══ GAME ══ -->
@@ -422,7 +427,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.36</div>
+  <div class="app-version">v1.37</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -611,7 +616,7 @@
           `<div class="online-pill"><span class="online-dot"></span>${n}</div>`
         ).join('')}</div>`
       : '<div class="online-empty">No one online yet</div>';
-    ['ol-name', 'ol-lobby'].forEach(id => {
+    ['ol-name', 'ol-lobby', 'ol-wait'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = html;
     });
