@@ -286,7 +286,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.43</div>
+  <div class="app-version">v1.44</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -431,15 +431,12 @@
   }
 
   async function recordWin(name) {
-    const week = getWeekKey();
-    const safe = encodeURIComponent(name);
+    const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
     try {
-      const sharedUrl = `${DB}/leaderboard/${week}/${safe}.json`;
-      const cur = Number((await fbGet(sharedUrl)) || 0);
-      await fbPut(sharedUrl, cur + 1);
-    } catch (e) {
-      console.error('recordWin failed on shared leaderboard', e);
-    }
+      const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
+      await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
+      broadcastScoreSync();
+    } catch(e) { console.error('recordWin failed', e); }
   }
 
   let lbLoading = false;
@@ -457,7 +454,7 @@
     listEls.forEach(el => { el.innerHTML = '<div class="lb-empty">Loading…</div>'; });
     lbLoading = true;
     try {
-      const allData = (await fbGet(`${DB}/leaderboard.json`)) || {};
+      const allData = await fetch(`${DB}/leaderboard.json`).then(r => r.json()).catch(() => ({})) || {};
       // Merge wins across ±1 day of the current week to tolerate timezone-offset keys
       const now  = new Date();
       const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
