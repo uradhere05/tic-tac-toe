@@ -899,7 +899,7 @@
 
   function cancelGame() {
     destroyPeer();
-    window.location.href = 'index.html';
+    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName || '')}`;
   }
 
   function onDrop() {
