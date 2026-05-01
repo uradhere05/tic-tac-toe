@@ -834,8 +834,10 @@
     if (goUp) myPaddle.y = Math.max(0,       myPaddle.y - PSPEED);
     if (goDn) myPaddle.y = Math.min(CH - PH, myPaddle.y + PSPEED);
 
-    // Always send paddle position so opponent stays in sync
-    send({ type: 'paddle-pos', y: myPaddle.y });
+    // Throttle paddle updates to every 3 frames to reduce network traffic
+    if (frameCount % 3 === 0) {
+      send({ type: 'paddle-pos', y: myPaddle.y });
+    }
 
     // Only host (left) drives ball physics
     if (mySide !== 'left') return;
@@ -871,8 +873,8 @@
     if (ball.x < 0)  { scores.right++; onPoint(); return; }
     if (ball.x > CW) { scores.left++;  onPoint(); return; }
 
-    // Throttle ball-state to every 2 frames — halves message rate without hurting smoothness
-    if (frameCount % 2 === 0) {
+    // Throttle ball-state to every 4 frames — reduces lag further without hurting sync
+    if (frameCount % 4 === 0) {
       send({ type: 'ball-state', x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy });
     }
   }
@@ -931,15 +933,11 @@
     ctx.fillStyle = '#56ccf2';
     ctx.fillRect(rp.x, rp.y, PW, PH);
 
-    // Ball with glow
-    ctx.save();
-    ctx.shadowColor = '#ffd200';
-    ctx.shadowBlur  = 14;
-    ctx.fillStyle   = '#ffd200';
+    // Ball — removed expensive shadow blur for better performance
+    ctx.fillStyle = '#ffd200';
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, BR, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
   }
 
   /* ── Champion ── */
