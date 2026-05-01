@@ -258,7 +258,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.41</div>
+  <div class="app-version">v1.42</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -391,7 +391,6 @@
     if (scores[winner] >= WINS_NEED) {
       const iWon = winner === myPiece;
       setTimeout(() => showChampionScreen(iWon), 1200);
-      if (iWon) recordWin(myName).then(() => loadAndRenderLeaderboard(true));
     }
   }
 
@@ -412,7 +411,15 @@
   function showChampionScreen(iWon) {
     document.getElementById('champ-sub').textContent = iWon ? `${myName} is Champion!` : `${opponentName} is Champion!`;
     show('s-champ');
-    loadAndRenderLeaderboard(true);
+    if (iWon) {
+      recordWin(myName).then(() => {
+        loadAndRenderLeaderboard(true);
+        broadcastScoreSync();
+      });
+      setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
+    } else {
+      loadAndRenderLeaderboard(true);
+    }
   }
 
   /* ── Restart ── */
@@ -458,25 +465,11 @@
     return `${fmt(mon)} – ${fmt(sun)}`;
   }
 
-  async function fbGet(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(res.status);
-    return res.json();
-  }
-
-  async function fbPut(url, value) {
-    const res = await fetch(url, { method: 'PUT', body: JSON.stringify(value) });
-    if (!res.ok) throw new Error(res.status);
-  }
-
   async function recordWin(name) {
-    const week = getWeekKey();
-    const safe = encodeURIComponent(name);
+    const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
     try {
-      const url = `${DB}/leaderboard/${week}/${safe}.json`;
-      const cur = Number((await fbGet(url)) || 0);
-      await fbPut(url, cur + 1);
-      broadcastScoreSync();
+      const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
+      await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
     } catch(e) { console.error('recordWin failed', e); }
   }
 
