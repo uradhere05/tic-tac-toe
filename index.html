@@ -114,6 +114,38 @@
     .room-card.waiting { animation: waitpulse 1.6s ease-in-out infinite; }
     #sound-btn { position:fixed; top:14px; right:14px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15); border-radius:50%; width:36px; height:36px; font-size:1.1rem; cursor:pointer; z-index:200; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; }
 
+    /* ── Main screen dynamic title ── */
+    @keyframes titleShimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+    @keyframes titleFloat   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes titleIn      { 0% { opacity:0; transform: scale(0.72) translateY(-16px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+    @keyframes sloganIn     { 0% { opacity:0; transform: translateY(8px); } 100% { opacity:0.85; transform: translateY(0); } }
+    @keyframes cardIn       { 0% { opacity:0; transform: translateY(14px) scale(0.95); } 100% { opacity:1; transform: translateY(0) scale(1); } }
+    @keyframes glowPulse    { 0%,100% { opacity: 0.45; } 50% { opacity: 0.85; } }
+
+    #s-name h1 {
+      font-size: 2.8rem;
+      background: linear-gradient(90deg, #f7971e 0%, #ffd200 28%, #fff5b0 50%, #ffd200 72%, #f7971e 100%);
+      background-size: 250% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: titleIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+                 titleShimmer 3.5s linear 0.7s infinite,
+                 titleFloat 5s ease-in-out 0.7s infinite;
+      filter: drop-shadow(0 0 18px rgba(255,210,0,0.55));
+      position: relative;
+    }
+    #s-name .arena-glow {
+      display: block; width: 180px; height: 2px; margin: 0 auto 6px;
+      background: linear-gradient(90deg, transparent, #ffd200, transparent);
+      animation: glowPulse 2.5s ease-in-out infinite;
+      border-radius: 2px;
+    }
+    #s-name .slogan {
+      animation: sloganIn 0.6s ease 0.5s both;
+    }
+    #s-name .name-card {
+      animation: cardIn 0.4s ease both;
+    }
+
     /* ── Code box (waiting screen) ── */
     .code-box {
       width: 100%; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12);
@@ -268,6 +300,7 @@
 <!-- ══ NAME SELECTION ══ -->
 <div class="screen active" id="s-name">
   <h1>FILO GANG ARENA</h1>
+  <span class="arena-glow"></span>
   <div class="slogan">Games for the ADHD in you.</div>
   <p class="pick-label">Who are you?</p>
   <div class="names-grid">
@@ -435,7 +468,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.46</div>
+  <div class="app-version">v1.47</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -1096,6 +1129,11 @@
     if (soundOn) _tone(440, 0.1);
   }
   document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
+
+  // Stagger name card entrance
+  document.querySelectorAll('#s-name .name-card').forEach((card, i) => {
+    card.style.animationDelay = `${0.55 + i * 0.05}s`;
+  });
 </script>
 </body>
 </html>
