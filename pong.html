@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Pickelbol — FILO GANG ARENA</title>
+  <title>Picklebol — FILO GANG ARENA</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -222,7 +222,8 @@
 <!-- ══ WAITING ══ -->
 <div class="screen active" id="s-wait">
   <h1>FILO GANG ARENA</h1>
-  <div class="game-title" style="margin-bottom:6px;">🏓 Pickelbol</div>
+  <div class="game-title" style="margin-bottom:6px;">🏓 Picklebol</div>
+  <div class="format-badge" id="format-badge" style="margin-bottom:16px;"></div>
   <div class="subtitle">Waiting for opponent…</div>
   <div class="code-box">
     <div class="code-label">You're in</div>
@@ -241,7 +242,7 @@
 <!-- ══ GAME ══ -->
 <div class="screen" id="s-game">
   <h1 style="margin-bottom:2px;">FILO GANG ARENA</h1>
-  <div class="game-title" style="margin-bottom:4px;">🏓 Pickelbol</div>
+  <div class="game-title" style="margin-bottom:4px;">🏓 Picklebol</div>
   <div class="format-badge" id="format-badge-game">First to 5 wins</div>
 
   <div class="player-badge">
@@ -286,7 +287,7 @@
 <div class="screen" id="s-champ">
   <div class="trophy-icon">🏆</div>
   <h1>FILO GANG ARENA</h1>
-  <div class="game-title" style="margin-bottom:8px;">🏓 Pickelbol Champion!</div>
+  <div class="game-title" style="margin-bottom:8px;">🏓 Picklebol Champion!</div>
   <div class="slogan" id="champ-sub" style="margin-bottom:28px;"></div>
   <div class="btn-row" style="width:100%;">
     <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
@@ -310,7 +311,6 @@
   const PEER_ID   = `filo-gang-pickelbol-${roomNum}`;
   const WINS_NEED = 5;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
-  const STALE_MS  = 30 * 1000; // presence expires if not refreshed
   const SCORE_SYNC_KEY = 'filo-score-sync';
 
   const CW       = 600, CH       = 340;  // logical canvas dimensions
@@ -431,19 +431,6 @@
     return `${fmt(mon)} – ${fmt(sun)}`;
   }
 
-  const LB_ROOTS = ['leaderboard'];
-
-  async function fbGet(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`GET failed (${res.status})`);
-    return res.json();
-  }
-
-  async function fbPut(url, value) {
-    const res = await fetch(url, { method: 'PUT', body: JSON.stringify(value) });
-    if (!res.ok) throw new Error(`PUT failed (${res.status})`);
-  }
-
   async function recordWin(name) {
     const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
     try {
@@ -497,7 +484,7 @@
               <span class="lb-name">${name}</span>
               <span class="lb-wins">${w} win${w!==1?'s':''}</span>
             </div>`).join('')
-        : '<div class="lb-empty">No pickelbol wins yet this week</div>';
+        : '<div class="lb-empty">No Picklebol wins yet this week</div>';
       listEls.forEach(el => { el.innerHTML = html; });
       lbLastLoad = Date.now();
     } catch {
@@ -765,7 +752,7 @@
 
     peer.on('error', () => {
       clearTimeout(giveUp); destroyPeer();
-      toast('Could not join Pickelbol — try again.');
+      toast('Could not join Picklebol — try again.');
       setTimeout(() => window.location.href = 'index.html', 2500);
     });
   }
@@ -945,7 +932,7 @@
     iAmWinner ? sndWin() : sndLose();
     const winner = iAmWinner ? myName : (opponentName || 'Opponent');
     document.getElementById('champ-sub').textContent =
-      iAmWinner ? `${myName} is the Pickelbol Champion! 🎉` : `${winner} is the Pickelbol Champion!`;
+      iAmWinner ? `${myName} is the Picklebol Champion! 🎉` : `${winner} is the Picklebol Champion!`;
     if (iAmWinner) {
       recordWin(myName).then(() => loadAndRenderLeaderboard(true));
       setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
