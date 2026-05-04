@@ -188,7 +188,7 @@ function startGamePlay(){
   document.getElementById('emergency-btn').disabled=emergencyUsed||aliveMap[myName]===false;
   stopIvs();
   ivs.push(setInterval(syncPos,300));
-  ivs.push(setInterval(pollGameState,800));
+  ivs.push(setInterval(pollGameState,500));
   raf=requestAnimationFrame(gameLoop);
   window.addEventListener('resize',buildMap);
 }
@@ -318,9 +318,11 @@ async function doInspect(){
 async function triggerMeeting(reason,victim){
   const state=await fb('GET','/mafia/state');
   if(state!=='playing') return;
-  await fb('PUT','/mafia/meeting',{trigger:reason,by:myName,victim:victim||null,startedAt:Date.now(),votes:{},chat:{},result:null});
+  const meetObj={trigger:reason,by:myName,victim:victim||null,startedAt:Date.now(),votes:{},chat:{},result:null};
+  await fb('PUT','/mafia/meeting',meetObj);
   await fb('PUT','/mafia/state','meeting');
   snd('meeting');
+  if(gamePhase==='playing'){gamePhase='meeting';openMeeting(meetObj);}
 }
 
 async function checkMurdererWin(){
@@ -357,12 +359,14 @@ async function pollGameState(){
 
 /* ─── Meeting ─── */
 function openMeeting(data){
+  meetingData=data;
   cancelAnimationFrame(raf);
   document.getElementById('meeting-overlay').style.display='flex';
   document.getElementById('meeting-result').style.display='none';
   document.getElementById('meeting-title').textContent=data.trigger==='body'?'📢 BODY REPORTED':'🚨 EMERGENCY MEETING';
   document.getElementById('meeting-caller').textContent=`Called by ${data.by}${data.victim?' — '+data.victim+' found dead':''}`;
   renderVoteGrid();
+  meetingTick();
   ivs.push(setInterval(pollMeeting,600));
   ivs.push(setInterval(meetingTick,500));
 }
