@@ -14,40 +14,92 @@ git push
 
 Commit messages should describe what changed and why, not just what files were touched. Push after every commit — don't batch pushes.
 
-## Running the game
+## Running the games
 
-No build step or server required — open `index.html` directly in a browser:
+No build step or server required — open any HTML file directly in a browser:
 
 ```
-open index.html
+open index.html       # main lobby / arena
+open mafia.html       # Filogang Mafia (Room 7)
+open pong.html        # Pickelbol (Rooms 5–6)
+open connect5.html    # Streytlima Connect 5 (Rooms 3–4)
+open tictactoe.html   # Solo/AI Tictactoe
 ```
 
 ## Architecture
 
-The project is two standalone single-file HTML games:
+A collection of standalone browser games sharing a common Firebase Realtime Database for presence, state, and leaderboards. No build step; no server required.
 
-- **`index.html`** — FILO Gang Tictactoe: the main multiplayer game, exclusive to a fixed friend group.
-- **`tictactoe.html`** — Solo/AI Tictactoe: a simpler version with 2-player local and vs-AI (minimax) modes.
+**Fixed player names (all games):** Kuya AD, Matt, Gianne, Austin, Charm, Kee, Kriselle, Monique, Tiff, Shantelle — hardcoded, no registration. Name stored in `localStorage.filoName`.
 
-### `index.html` — how it fits together
+**Firebase DB:** `https://filo-gang-tictactoe-default-rtdb.firebaseio.com` (REST API, no SDK).
 
-**External dependencies (CDN only):**
-- `peerjs@1.5.2` — WebRTC peer-to-peer connections for real-time gameplay
-- Firebase Realtime Database (REST API, no SDK) — presence, room state, leaderboard
+---
+
+### `index.html` — FILO Gang Arena (lobby)
+
+Main entry point. Shows all 7 rooms; clicking a room navigates to the appropriate game.
+
+**External dependencies:** `peerjs@1.5.2` (WebRTC), Firebase REST API.
 
 **Flow:** Name screen → Lobby (pick room) → Waiting screen → Game → Champion screen
 
-**PeerJS room model:** Rooms 1–5 use fixed peer IDs (`filo-gang-room-N`). The first player to claim the ID becomes the host (X); the second player joins as guest (O). If the fixed ID is already taken, `peer.on('error', 'unavailable-id')` fires and the client falls back to `joinRoomN()`.
+**PeerJS room model:** Rooms 1–2 use fixed peer IDs (`filo-gang-room-N`). First player becomes host (X); second joins as guest (O). Falls back to `joinRoomN()` if ID is taken.
 
-**Firebase paths used:**
-- `/online/<name>` — heartbeat presence (written every 30s, deleted on `beforeunload`)
-- `/rooms/room-N/host` and `/rooms/room-N/guest` — who is in each room and whether a game is active
-- `/leaderboard/<week-key>/<name>` — weekly win counts, keyed by Monday date (YYYY-MM-DD)
+**Firebase paths:**
+- `/online/<name>` — `{ts}` heartbeat presence (30s interval, deleted on `beforeunload`)
+- `/rooms/room-N/host` and `/rooms/room-N/guest` — `{name, ts}` room occupancy
+- `/leaderboard/<YYYY-MM-DD>/<name>` — number, weekly win counts (Monday-keyed)
 
-**Leaderboard timezone fix:** The loader fetches the entire `/leaderboard.json` tree and merges wins from any key within ±1 day of the current week's Monday–Sunday range. This handles data that was written under wrong UTC-offset keys.
+**Leaderboard timezone fix:** Fetches entire `/leaderboard.json` and merges wins from keys within ±1 day of current week to handle UTC-offset drift.
 
-**`WINS_NEED = 2`** — best of 3 series (first to 2 game wins).
+**`WINS_NEED = 2`** — best of 3 (first to 2 game wins). Presence stale after 75s.
 
-**Presence stale threshold:** Online heartbeats expire after 75s (`ONLINE_STALE`); room presence expires after 8 minutes (`STALE_MS`).
+---
 
-**Fixed player names:** Kuya AD, Matt, Gianne, Austin, Charm, Kee, Kriselle, Monique, Tiff, Shantelle — hardcoded in the HTML, no registration.
+### `mafia.html` + `mafia.js` — Filogang Mafia (Room 7)
+
+Multiplayer social deduction game for 5–10 players. Two files: `mafia.html` (HTML + CSS, ~280 lines) and `mafia.js` (game logic, ~560 lines).
+
+**No external dependencies** — Firebase REST API + Web Audio API only.
+
+**Roles:** Murderer (1), Detective (1 if 8+ players), Innocents (remainder). Randomly assigned by host.
+
+**Flow:** Name screen → Lobby (ready up) → Role reveal (5s) → Game canvas → Meeting overlay → End screen
+
+**Canvas map — Bloodmoor Manor:** 5 rooms as percentage-based rectangles on a full-viewport canvas (Foyer, Library, Ballroom, Kitchen, Basement + corridors). Movement: WASD + arrow keys + D-pad. Wall collision with sliding.
+
+**Firebase paths (all under `/mafia/`):**
+- `/mafia/lobby/<name>` — `{name, ready, ts}`
+- `/mafia/host` — string
+- `/mafia/state` — `"lobby" | "playing" | "meeting" | "ended"`
+- `/mafia/roles/<name>` — `"murderer" | "innocent" | "detective"` (each player reads only their own)
+- `/mafia/alive/<name>` — bool
+- `/mafia/pos/<name>` — `{x, y, ts}` written every 300ms, polled every 500ms
+- `/mafia/bodies/<id>` — `{victim, x, y, ts}`
+- `/mafia/killCd/<name>` — timestamp when 25s kill cooldown expires
+- `/mafia/meeting` — `{trigger, by, victim, startedAt, votes, chat, result}`
+- `/mafia/winner` — `"murderer" | "innocents"`
+- `/mafia/allRoles` — full role map written on game end for reveal
+
+**Meeting flow:** 45s discussion → 30s voting → 6s result. Server-synced via `startedAt`. Alphabetically-first alive player writes vote result; all clients react identically.
+
+**Win conditions:**
+- Murderer wins: alive murderers ≥ alive innocents (checked after every kill)
+- Innocents win: murderer voted out
+
+**Key constants:** `KILL_R=70px`, `RPT_R=100px`, `KILL_CD=25s`, `DISC=45s`, `VOTE=30s`, `RSLT=6s`.
+
+---
+
+### `pong.html` — Pickelbol (Rooms 5–6)
+
+PeerJS-based 2-player Pong variant. Room via `?room=N` query param.
+
+### `connect5.html` — Streytlima Connect 5 (Rooms 3–4)
+
+PeerJS-based 2-player Connect 5. Room via `?room=N` query param.
+
+### `tictactoe.html` — Solo/AI Tictactoe
+
+Standalone: 2-player local or vs-AI (minimax). No Firebase or PeerJS.
