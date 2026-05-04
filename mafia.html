@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Filogang Mafia</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #08030f;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #e8e0f0;
+  height: 100vh; height: 100dvh;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.screen { display:none; flex-direction:column; align-items:center; justify-content:center;
+  width:100%; height:100vh; height:100dvh; overflow-y:auto; padding:20px; }
+.screen.active { display:flex; }
+
+.m-title { font-size:2.4rem; font-weight:900; letter-spacing:6px; text-transform:uppercase;
+  background:linear-gradient(135deg,#8B0000,#cc2200,#FFD200);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(180,0,0,0.7)); margin-bottom:6px; text-align:center; }
+.m-sub { font-size:0.75rem; letter-spacing:3px; text-transform:uppercase; opacity:0.5; margin-bottom:24px; text-align:center; }
+
+.btn { padding:13px 28px; border:none; border-radius:50px; font-size:0.85rem;
+  letter-spacing:2px; text-transform:uppercase; font-weight:700; cursor:pointer;
+  transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+.btn:active { transform:scale(0.95); }
+.btn-primary { background:linear-gradient(90deg,#8B0000,#cc2200); color:#fff; box-shadow:0 0 16px rgba(140,0,0,0.5); }
+.btn-secondary { background:rgba(255,255,255,0.08); color:#e8e0f0; border:1.5px solid rgba(255,255,255,0.18); }
+.btn-row { display:flex; gap:10px; width:100%; margin-top:10px; max-width:360px; }
+.btn-row .btn { flex:1; }
+
+/* Name Screen */
+.names-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:360px; }
+.name-card { background:linear-gradient(160deg,rgba(60,5,15,0.7),rgba(10,2,25,0.9));
+  border:1px solid rgba(139,0,0,0.35); border-radius:12px; padding:14px 10px;
+  text-align:center; cursor:pointer; transition:all 0.15s; }
+.name-card:hover:not(.taken) { border-color:rgba(200,50,50,0.8); transform:translateY(-2px); box-shadow:0 0 14px rgba(139,0,0,0.3); }
+.name-card:active:not(.taken) { transform:scale(0.94); }
+.name-card.taken { opacity:0.3; cursor:not-allowed; }
+.name-card.mine { border-color:#FFD200 !important; background:linear-gradient(160deg,rgba(30,20,0,0.7),rgba(15,10,2,0.9)) !important; box-shadow:0 0 14px rgba(255,210,0,0.25) !important; }
+.nc-num { font-size:0.55rem; letter-spacing:3px; opacity:0.4; text-transform:uppercase; color:#cc4444; }
+.nc-name { font-size:0.9rem; font-weight:700; margin-top:4px; }
+.nc-status { font-size:0.55rem; letter-spacing:1px; margin-top:3px; color:#FFD200; min-height:14px; }
+
+/* Lobby Screen */
+#s-lobby { justify-content:flex-start; padding-top:60px; }
+.player-list { width:100%; max-width:380px; margin-bottom:16px; }
+.player-row { display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:rgba(255,255,255,0.05); border-radius:10px; margin-bottom:6px;
+  border:1px solid rgba(139,0,0,0.2); transition:all 0.2s; }
+.player-row.ready { border-color:rgba(0,200,100,0.4); background:rgba(0,80,30,0.15); }
+.p-dot { width:8px; height:8px; border-radius:50%; background:#555; flex-shrink:0; }
+.p-dot.ready { background:#4caf50; box-shadow:0 0 6px #4caf50; }
+.p-name-lbl { font-size:0.9rem; font-weight:600; flex:1; }
+.p-tag { font-size:0.55rem; letter-spacing:1.5px; text-transform:uppercase; padding:2px 8px;
+  border-radius:10px; background:rgba(255,210,0,0.15); border:1px solid rgba(255,210,0,0.3); color:#FFD200; }
+.lobby-btns { display:flex; flex-direction:column; gap:10px; width:100%; max-width:380px; }
+.need-more { font-size:0.68rem; color:#cc4444; text-align:center; margin-top:8px; letter-spacing:1px; min-height:18px; }
+.lobby-info { font-size:0.72rem; letter-spacing:2px; opacity:0.55; margin-bottom:16px; }
+
+/* Role Reveal */
+#s-reveal { background:radial-gradient(ellipse at center, rgba(80,0,0,0.4) 0%, #08030f 70%); }
+.reveal-card { border:2px solid rgba(139,0,0,0.6); border-radius:20px; padding:48px 36px;
+  text-align:center; max-width:340px; width:100%;
+  background:linear-gradient(160deg,rgba(40,5,5,0.9),rgba(8,2,15,0.95));
+  box-shadow:0 0 60px rgba(139,0,0,0.4); animation:revealIn 0.6s cubic-bezier(.34,1.56,.64,1) both; }
+.reveal-card.innocent { border-color:rgba(80,140,255,0.6); box-shadow:0 0 60px rgba(50,80,255,0.3); }
+.reveal-card.detective { border-color:rgba(255,200,0,0.7); box-shadow:0 0 60px rgba(255,200,0,0.4); }
+@keyframes revealIn { from{opacity:0;transform:scale(0.6) rotateY(30deg)} to{opacity:1;transform:scale(1) rotateY(0)} }
+.reveal-icon { font-size:5rem; margin-bottom:16px; animation:iconFloat 2s ease-in-out infinite; }
+@keyframes iconFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.reveal-role { font-size:1.8rem; font-weight:900; letter-spacing:4px; text-transform:uppercase; margin-bottom:10px; }
+.reveal-role.murderer { color:#cc2200; text-shadow:0 0 20px rgba(200,0,0,0.8); }
+.reveal-role.innocent { color:#99b4ff; }
+.reveal-role.detective { color:#FFD200; text-shadow:0 0 20px rgba(255,210,0,0.8); }
+.reveal-desc { font-size:0.8rem; opacity:0.7; letter-spacing:1px; margin-bottom:20px; line-height:1.5; }
+.reveal-countdown { font-size:0.7rem; letter-spacing:2px; opacity:0.4; }
+
+/* Game Screen */
+#s-game { padding:0; position:relative; background:#04020a; }
+#game-canvas { position:absolute; top:0; left:0; width:100%; height:100%; display:block; }
+#hud-top { position:absolute; top:0; left:0; right:0; z-index:10; height:48px;
+  display:flex; align-items:center; justify-content:space-between; padding:0 14px;
+  background:linear-gradient(180deg,rgba(4,2,10,0.92),transparent); pointer-events:none; }
+#hud-room { font-size:0.68rem; letter-spacing:2px; text-transform:uppercase; opacity:0.7; }
+#hud-status { font-size:0.75rem; font-weight:700; }
+#hud-alive { font-size:0.68rem; letter-spacing:1px; opacity:0.6; }
+#hud-bottom { position:absolute; bottom:0; left:0; right:0; z-index:10;
+  display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 14px 20px;
+  background:linear-gradient(0deg,rgba(4,2,10,0.92),transparent); flex-wrap:wrap; }
+.action-btn { padding:10px 18px; border:none; border-radius:30px; font-size:0.78rem;
+  letter-spacing:1.5px; text-transform:uppercase; font-weight:700; cursor:pointer; transition:all 0.15s; }
+.action-btn:active { transform:scale(0.92); }
+.action-btn.danger { background:linear-gradient(90deg,#6b0000,#cc1100); color:#fff; box-shadow:0 0 16px rgba(200,0,0,0.5); }
+.action-btn.warn { background:rgba(180,120,0,0.3); color:#FFD200; border:1.5px solid rgba(200,150,0,0.5); }
+.action-btn.neutral { background:rgba(255,255,255,0.1); color:#ccc; border:1.5px solid rgba(255,255,255,0.2); }
+.action-btn.info { background:rgba(0,100,200,0.25); color:#88ccff; border:1.5px solid rgba(50,120,255,0.4); }
+.action-btn:disabled { opacity:0.3; pointer-events:none; }
+.kill-cd { font-size:0.58rem; display:block; opacity:0.7; }
+
+/* D-Pad */
+#dpad { position:absolute; bottom:90px; right:14px; z-index:15;
+  display:flex; flex-direction:column; align-items:center; gap:3px; }
+#dpad-row { display:flex; gap:3px; }
+.dp { width:44px; height:44px; border:none; border-radius:8px; font-size:1rem;
+  background:rgba(255,255,255,0.12); color:#e8e0f0; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; }
+.dp:active { background:rgba(255,255,255,0.28); }
+
+/* Meeting Overlay */
+#meeting-overlay { position:absolute; inset:0; z-index:50; display:flex; flex-direction:column;
+  background:rgba(4,0,8,0.97); padding:12px 14px; overflow:hidden; }
+#meeting-header { text-align:center; padding-bottom:8px; border-bottom:1px solid rgba(139,0,0,0.3); flex-shrink:0; }
+#meeting-title { font-size:1.1rem; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:#cc2200; }
+#meeting-caller { font-size:0.68rem; letter-spacing:1px; opacity:0.55; margin-top:3px; }
+#meeting-phase-lbl { font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; color:#FFD200; margin-top:2px; }
+#meeting-timer { font-size:1.6rem; font-weight:900; color:#FFD200; margin-top:2px; }
+#vote-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; padding:8px 0; flex-shrink:0; max-height:195px; overflow-y:auto; }
+.vote-card { border:1.5px solid rgba(100,30,30,0.4); border-radius:10px; padding:9px 4px;
+  text-align:center; cursor:pointer; transition:all 0.15s; background:rgba(20,5,30,0.7); }
+.vote-card:not(.dead-card):not(.voted-card):hover { border-color:rgba(200,50,50,0.8); }
+.vote-card.voted-card { border-color:#FFD200; background:rgba(40,30,0,0.5); }
+.vote-card.dead-card { opacity:0.28; cursor:default; }
+.vote-card.me-card { border-color:rgba(100,100,200,0.4); cursor:default; }
+.vc-avatar { font-size:1.5rem; }
+.vc-name { font-size:0.62rem; font-weight:700; margin-top:3px; }
+.vc-count { font-size:0.58rem; color:#FFD200; min-height:13px; }
+.vc-dead-lbl { font-size:0.52rem; color:#cc3333; }
+#chat-section { flex:1; display:flex; flex-direction:column; min-height:0; margin-top:8px; }
+#chat-log { flex:1; overflow-y:auto; padding:6px 8px; background:rgba(0,0,0,0.3); border-radius:10px;
+  border:1px solid rgba(255,255,255,0.06); }
+.chat-msg { font-size:0.77rem; margin-bottom:4px; line-height:1.4; }
+.chat-name { font-weight:700; margin-right:5px; }
+.chat-ghost { opacity:0.4; font-style:italic; }
+#chat-input-row { display:flex; gap:8px; margin-top:7px; flex-shrink:0; }
+#chat-input { flex:1; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18);
+  border-radius:20px; padding:9px 14px; color:#e8e0f0; font-size:0.83rem; outline:none; }
+#chat-send { padding:9px 16px; border:none; border-radius:20px;
+  background:rgba(139,0,0,0.5); color:#fff; font-weight:700; cursor:pointer; font-size:0.78rem; }
+#meeting-result { position:absolute; inset:0; z-index:60; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; background:rgba(4,0,8,0.97); text-align:center; padding:24px; }
+.res-icon { font-size:4rem; margin-bottom:14px; }
+.res-title { font-size:1.4rem; font-weight:900; letter-spacing:2px; margin-bottom:8px; }
+.res-sub { font-size:0.85rem; opacity:0.7; margin-bottom:6px; }
+.res-role { font-size:0.72rem; letter-spacing:2px; text-transform:uppercase; opacity:0.5; }
+
+/* End Screen */
+#s-end { background:radial-gradient(ellipse at center, rgba(60,0,0,0.5) 0%, #08030f 70%); }
+.end-icon { font-size:5rem; margin-bottom:12px; animation:iconFloat 2s ease-in-out infinite; }
+.end-title { font-size:2rem; font-weight:900; letter-spacing:4px; text-transform:uppercase; margin-bottom:8px; text-align:center; }
+.end-sub { font-size:0.85rem; opacity:0.65; margin-bottom:20px; text-align:center; letter-spacing:1px; }
+.murderer-reveal { font-size:1rem; padding:12px 20px; background:rgba(139,0,0,0.2);
+  border:1.5px solid rgba(139,0,0,0.5); border-radius:12px; margin-bottom:20px; text-align:center; }
+
+/* Toast */
+#toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-70px);
+  background:#FFD200; color:#1a1000; padding:10px 22px; border-radius:30px;
+  font-weight:700; font-size:0.82rem; letter-spacing:1px; z-index:999;
+  transition:transform 0.28s cubic-bezier(.34,1.56,.64,1); pointer-events:none; }
+#toast.show { transform:translateX(-50%) translateY(0); }
+.back-link { position:fixed; top:14px; left:14px; z-index:200;
+  background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15);
+  border-radius:20px; padding:6px 14px; font-size:0.7rem; letter-spacing:1px;
+  color:#e8e0f0; cursor:pointer; text-decoration:none; text-transform:uppercase; }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<a href="index.html" class="back-link">← Home</a>
+
+<!-- NAME SCREEN -->
+<div class="screen active" id="s-name">
+  <div class="m-title">🔪 FILO MAFIA</div>
+  <div class="m-sub">Bloodmoor Manor — Choose your identity</div>
+  <div class="names-grid">
+    <div class="name-card" data-name="Kuya AD"   onclick="selectName('Kuya AD')">  <div class="nc-num">01</div><div class="nc-name">Kuya AD</div>  <div class="nc-status" id="ns-KuyaAD"></div></div>
+    <div class="name-card" data-name="Matt"      onclick="selectName('Matt')">      <div class="nc-num">02</div><div class="nc-name">Matt</div>      <div class="nc-status" id="ns-Matt"></div></div>
+    <div class="name-card" data-name="Gianne"    onclick="selectName('Gianne')">    <div class="nc-num">03</div><div class="nc-name">Gianne</div>    <div class="nc-status" id="ns-Gianne"></div></div>
+    <div class="name-card" data-name="Austin"    onclick="selectName('Austin')">    <div class="nc-num">04</div><div class="nc-name">Austin</div>    <div class="nc-status" id="ns-Austin"></div></div>
+    <div class="name-card" data-name="Charm"     onclick="selectName('Charm')">     <div class="nc-num">05</div><div class="nc-name">Charm</div>     <div class="nc-status" id="ns-Charm"></div></div>
+    <div class="name-card" data-name="Kee"       onclick="selectName('Kee')">       <div class="nc-num">06</div><div class="nc-name">Kee</div>       <div class="nc-status" id="ns-Kee"></div></div>
+    <div class="name-card" data-name="Kriselle"  onclick="selectName('Kriselle')">  <div class="nc-num">07</div><div class="nc-name">Kriselle</div>  <div class="nc-status" id="ns-Kriselle"></div></div>
+    <div class="name-card" data-name="Monique"   onclick="selectName('Monique')">   <div class="nc-num">08</div><div class="nc-name">Monique</div>   <div class="nc-status" id="ns-Monique"></div></div>
+    <div class="name-card" data-name="Tiff"      onclick="selectName('Tiff')">      <div class="nc-num">09</div><div class="nc-name">Tiff</div>      <div class="nc-status" id="ns-Tiff"></div></div>
+    <div class="name-card" data-name="Shantelle" onclick="selectName('Shantelle')"> <div class="nc-num">10</div><div class="nc-name">Shantelle</div> <div class="nc-status" id="ns-Shantelle"></div></div>
+  </div>
+</div>
+
+<!-- LOBBY SCREEN -->
+<div class="screen" id="s-lobby">
+  <div class="m-title" style="font-size:1.8rem;margin-bottom:4px;">🔪 FILO MAFIA</div>
+  <div class="m-sub" id="lobby-sub">Lobby — Waiting for players</div>
+  <div class="player-list" id="player-list"></div>
+  <div class="lobby-btns">
+    <button class="btn btn-secondary" id="ready-btn" onclick="toggleReady()">Ready Up</button>
+    <button class="btn btn-primary"   id="start-btn" onclick="hostStart()" style="display:none">▶ Start Game</button>
+    <div class="need-more" id="need-more"></div>
+  </div>
+</div>
+
+<!-- ROLE REVEAL SCREEN -->
+<div class="screen" id="s-reveal">
+  <div class="reveal-card" id="reveal-card">
+    <div class="reveal-icon" id="reveal-icon">🎭</div>
+    <div class="reveal-role" id="reveal-role">INNOCENT</div>
+    <div class="reveal-desc" id="reveal-desc">Survive, gather clues, and vote out the murderer.</div>
+    <div class="reveal-countdown" id="reveal-cd">Starting in 5…</div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="s-game">
+  <canvas id="game-canvas"></canvas>
+  <div id="hud-top">
+    <span id="hud-room">Bloodmoor Manor</span>
+    <span id="hud-status"></span>
+    <span id="hud-alive"></span>
+  </div>
+  <div id="hud-bottom">
+    <button class="action-btn danger"  id="kill-btn"      onclick="doKill()"      style="display:none">🔪 KILL<span class="kill-cd" id="kill-cd"></span></button>
+    <button class="action-btn warn"    id="report-btn"    onclick="doReport()"    style="display:none">📢 REPORT</button>
+    <button class="action-btn neutral" id="emergency-btn" onclick="doEmergency()">🚨 MEETING</button>
+    <button class="action-btn info"    id="inspect-btn"   onclick="doInspect()"   style="display:none">🔍 INSPECT</button>
+  </div>
+  <div id="dpad">
+    <button class="dp" onpointerdown="keys.up=true"    onpointerup="keys.up=false"    onpointerleave="keys.up=false">▲</button>
+    <div id="dpad-row">
+      <button class="dp" onpointerdown="keys.left=true"  onpointerup="keys.left=false"  onpointerleave="keys.left=false">◀</button>
+      <button class="dp" onpointerdown="keys.right=true" onpointerup="keys.right=false" onpointerleave="keys.right=false">▶</button>
+    </div>
+    <button class="dp" onpointerdown="keys.down=true"  onpointerup="keys.down=false"  onpointerleave="keys.down=false">▼</button>
+  </div>
+
+  <!-- MEETING OVERLAY -->
+  <div id="meeting-overlay" style="display:none">
+    <div id="meeting-header">
+      <div id="meeting-title">⚠️ EMERGENCY MEETING</div>
+      <div id="meeting-caller"></div>
+      <div id="meeting-phase-lbl"></div>
+      <div id="meeting-timer">60</div>
+    </div>
+    <div id="vote-grid"></div>
+    <div id="chat-section">
+      <div id="chat-log"></div>
+      <div id="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" autocomplete="off">
+        <button id="chat-send" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+    <div id="meeting-result" style="display:none">
+      <div class="res-icon" id="res-icon">💀</div>
+      <div class="res-title" id="res-title"></div>
+      <div class="res-sub"   id="res-sub"></div>
+      <div class="res-role"  id="res-role"></div>
+    </div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div class="screen" id="s-end">
+  <div class="end-icon" id="end-icon">🏆</div>
+  <div class="end-title" id="end-title"></div>
+  <div class="end-sub"   id="end-sub"></div>
+  <div class="murderer-reveal" id="end-reveal" style="display:none"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary"   onclick="playAgain()">Play Again</button>
+    <button class="btn btn-secondary" onclick="goHome()">← Home</button>
+  </div>
+</div>
+
+<script src="mafia.js"></script>
+</body>
+</html>
