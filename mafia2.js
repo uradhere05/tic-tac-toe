@@ -36,6 +36,7 @@ function hShow(id){['h-setup','h-night','h-day','h-end'].forEach(s=>document.get
 function init(){
   if(new URLSearchParams(window.location.search).has('host')){
     isHost=true; show('s-host'); hShow('h-setup'); renderCheckboxes();
+    pollOnline(); setInterval(pollOnline,4000);
   } else {
     const stored=localStorage.getItem('filoName');
     if(stored){myName=stored;show('s-player');startPlayerPolling();}
@@ -56,9 +57,20 @@ let selectedPlayers=[];
 
 function renderCheckboxes(){
   document.getElementById('player-checks').innerHTML=NAMES.map(n=>`
-    <div class="pc-label" onclick="togglePC('${n}',this)">
+    <div class="pc-label" data-name="${n}" onclick="togglePC('${n}',this)">
       <span class="pc-av">${AMAP[n]}</span><span>${n}</span>
     </div>`).join('');
+}
+
+async function pollOnline(){
+  const data=await fb('GET','/online')||{};
+  const now=Date.now();
+  const online=Object.entries(data)
+    .filter(([,v])=>v&&(now-v.ts<75000))
+    .map(([k])=>decN(k));
+  document.querySelectorAll('#player-checks .pc-label').forEach(el=>{
+    el.classList.toggle('online', online.includes(el.dataset.name));
+  });
 }
 
 function togglePC(name,el){
