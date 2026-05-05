@@ -547,12 +547,15 @@ document.addEventListener('keyup', e=>{if(KM[e.key]!==undefined) keys[KM[e.key]]
 /* ─── Init ─── */
 buildMap();
 const _stored=localStorage.getItem('filoName');
-if(_stored) document.querySelectorAll('.name-card').forEach(c=>{if(c.dataset.name===_stored)c.classList.add('mine');});
-setInterval(async()=>{
-  if(!document.getElementById('s-name').classList.contains('active')) return;
-  const lobby=await fb('GET','/mafia/lobby')||{};
-  updateNameCards(Object.values(lobby).filter(v=>v).map(v=>v.name));
-},3000);
+if(_stored){
+  selectName(_stored);
+} else {
+  setInterval(async()=>{
+    if(!document.getElementById('s-name').classList.contains('active')) return;
+    const lobby=await fb('GET','/mafia/lobby')||{};
+    updateNameCards(Object.values(lobby).filter(v=>v).map(v=>v.name));
+  },3000);
+}
 window.addEventListener('beforeunload',()=>{
   if(myName) fetch(`${DB}/mafia/lobby/${encN(myName)}.json`,{method:'DELETE',keepalive:true});
 });
