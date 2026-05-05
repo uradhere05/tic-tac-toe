@@ -19,11 +19,13 @@ Commit messages should describe what changed and why, not just what files were t
 No build step or server required — open any HTML file directly in a browser:
 
 ```
-open index.html       # main lobby / arena
-open mafia.html       # Filogang Mafia (Room 7)
-open pong.html        # Pickelbol (Rooms 5–6)
-open connect5.html    # Streytlima Connect 5 (Rooms 3–4)
-open tictactoe.html   # Solo/AI Tictactoe
+open index.html            # main lobby / arena
+open mafia.html            # Filogang Mafia — Free-Play (Room 7)
+open "mafia2.html?host"    # Mafia Host-Run — GM console (Room 8, host)
+open mafia2.html           # Mafia Host-Run — player view
+open pong.html             # Pickelbol (Rooms 5–6)
+open connect5.html         # Streytlima Connect 5 (Rooms 3–4)
+open tictactoe.html        # Solo/AI Tictactoe
 ```
 
 ## Architecture
@@ -38,7 +40,7 @@ A collection of standalone browser games sharing a common Firebase Realtime Data
 
 ### `index.html` — FILO Gang Arena (lobby)
 
-Main entry point. Shows all 7 rooms; clicking a room navigates to the appropriate game.
+Main entry point. Shows all 8 rooms; clicking a room navigates to the appropriate game.
 
 **External dependencies:** `peerjs@1.5.2` (WebRTC), Firebase REST API.
 
@@ -89,6 +91,39 @@ Multiplayer social deduction game for 5–10 players. Two files: `mafia.html` (H
 - Innocents win: murderer voted out
 
 **Key constants:** `KILL_R=70px`, `RPT_R=100px`, `KILL_CD=25s`, `DISC=45s`, `VOTE=30s`, `RSLT=6s`.
+
+---
+
+### `mafia2.html` + `mafia2.js` — Mafia: Host-Run (Room 8)
+
+Face-to-face version for in-person play. One device is the GM console; each player has their own device. Two files: `mafia2.html` (HTML + CSS, ~216 lines) and `mafia2.js` (game logic, ~410 lines).
+
+**Two views from one URL:**
+- `mafia2.html?host` → Host GM console (full visibility, controls all phases)
+- `mafia2.html` → Player screen (role-gated, auto-joined via `localStorage.filoName`)
+
+**Roles:** Murderer (1), Doctor (1), Investigator (1), Civilians (rest). Host selects players, shuffles roles, sees all assignments.
+
+**Flow:** Host setup (select players, shuffle) → Night (special roles submit actions; host sees results) → Day (host announces, opens vote) → Vote (players tap a card; host resolves) → repeat until win.
+
+**Firebase paths (all under `/mafia2/`):**
+- `/mafia2/phase` — `"night" | "day" | "vote" | "ended"`
+- `/mafia2/round` — number
+- `/mafia2/roles/<name>` — `"murderer" | "doctor" | "investigator" | "civilian"`
+- `/mafia2/alive/<name>` — bool
+- `/mafia2/night/kill` · `/mafia2/night/save` · `/mafia2/night/inspect` — string (target name)
+- `/mafia2/day/votes/<name>` — string (target name)
+- `/mafia2/announcement` — string (host writes; all players display)
+- `/mafia2/winner` — `"murderer" | "civilians"`
+- `/mafia2/allRoles` — full role map written on game end for reveal
+
+**Night resolution (host-side):** kill target + save target → if save === kill, no one dies; otherwise kill target dies. Investigator result shown only to host. Host edits and reads announcement aloud.
+
+**Win conditions:**
+- Murderer wins: alive murderers ≥ alive civilians
+- Civilians win: murderer voted out
+
+**Key fix:** Player selector uses `<div onclick>` not `<label><input>` — label+input caused double-toggle (browser fires onclick twice per tap).
 
 ---
 
