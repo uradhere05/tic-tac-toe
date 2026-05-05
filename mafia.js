@@ -548,6 +548,7 @@ document.addEventListener('keyup', e=>{if(KM[e.key]!==undefined) keys[KM[e.key]]
 buildMap();
 const _stored=localStorage.getItem('filoName');
 if(_stored){
+  myName=_stored; // pre-set so taken-check skips our own stale lobby entry
   selectName(_stored);
 } else {
   setInterval(async()=>{
