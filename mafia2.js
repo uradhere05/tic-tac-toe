@@ -56,10 +56,9 @@ let selectedPlayers=[];
 
 function renderCheckboxes(){
   document.getElementById('player-checks').innerHTML=NAMES.map(n=>`
-    <label class="pc-label" onclick="togglePC('${n}',this)">
-      <input type="checkbox" value="${n}">
+    <div class="pc-label" onclick="togglePC('${n}',this)">
       <span class="pc-av">${AMAP[n]}</span><span>${n}</span>
-    </label>`).join('');
+    </div>`).join('');
 }
 
 function togglePC(name,el){
