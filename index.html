@@ -409,6 +409,7 @@
     .chat-msg { font-size:.8rem; line-height:1.4; word-break:break-word; text-align:left; }
     .chat-msg .cm-name { font-weight:700; color:#ffd200; margin-right:4px; }
     .chat-msg.cm-mine .cm-name { color:#f7971e; }
+    .cm-time { font-size:.62rem; opacity:.35; margin-left:6px; white-space:nowrap; }
     .chat-empty { font-size:.72rem; opacity:.28; text-align:center; letter-spacing:1px; padding:12px 0; margin:auto; }
     .chat-input-row { display:flex; gap:8px; width:100%; }
     .chat-input-row input {
@@ -627,7 +628,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.84</div>
+  <div class="app-version">v1.85</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -1290,7 +1291,11 @@
       if(!msgs.length){el.innerHTML='<div class="chat-empty">No messages yet…</div>';return;}
       el.innerHTML=msgs.map(m=>{
         const mine=m.name===myName;
-        return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}</div>`;
+        const d=new Date(m.ts);
+        const hh=String(d.getHours()).padStart(2,'0');
+        const mm=String(d.getMinutes()).padStart(2,'0');
+        const time=hh+':'+mm;
+        return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}<span class="cm-time">${time}</span></div>`;
       }).join('');
       el.scrollTop=el.scrollHeight;
     }catch{}
