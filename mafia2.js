@@ -370,13 +370,13 @@ async function pollNightActions(){
   }
   if(!html)html='<div style="opacity:.4;font-size:.83rem">No special roles alive — resolve now.</div>';
 
-  // Civilian suspicions — for host discussion next day
+  // Civilian death predictions
   const aliveCivs=Object.keys(rolesMap).filter(n=>rolesMap[n]==='civilian'&&aliveMap[n]!==false);
   if(aliveCivs.length){
-    html+='<div style="opacity:.4;font-size:.6rem;letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">Civilian suspicions</div>';
+    html+='<div style="opacity:.4;font-size:.6rem;letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">Civilian predictions — who dies tonight?</div>';
     aliveCivs.forEach(name=>{
       const s=suspectD?suspectD[encN(name)]:null;
-      html+=`<div class="act-item ${s?'submitted':'pending'}">🕵️ <b>${name}</b>: ${s?`suspects <b>${s}</b>`:'Thinking…'}</div>`;
+      html+=`<div class="act-item ${s?'submitted':'pending'}">🕵️ <b>${name}</b>: ${s?`predicts <b>${s}</b>`:'Thinking…'}</div>`;
     });
   }
 
@@ -603,7 +603,7 @@ function showNightUI(){
       document.getElementById('p-content').innerHTML=`
         <div class="phase-card night">
           <div class="phase-icon">🌙</div>
-          <div class="phase-title">Choice Made</div>
+          <div class="phase-title">Prediction Locked</div>
           <div class="phase-desc">Waiting for morning…</div>
           <button class="btn btn-secondary" onclick="changeSuspect()"
             style="font-size:.72rem;padding:8px 18px;margin-top:14px">↩ Change</button>
@@ -615,7 +615,7 @@ function showNightUI(){
       <div class="phase-card night" style="padding:20px 16px;margin-bottom:12px">
         <div class="rr-icon">🌙</div>
         <div class="phase-title" style="font-size:1rem">Night Action</div>
-        <div class="phase-desc">Tap a player</div>
+        <div class="phase-desc">Who do you think will die tonight?</div>
       </div>
       <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
         <div class="ag-card" onclick="submitSuspect('${n}')">
