@@ -179,7 +179,7 @@ async function lobbyTick(){
     hbar.innerHTML='';
   } else if(hostName===myName){
     isHost=true;
-    hbar.innerHTML='<div class="host-badge">👑 You are Game Master</div>';
+    hbar.innerHTML='<div class="host-badge">👑 You are Game Master</div><br><button class="btn btn-secondary" style="font-size:.62rem;padding:5px 16px;margin-top:6px;opacity:.55" onclick="stepDownHost()">↩ Step Down</button>';
   } else {
     hbar.innerHTML=`<div style="font-size:.75rem;opacity:.55;letter-spacing:1px">👑 ${hostName} is Game Master</div>`;
   }
@@ -205,6 +205,13 @@ async function claimHost(){
   await fb('PUT','/mafia2/host',myName);
   isHost=true;hostName=myName;
   lobbyTick();
+}
+
+async function stepDownHost(){
+  await fb('DELETE','/mafia2/host');
+  isHost=false;hostName='';
+  stopIvs();
+  enterRoleSelect();
 }
 
 async function toggleReady(){
