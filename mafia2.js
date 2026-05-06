@@ -39,12 +39,29 @@ function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementByI
 ════════════════════════════════ */
 function init(){
   const stored=localStorage.getItem('filoName');
-  if(stored){myName=stored;enterLobby();}
+  if(stored){myName=stored;enterRoleSelect();}
   else show('s-join');
 }
 
 function joinAs(name){
   myName=name;localStorage.setItem('filoName',name);
+  enterRoleSelect();
+}
+
+function enterRoleSelect(){
+  document.getElementById('rs-name-lbl').textContent=myName;
+  show('s-role-select');
+}
+
+function joinAsPlayer(){
+  enterLobby();
+}
+
+async function joinAsGameMaster(){
+  const current=await fb('GET','/mafia2/host');
+  if(current&&current!==myName){toast(`${current} is already the Game Master`);return;}
+  await fb('PUT','/mafia2/host',myName);
+  isHost=true;hostName=myName;
   enterLobby();
 }
 

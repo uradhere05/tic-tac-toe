@@ -202,6 +202,19 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   </div>
 </div>
 
+<!-- ROLE SELECT — choose before entering lobby -->
+<div class="screen" id="s-role-select">
+  <div class="m-title">🔪 FILO MAFIA</div>
+  <div class="m-sub">Host-Run Edition</div>
+  <div class="phase-card" style="margin-bottom:24px">
+    <div class="phase-icon">🎭</div>
+    <div class="phase-title" id="rs-name-lbl"></div>
+    <div class="phase-desc">How are you joining tonight?</div>
+  </div>
+  <button class="btn btn-primary w100" onclick="joinAsPlayer()">👤 Join as Player</button>
+  <button class="btn btn-gold w100" onclick="joinAsGameMaster()">👑 Be the Game Master</button>
+</div>
+
 <!-- LOBBY — shared for all players -->
 <div class="screen" id="s-lobby">
   <div class="m-title">🔪 FILO MAFIA</div>
