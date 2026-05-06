@@ -85,12 +85,26 @@ async function lobbyTick(){
 
   // Route away if game has moved past lobby
   if(phaseD&&phaseD!=='ended'){
+    const iAmHost=hostD===myName;
+    // Check if this player is part of the active game
+    const myRoleInGame=iAmHost?true:await fb('GET',`/mafia2/roles/${encN(myName)}`);
+    if(!myRoleInGame&&phaseD!=='assigning'){
+      // Not in this game — show warning, offer reset
+      document.getElementById('lb-host-bar').innerHTML=`
+        <div style="background:rgba(255,80,0,0.12);border:1px solid rgba(255,80,0,0.35);
+          border-radius:12px;padding:10px 14px;font-size:.78rem;text-align:center;width:100%;max-width:420px">
+          ⚠️ A previous game is still active.<br>
+          <button class="btn btn-secondary" style="font-size:.68rem;padding:6px 16px;margin-top:8px"
+            onclick="resetStaleGame()">🔄 Reset & Open Lobby</button>
+        </div>`;
+      return;
+    }
     stopIvs();
     if(phaseD==='assigning'){
-      if(isHost){show('s-assign');renderAssignScreen();}
+      if(iAmHost){show('s-assign');renderAssignScreen();}
       else{show('s-player');renderWaiting();startPlayerPolling();}
     } else {
-      if(isHost){show('s-host');hShow('h-night');}
+      if(iAmHost){show('s-host');hShow('h-night');}
       else{show('s-player');startPlayerPolling();}
     }
     return;
@@ -402,6 +416,25 @@ async function hostReset(){
   enterLobby();
 }
 
+async function resetStaleGame(){
+  await fb('DELETE','/mafia2');
+  rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;
+  myRole=null;myAction=null;myVote=null;amReady=false;lobbyPlayers={};
+  toast('Game data cleared — lobby is open');
+  enterLobby();
+}
+
+function renderNotInGame(){
+  document.getElementById('p-content').innerHTML=`
+    <div class="phase-card">
+      <div class="phase-icon">🚫</div>
+      <div class="phase-title">Not In This Game</div>
+      <div class="phase-desc">You weren't selected for this round.<br>Wait for the next game.</div>
+    </div>
+    <button class="btn btn-secondary" onclick="enterLobby()"
+      style="margin-top:14px;width:100%;max-width:400px">← Back to Lobby</button>`;
+}
+
 /* ════════════════════════════════
    PLAYER
 ════════════════════════════════ */
@@ -433,7 +466,9 @@ async function pollPhase(){
   } else if(phD==='night'){
     myAction=null;
     if(!myRole){
-      myRole=await fb('GET',`/mafia2/roles/${encN(myName)}`)||'civilian';
+      const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
+      if(!fetched){stopIvs();renderNotInGame();return;}
+      myRole=fetched;
       showRoleReveal();
     } else showNightUI();
   } else if(phD==='day') showDayAnn(annD||'');
