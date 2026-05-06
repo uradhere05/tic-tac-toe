@@ -2,14 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Filogang Mafia — Host Run</title>
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f0;
-  min-height:100vh; overflow-x:hidden; -webkit-tap-highlight-color:transparent; }
+  min-height:100vh; min-height:100dvh; overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent; -webkit-text-size-adjust:100%;
+  overscroll-behavior-y:none; }
 .screen { display:none; flex-direction:column; align-items:center;
-  min-height:100vh; padding:60px 18px 40px; }
+  min-height:100vh; min-height:100dvh;
+  padding:max(60px,calc(44px + env(safe-area-inset-top))) 18px
+          max(40px,calc(24px + env(safe-area-inset-bottom)));
+  overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .screen.active { display:flex; }
 .m-title { font-size:2.1rem; font-weight:900; letter-spacing:5px; text-transform:uppercase;
   background:linear-gradient(135deg,#8B0000,#cc2200,#FFD200);
@@ -17,7 +22,8 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   filter:drop-shadow(0 0 16px rgba(180,0,0,0.6)); margin-bottom:4px; text-align:center; }
 .m-sub { font-size:0.72rem; letter-spacing:3px; text-transform:uppercase; opacity:0.45; margin-bottom:22px; text-align:center; }
 .btn { padding:13px 24px; border:none; border-radius:50px; font-size:0.82rem;
-  letter-spacing:2px; text-transform:uppercase; font-weight:700; cursor:pointer; transition:all 0.15s; }
+  letter-spacing:2px; text-transform:uppercase; font-weight:700; cursor:pointer;
+  transition:all 0.15s; min-height:44px; touch-action:manipulation; user-select:none; }
 .btn:active { transform:scale(0.95); }
 .btn-primary   { background:linear-gradient(90deg,#8B0000,#cc2200); color:#fff; box-shadow:0 0 14px rgba(140,0,0,0.4); }
 .btn-gold      { background:linear-gradient(90deg,#b8860b,#FFD200); color:#1a1000; }
@@ -31,7 +37,8 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .names-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:380px; margin-bottom:16px; }
 .name-card { background:linear-gradient(160deg,rgba(60,5,15,0.7),rgba(10,2,25,0.9));
   border:1px solid rgba(139,0,0,0.35); border-radius:12px; padding:14px 10px;
-  text-align:center; cursor:pointer; transition:all 0.15s; }
+  text-align:center; cursor:pointer; transition:all 0.15s;
+  touch-action:manipulation; user-select:none; }
 .name-card:hover { border-color:rgba(200,50,50,0.8); transform:translateY(-2px); }
 .name-card:active { transform:scale(0.94); }
 .nc-num { font-size:0.55rem; letter-spacing:3px; opacity:0.4; color:#cc4444; text-transform:uppercase; }
@@ -41,9 +48,10 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .section-lbl { font-size:0.62rem; letter-spacing:2.5px; text-transform:uppercase;
   opacity:0.4; margin-bottom:7px; width:100%; max-width:420px; }
 .lobby-list { width:100%; max-width:420px; margin-bottom:10px; }
-.lp-row { display:flex; align-items:center; gap:10px; padding:11px 14px;
+.lp-row { display:flex; align-items:center; gap:10px; padding:12px 14px;
   border-radius:12px; margin-bottom:6px; background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.08); transition:all 0.15s; }
+  border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;
+  min-height:52px; user-select:none; }
 .lp-row.is-ready { background:rgba(0,70,0,0.18); border-color:rgba(0,200,80,0.45); }
 .lp-av { font-size:1.3rem; }
 .lp-name { flex:1; font-size:0.88rem; font-weight:600; }
@@ -69,9 +77,10 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .ar-cur.investigator { background:rgba(0,40,100,0.4);  color:#88ccff; }
 .ar-cur.civilian     { background:rgba(30,20,60,0.4);  color:#aaa; }
 .ar-roles { display:flex; gap:6px; }
-.rb { flex:1; padding:9px 4px; border:1.5px solid rgba(255,255,255,0.15); border-radius:8px;
-  font-size:1.1rem; cursor:pointer; transition:all 0.12s;
-  background:rgba(255,255,255,0.04); text-align:center; }
+.rb { flex:1; padding:12px 4px; border:1.5px solid rgba(255,255,255,0.15); border-radius:8px;
+  font-size:1.3rem; cursor:pointer; transition:all 0.12s;
+  background:rgba(255,255,255,0.04); text-align:center;
+  min-height:48px; touch-action:manipulation; user-select:none; }
 .rb:active { transform:scale(0.9); }
 .rb.on-murderer     { border-color:rgba(200,0,0,0.7);    background:rgba(80,0,0,0.45); }
 .rb.on-doctor       { border-color:rgba(0,200,100,0.7);  background:rgba(0,60,30,0.45); }
@@ -104,7 +113,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   font-size:0.88rem; line-height:1.7; min-height:48px; }
 .h-ann { width:100%; max-width:420px; background:rgba(255,255,255,0.07);
   border:1.5px solid rgba(255,255,255,0.15); border-radius:12px; padding:12px 14px;
-  color:#e8e0f0; font-size:0.87rem; resize:vertical; min-height:58px; outline:none;
+  color:#e8e0f0; font-size:16px; resize:vertical; min-height:58px; outline:none;
   margin-bottom:10px; font-family:inherit; }
 .alive-list { display:flex; flex-wrap:wrap; gap:7px; width:100%; max-width:420px; margin-bottom:14px; }
 .alive-chip { display:flex; align-items:center; gap:5px; padding:7px 13px;
@@ -127,9 +136,10 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   background:rgba(0,0,0,0.5); border:1px solid rgba(255,210,0,0.35);
   font-size:0.95rem; line-height:1.6; text-align:center; margin-bottom:14px; color:#FFD200; }
 .action-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; max-width:400px; margin-bottom:12px; }
-.ag-card { border:1.5px solid rgba(100,30,30,0.4); border-radius:10px; padding:10px 4px;
-  text-align:center; cursor:pointer; transition:all 0.15s; background:rgba(20,5,30,0.7); }
-.ag-card:hover { border-color:rgba(200,50,50,0.8); }
+.ag-card { border:1.5px solid rgba(100,30,30,0.4); border-radius:10px; padding:14px 4px;
+  text-align:center; cursor:pointer; transition:all 0.15s; background:rgba(20,5,30,0.7);
+  min-height:72px; touch-action:manipulation; user-select:none; }
+.ag-card:active { transform:scale(0.93); border-color:rgba(255,210,0,0.6); }
 .ag-card.selected { border-color:#FFD200; background:rgba(40,30,0,0.5); }
 .ag-av { font-size:1.5rem; }
 .ag-name { font-size:0.62rem; font-weight:700; margin-top:3px; }
@@ -154,14 +164,20 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .end-sub   { font-size:0.85rem; opacity:0.6; margin-bottom:18px; text-align:center; }
 
 /* Toast / nav */
-#toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-70px);
+#toast { position:fixed; top:max(16px,calc(8px + env(safe-area-inset-top)));
+  left:50%; transform:translateX(-50%) translateY(-70px);
   background:#FFD200; color:#1a1000; padding:10px 22px; border-radius:30px;
   font-weight:700; font-size:0.82rem; letter-spacing:1px; z-index:999;
   transition:transform 0.28s cubic-bezier(.34,1.56,.64,1); pointer-events:none; }
 #toast.show { transform:translateX(-50%) translateY(0); }
-.back-link { position:fixed; top:14px; left:14px; z-index:200; background:rgba(255,255,255,0.08);
-  border:1.5px solid rgba(255,255,255,0.15); border-radius:20px; padding:6px 14px;
-  font-size:0.7rem; letter-spacing:1px; color:#e8e0f0; cursor:pointer; text-decoration:none; text-transform:uppercase; }
+.back-link { position:fixed; top:max(14px,env(safe-area-inset-top));
+  left:max(14px,env(safe-area-inset-left)); z-index:200;
+  background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15);
+  border-radius:20px; padding:8px 16px; min-height:36px;
+  font-size:0.7rem; letter-spacing:1px; color:#e8e0f0; cursor:pointer;
+  text-decoration:none; text-transform:uppercase;
+  touch-action:manipulation; user-select:none;
+  display:flex; align-items:center; }
 </style>
 </head>
 <body>
