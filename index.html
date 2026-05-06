@@ -628,7 +628,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.85</div>
+  <div class="app-version">v1.86</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -1292,9 +1292,10 @@
       el.innerHTML=msgs.map(m=>{
         const mine=m.name===myName;
         const d=new Date(m.ts);
-        const hh=String(d.getHours()).padStart(2,'0');
+        const h12=d.getHours()%12||12;
         const mm=String(d.getMinutes()).padStart(2,'0');
-        const time=hh+':'+mm;
+        const ampm=d.getHours()<12?'AM':'PM';
+        const time=h12+':'+mm+' '+ampm;
         return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}<span class="cm-time">${time}</span></div>`;
       }).join('');
       el.scrollTop=el.scrollHeight;
