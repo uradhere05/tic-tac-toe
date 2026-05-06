@@ -13,7 +13,7 @@ const ROLE_CFG={
 };
 
 /* ─── State ─── */
-let isHost=false,myName='',myRole=null,round=1;
+let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,ivs=[],knownPhase='';
 
 /* ─── Firebase ─── */
@@ -30,47 +30,118 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.re
 let _tt;
 function toast(m,d=2600){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),d);}
 function stopIvs(){ivs.forEach(clearInterval);ivs=[];}
-function hShow(id){['h-setup','h-night','h-day','h-end'].forEach(s=>document.getElementById(s).style.display=s===id?'':'none');}
+function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementById(s).style.display=s===id?'':'none');}
 
-/* ─── Entry ─── */
+/* ════════════════════════════════
+   ENTRY
+════════════════════════════════ */
 function init(){
-  if(new URLSearchParams(window.location.search).has('host')){
-    isHost=true; show('s-host'); hShow('h-setup'); renderCheckboxes();
-    pollOnline(); setInterval(pollOnline,4000);
-  } else {
-    const stored=localStorage.getItem('filoName');
-    if(stored){myName=stored;show('s-player');startPlayerPolling();}
-    else show('s-join');
-  }
+  const stored=localStorage.getItem('filoName');
+  if(stored){myName=stored;enterLobby();}
+  else show('s-join');
 }
 
 function joinAs(name){
-  myName=name; localStorage.setItem('filoName',name);
-  document.querySelectorAll('.name-card').forEach(c=>c.classList.toggle('mine',c.dataset.name===name));
-  show('s-player'); startPlayerPolling();
+  myName=name;localStorage.setItem('filoName',name);
+  enterLobby();
 }
 
 /* ════════════════════════════════
-   HOST
+   LOBBY
+════════════════════════════════ */
+async function enterLobby(){
+  show('s-lobby');
+  document.getElementById('lb-my-name').textContent=myName;
+  renderCheckboxes();
+  await writeLobbyPresence();
+  startLobbyPolling();
+}
+
+async function writeLobbyPresence(){
+  const ts=Date.now();
+  await Promise.all([
+    fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts}),
+    fb('PUT',`/online/${encN(myName)}`,{ts}),
+  ]);
+}
+
+function startLobbyPolling(){
+  stopIvs();
+  lobbyTick();
+  ivs.push(setInterval(lobbyTick,2000));
+  ivs.push(setInterval(writeLobbyPresence,20000));
+}
+
+async function lobbyTick(){
+  if(!document.getElementById('s-lobby').classList.contains('active')&&!isHost) return;
+  const [onlineD,hostD,phaseD]=await Promise.all([
+    fb('GET','/online'),
+    fb('GET','/mafia2/host'),
+    fb('GET','/mafia2/phase'),
+  ]);
+
+  // If game in progress, route to correct view
+  if(phaseD&&phaseD!=='ended'){
+    if(document.getElementById('s-lobby').classList.contains('active')){
+      stopIvs();
+      if(isHost){show('s-host');hShow('h-night');}
+      else{show('s-player');startPlayerPolling();}
+    }
+    return;
+  }
+
+  // Render online chips
+  const now=Date.now();
+  const online=onlineD?Object.entries(onlineD)
+    .filter(([,v])=>v&&(now-v.ts<75000))
+    .map(([k])=>decN(k)):[];
+
+  document.getElementById('lobby-online').innerHTML=online.length
+    ?online.map(n=>`<div class="online-chip" style="border-color:${CMAP[n]||'#888'}55;background:${CMAP[n]||'#888'}18">${AMAP[n]||'👤'} ${n}</div>`).join('')
+    :'<div style="opacity:.4;font-size:.8rem;padding:6px 0">No one online yet…</div>';
+
+  // Keep checkboxes online indicators fresh
+  document.querySelectorAll('#player-checks .pc-label').forEach(el=>{
+    el.classList.toggle('online',online.includes(el.dataset.name));
+  });
+
+  // Host state panels
+  hostName=hostD||'';
+  const noHostEl=document.getElementById('lb-no-host');
+  const isHostEl=document.getElementById('lb-is-host');
+  const waitEl=document.getElementById('lb-wait-host');
+  if(!hostName){
+    noHostEl.style.display='';isHostEl.style.display='none';waitEl.style.display='none';
+  } else if(hostName===myName){
+    isHost=true;
+    noHostEl.style.display='none';isHostEl.style.display='';waitEl.style.display='none';
+  } else {
+    isHost=false;
+    noHostEl.style.display='none';isHostEl.style.display='none';waitEl.style.display='';
+    document.getElementById('lb-host-name').textContent=`${hostName} is Game Master`;
+  }
+}
+
+async function claimHost(){
+  const current=await fb('GET','/mafia2/host');
+  if(current){toast(`${current} is already the host`);return;}
+  await fb('PUT','/mafia2/host',myName);
+  hostName=myName;isHost=true;
+  lobbyTick();
+}
+
+/* ════════════════════════════════
+   HOST SETUP (in lobby)
 ════════════════════════════════ */
 let selectedPlayers=[];
 
 function renderCheckboxes(){
-  document.getElementById('player-checks').innerHTML=NAMES.map(n=>`
+  const el=document.getElementById('player-checks');
+  if(!el)return;
+  el.innerHTML=NAMES.map(n=>`
     <div class="pc-label" data-name="${n}" onclick="togglePC('${n}',this)">
       <span class="pc-av">${AMAP[n]}</span><span>${n}</span>
     </div>`).join('');
-}
-
-async function pollOnline(){
-  const data=await fb('GET','/online')||{};
-  const now=Date.now();
-  const online=Object.entries(data)
-    .filter(([,v])=>v&&(now-v.ts<75000))
-    .map(([k])=>decN(k));
-  document.querySelectorAll('#player-checks .pc-label').forEach(el=>{
-    el.classList.toggle('online', online.includes(el.dataset.name));
-  });
 }
 
 function togglePC(name,el){
@@ -87,7 +158,7 @@ function shuffleRoles(){
   if(selectedPlayers.length<4){toast('Need at least 4 players');return;}
   const sh=[...selectedPlayers].sort(()=>Math.random()-0.5);
   rolesMap={};
-  rolesMap[sh[0]]='murderer'; rolesMap[sh[1]]='doctor'; rolesMap[sh[2]]='investigator';
+  rolesMap[sh[0]]='murderer';rolesMap[sh[1]]='doctor';rolesMap[sh[2]]='investigator';
   sh.slice(3).forEach(n=>rolesMap[n]='civilian');
   document.getElementById('role-list').innerHTML=Object.entries(rolesMap).map(([name,role])=>`
     <div class="role-item ${role}">
@@ -99,33 +170,36 @@ function shuffleRoles(){
 }
 
 async function hostStartGame(){
-  if(!Object.keys(rolesMap).length) return;
+  if(!Object.keys(rolesMap).length)return;
   const roles={},alive={};
   Object.keys(rolesMap).forEach(n=>{roles[encN(n)]=rolesMap[n];alive[encN(n)]=true;aliveMap[n]=true;});
   await Promise.all([
-    fb('PUT','/mafia2/roles',roles), fb('PUT','/mafia2/alive',alive),
-    fb('PUT','/mafia2/round',1),     fb('DELETE','/mafia2/night'),
-    fb('DELETE','/mafia2/day'),      fb('DELETE','/mafia2/winner'),
-    fb('DELETE','/mafia2/announcement'), fb('PUT','/mafia2/phase','night'),
+    fb('PUT','/mafia2/roles',roles),fb('PUT','/mafia2/alive',alive),
+    fb('PUT','/mafia2/round',1),    fb('DELETE','/mafia2/night'),
+    fb('DELETE','/mafia2/day'),     fb('DELETE','/mafia2/winner'),
+    fb('DELETE','/mafia2/announcement'),fb('PUT','/mafia2/phase','night'),
   ]);
-  round=1; enterHostNight();
+  round=1;stopIvs();show('s-host');enterHostNight();
 }
 
+/* ════════════════════════════════
+   HOST GAME CONSOLE
+════════════════════════════════ */
 function enterHostNight(){
   hShow('h-night');
   document.getElementById('h-rn').textContent=round;
   document.getElementById('h-ann').value='';
   document.getElementById('h-result').textContent='Waiting for actions…';
   document.getElementById('h-actions').innerHTML='';
-  stopIvs(); ivs.push(setInterval(pollNightActions,1500));
+  stopIvs();ivs.push(setInterval(pollNightActions,1500));
 }
 
 async function pollNightActions(){
   const [killD,saveD,inspD,aliveD]=await Promise.all([
-    fb('GET','/mafia2/night/kill'), fb('GET','/mafia2/night/save'),
-    fb('GET','/mafia2/night/inspect'), fb('GET','/mafia2/alive'),
+    fb('GET','/mafia2/night/kill'),fb('GET','/mafia2/night/save'),
+    fb('GET','/mafia2/night/inspect'),fb('GET','/mafia2/alive'),
   ]);
-  if(aliveD) Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
+  if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
   const murd=Object.keys(rolesMap).find(n=>rolesMap[n]==='murderer');
   const doct=Object.keys(rolesMap).find(n=>rolesMap[n]==='doctor');
   const inv =Object.keys(rolesMap).find(n=>rolesMap[n]==='investigator');
@@ -139,7 +213,7 @@ async function pollNightActions(){
     if(inspD){const r=await fb('GET',`/mafia2/roles/${encN(inspD)}`);txt=`Inspect → <b>${inspD}</b> = ${r==='murderer'?'⚠️ MURDERER':'✅ Innocent'}`;}
     html+=`<div class="act-item ${inspD?'submitted':'pending'}">🔍 <b>${inv}</b>: ${txt}</div>`;
   }
-  if(!html) html='<div style="opacity:.4;font-size:.83rem">No special roles alive — resolve now.</div>';
+  if(!html)html='<div style="opacity:.4;font-size:.83rem">No special roles alive — resolve now.</div>';
   document.getElementById('h-actions').innerHTML=html;
   if(killD){
     const killed=saveD===killD?null:killD;
@@ -162,8 +236,8 @@ async function resolveNight(){
   if(killed){await fb('PATCH','/mafia2/alive',{[encN(killed)]:false});aliveMap[killed]=false;}
   await fb('PUT','/mafia2/announcement',ann);
   await fb('PUT','/mafia2/phase','day');
-  const w=checkWin(); if(w){await endGame(w);return;}
-  stopIvs(); hShow('h-day');
+  const w=checkWin();if(w){await endGame(w);return;}
+  stopIvs();hShow('h-day');
   document.getElementById('h-rd').textContent=round;
   renderAliveList();
   document.getElementById('h-vote-sec').style.display='none';
@@ -179,7 +253,7 @@ function renderAliveList(){
 async function hostOpenVote(){
   await Promise.all([fb('DELETE','/mafia2/day/votes'),fb('PUT','/mafia2/phase','vote')]);
   document.getElementById('h-vote-sec').style.display='';
-  stopIvs(); ivs.push(setInterval(pollVotes,1000));
+  stopIvs();ivs.push(setInterval(pollVotes,1000));
 }
 
 async function pollVotes(){
@@ -200,10 +274,10 @@ async function hostResolveVote(){
   if(Object.keys(tally).length){
     const max=Math.max(...Object.values(tally));
     const top=Object.entries(tally).filter(([,v])=>v===max).map(([k])=>k);
-    if(top.length===1) elim=top[0];
+    if(top.length===1)elim=top[0];
   }
   if(elim){
-    await fb('PATCH','/mafia2/alive',{[encN(elim)]:false}); aliveMap[elim]=false;
+    await fb('PATCH','/mafia2/alive',{[encN(elim)]:false});aliveMap[elim]=false;
     const er=rolesMap[elim];
     toast(`${elim} eliminated — ${er}`);
     await fb('PUT','/mafia2/announcement',`${elim} was eliminated. They were ${er==='murderer'?'THE MURDERER! 🔪':`a ${er}.`}`);
@@ -212,7 +286,7 @@ async function hostResolveVote(){
     toast('Tied — no elimination');
   }
   stopIvs();
-  const w=checkWin(); if(w){await endGame(w);return;}
+  const w=checkWin();if(w){await endGame(w);return;}
   round++;
   await Promise.all([fb('PUT','/mafia2/round',round),fb('DELETE','/mafia2/night'),fb('DELETE','/mafia2/day'),fb('PUT','/mafia2/phase','night')]);
   enterHostNight();
@@ -222,15 +296,15 @@ function checkWin(){
   const living=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
   const murdAlive=living.some(n=>rolesMap[n]==='murderer');
   const civCount=living.filter(n=>rolesMap[n]!=='murderer').length;
-  if(!murdAlive) return 'civilians';
-  if(murdAlive&&civCount<=1) return 'murderer';
+  if(!murdAlive)return 'civilians';
+  if(murdAlive&&civCount<=1)return 'murderer';
   return null;
 }
 
 async function endGame(winner){
   const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
   await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
-  stopIvs(); hShow('h-end');
+  stopIvs();hShow('h-end');
   document.getElementById('h-ei').textContent=winner==='murderer'?'🔪':'🛡️';
   document.getElementById('h-et').textContent=winner==='murderer'?'MURDERER WINS!':'CIVILIANS WIN!';
   document.getElementById('h-es').textContent=winner==='murderer'?'The murderer was never caught.':'Justice prevails!';
@@ -244,20 +318,15 @@ async function endGame(winner){
 
 async function hostReset(){
   await fb('DELETE','/mafia2');
-  rolesMap={};aliveMap={};selectedPlayers=[];round=1;knownPhase='';
-  document.querySelectorAll('.pc-label').forEach(l=>l.classList.remove('checked'));
-  document.getElementById('role-list').innerHTML='';
-  document.getElementById('sel-count').textContent='0 selected';
-  document.getElementById('shuffle-btn').disabled=true;
-  document.getElementById('h-start-btn').style.display='none';
-  hShow('h-setup');
+  rolesMap={};aliveMap={};selectedPlayers=[];round=1;knownPhase='';hostName='';isHost=false;myRole=null;myAction=null;myVote=null;
+  enterLobby();
 }
 
 /* ════════════════════════════════
    PLAYER
 ════════════════════════════════ */
 function startPlayerPolling(){
-  renderWaiting(); stopIvs();
+  renderWaiting();stopIvs();
   ivs.push(setInterval(pollPhase,1500));
 }
 
@@ -275,9 +344,9 @@ async function pollPhase(){
     fb('GET','/mafia2/phase'),fb('GET','/mafia2/round'),fb('GET','/mafia2/announcement'),
     fb('GET','/mafia2/winner'),fb('GET','/mafia2/alive'),
   ]);
-  if(aliveD) Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
-  if(roundD) round=roundD;
-  if(!phD||phD===knownPhase) return;
+  if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
+  if(roundD)round=roundD;
+  if(!phD||phD===knownPhase)return;
   knownPhase=phD;
   if(phD==='night'){
     myAction=null;
@@ -286,7 +355,7 @@ async function pollPhase(){
       showRoleReveal();
     } else showNightUI();
   } else if(phD==='day') showDayAnn(annD||'');
-  else if(phD==='vote') {myVote=null;showVoteUI();}
+  else if(phD==='vote'){myVote=null;showVoteUI();}
   else if(phD==='ended'&&winner){stopIvs();showPlayerEnd(winner);}
 }
 
@@ -299,7 +368,7 @@ function showRoleReveal(){
       <div class="rr-desc">${cfg.desc}</div>
       <div class="rr-cd" id="rr-cd">Starting in 5…</div>
     </div>`;
-  let s=5; const cd=document.getElementById('rr-cd');
+  let s=5;const cd=document.getElementById('rr-cd');
   const t=setInterval(()=>{cd.textContent=`Starting in ${--s}…`;if(s<=0){clearInterval(t);showNightUI();}},1000);
 }
 
@@ -344,7 +413,7 @@ async function submitAction(target){
   myAction=target;
   const paths={murderer:'/mafia2/night/kill',doctor:'/mafia2/night/save',investigator:'/mafia2/night/inspect'};
   await fb('PUT',paths[myRole],target);
-  showNightUI(); snd('click');
+  showNightUI();snd('click');
 }
 
 function showDayAnn(ann){
@@ -395,7 +464,7 @@ function showVoteUI(){
 async function submitVote(target){
   myVote=target;
   await fb('PUT',`/mafia2/day/votes/${encN(myName)}`,target);
-  showVoteUI(); snd('click');
+  showVoteUI();snd('click');
 }
 
 async function showPlayerEnd(winner){

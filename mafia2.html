@@ -35,6 +35,12 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .nc-num { font-size:0.55rem; letter-spacing:3px; opacity:0.4; color:#cc4444; text-transform:uppercase; }
 .nc-name { font-size:0.9rem; font-weight:700; margin-top:4px; }
 
+/* Lobby */
+.online-chips { display:flex; flex-wrap:wrap; gap:7px; width:100%; max-width:420px; margin-bottom:18px; min-height:36px; }
+.online-chip { display:flex; align-items:center; gap:5px; padding:6px 12px;
+  border-radius:20px; font-size:0.82rem; font-weight:600; border:1px solid; }
+.lb-panel { width:100%; max-width:420px; }
+
 /* Host */
 .host-badge { background:rgba(255,210,0,0.15); border:1px solid rgba(255,210,0,0.4);
   border-radius:20px; padding:4px 16px; font-size:0.68rem; letter-spacing:2px;
@@ -140,7 +146,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 <div id="toast"></div>
 <a href="index.html" class="back-link">← Home</a>
 
-<!-- JOIN -->
+<!-- JOIN (shown only if no name in localStorage) -->
 <div class="screen active" id="s-join">
   <div class="m-title">🔪 FILO MAFIA</div>
   <div class="m-sub">Host-Run Edition — Who are you?</div>
@@ -158,19 +164,44 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   </div>
 </div>
 
-<!-- HOST -->
-<div class="screen" id="s-host">
-  <div class="m-title" style="font-size:1.7rem">🎭 HOST CONSOLE</div>
-  <div class="host-badge">Game Master</div>
+<!-- LOBBY (shared for all players) -->
+<div class="screen" id="s-lobby">
+  <div class="m-title">🔪 FILO MAFIA</div>
+  <div class="m-sub">Host-Run Edition</div>
 
-  <div id="h-setup">
-    <div class="section-lbl">Select players (4–10)</div>
+  <div class="section-lbl">Online now</div>
+  <div id="lobby-online" class="online-chips"></div>
+
+  <!-- No host yet -->
+  <div id="lb-no-host" class="lb-panel">
+    <button class="btn btn-gold w100" onclick="claimHost()">👑 Be the Host</button>
+  </div>
+
+  <!-- I am the host -->
+  <div id="lb-is-host" class="lb-panel" style="display:none">
+    <div class="host-badge" style="align-self:center">You are Game Master</div>
+    <div class="section-lbl">Select players (min 5)</div>
     <div class="player-checks" id="player-checks"></div>
     <div class="section-lbl" id="sel-count">0 selected</div>
     <button class="btn btn-primary w100" id="shuffle-btn" onclick="shuffleRoles()" disabled>🎲 Shuffle &amp; Assign Roles</button>
     <div class="role-list" id="role-list"></div>
     <button class="btn btn-gold w100" id="h-start-btn" onclick="hostStartGame()" style="display:none">▶ Start Game</button>
   </div>
+
+  <!-- Someone else is host -->
+  <div id="lb-wait-host" class="lb-panel" style="display:none">
+    <div class="phase-card">
+      <div class="phase-icon">⏳</div>
+      <div class="phase-title" style="font-size:1rem" id="lb-host-name">Waiting for host…</div>
+      <div class="phase-desc">The Game Master is setting up.<br>Stand by, <strong id="lb-my-name"></strong>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOST GAME CONSOLE (night/day/vote/end panels) -->
+<div class="screen" id="s-host">
+  <div class="m-title" style="font-size:1.7rem">🎭 HOST CONSOLE</div>
+  <div class="host-badge">Game Master</div>
 
   <div id="h-night" style="display:none">
     <div class="phase-banner night">🌙 Night — Round <span id="h-rn">1</span></div>
@@ -207,7 +238,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   </div>
 </div>
 
-<!-- PLAYER -->
+<!-- PLAYER VIEW -->
 <div class="screen" id="s-player">
   <div id="p-content"></div>
 </div>
