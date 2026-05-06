@@ -23,43 +23,67 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .btn-gold      { background:linear-gradient(90deg,#b8860b,#FFD200); color:#1a1000; }
 .btn-blue      { background:rgba(50,100,200,0.25); color:#88ccff; border:1.5px solid rgba(50,120,255,0.4); }
 .btn-secondary { background:rgba(255,255,255,0.08); color:#e8e0f0; border:1.5px solid rgba(255,255,255,0.18); }
+.btn-green     { background:linear-gradient(90deg,#1a6b2e,#2ecc71); color:#fff; }
 .btn:disabled  { opacity:0.3; pointer-events:none; }
 .w100 { width:100%; max-width:420px; margin-bottom:10px; }
+
+/* Name picker */
 .names-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:100%; max-width:380px; margin-bottom:16px; }
 .name-card { background:linear-gradient(160deg,rgba(60,5,15,0.7),rgba(10,2,25,0.9));
   border:1px solid rgba(139,0,0,0.35); border-radius:12px; padding:14px 10px;
   text-align:center; cursor:pointer; transition:all 0.15s; }
-.name-card:hover:not(.taken) { border-color:rgba(200,50,50,0.8); transform:translateY(-2px); }
-.name-card:active:not(.taken) { transform:scale(0.94); }
-.name-card.taken { opacity:0.3; cursor:not-allowed; }
+.name-card:hover { border-color:rgba(200,50,50,0.8); transform:translateY(-2px); }
+.name-card:active { transform:scale(0.94); }
 .nc-num { font-size:0.55rem; letter-spacing:3px; opacity:0.4; color:#cc4444; text-transform:uppercase; }
 .nc-name { font-size:0.9rem; font-weight:700; margin-top:4px; }
 
 /* Lobby */
-.online-chips { display:flex; flex-wrap:wrap; gap:7px; width:100%; max-width:420px; margin-bottom:18px; min-height:36px; }
-.online-chip { display:flex; align-items:center; gap:5px; padding:6px 12px;
-  border-radius:20px; font-size:0.82rem; font-weight:600; border:1px solid; }
-.lb-panel { width:100%; max-width:420px; }
-
-/* Host */
+.section-lbl { font-size:0.62rem; letter-spacing:2.5px; text-transform:uppercase;
+  opacity:0.4; margin-bottom:7px; width:100%; max-width:420px; }
+.lobby-list { width:100%; max-width:420px; margin-bottom:10px; }
+.lp-row { display:flex; align-items:center; gap:10px; padding:11px 14px;
+  border-radius:12px; margin-bottom:6px; background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08); transition:all 0.15s; }
+.lp-row.is-ready { background:rgba(0,70,0,0.18); border-color:rgba(0,200,80,0.45); }
+.lp-av { font-size:1.3rem; }
+.lp-name { flex:1; font-size:0.88rem; font-weight:600; }
+.lp-badges { display:flex; gap:5px; align-items:center; flex-shrink:0; }
+.lp-badge { font-size:0.58rem; padding:2px 7px; border-radius:10px; font-weight:700; letter-spacing:1px; }
+.lp-host-b { background:rgba(255,210,0,0.15); color:#FFD200; border:1px solid rgba(255,210,0,0.4); }
+.lp-ready-b { background:rgba(0,200,80,0.15); color:#4caf50; border:1px solid rgba(0,200,80,0.4); }
+.host-bar { width:100%; max-width:420px; text-align:center; margin-bottom:14px; min-height:28px; }
 .host-badge { background:rgba(255,210,0,0.15); border:1px solid rgba(255,210,0,0.4);
   border-radius:20px; padding:4px 16px; font-size:0.68rem; letter-spacing:2px;
-  color:#FFD200; text-transform:uppercase; margin-bottom:18px; }
+  color:#FFD200; text-transform:uppercase; display:inline-block; }
+
+/* Role assignment */
+.assign-list { width:100%; max-width:420px; margin-bottom:12px; }
+.ar-row { padding:11px 13px; border-radius:12px; margin-bottom:7px;
+  background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); }
+.ar-info { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+.ar-av { font-size:1.2rem; }
+.ar-name { flex:1; font-size:0.9rem; font-weight:600; }
+.ar-cur { font-size:0.62rem; padding:2px 8px; border-radius:10px; font-weight:700; letter-spacing:1px; }
+.ar-cur.murderer     { background:rgba(80,0,0,0.4);    color:#ff6666; }
+.ar-cur.doctor       { background:rgba(0,60,30,0.4);   color:#4caf50; }
+.ar-cur.investigator { background:rgba(0,40,100,0.4);  color:#88ccff; }
+.ar-cur.civilian     { background:rgba(30,20,60,0.4);  color:#aaa; }
+.ar-roles { display:flex; gap:6px; }
+.rb { flex:1; padding:9px 4px; border:1.5px solid rgba(255,255,255,0.15); border-radius:8px;
+  font-size:1.1rem; cursor:pointer; transition:all 0.12s;
+  background:rgba(255,255,255,0.04); text-align:center; }
+.rb:active { transform:scale(0.9); }
+.rb.on-murderer     { border-color:rgba(200,0,0,0.7);    background:rgba(80,0,0,0.45); }
+.rb.on-doctor       { border-color:rgba(0,200,100,0.7);  background:rgba(0,60,30,0.45); }
+.rb.on-investigator { border-color:rgba(50,150,255,0.7); background:rgba(0,40,100,0.45); }
+.rb.on-civilian     { border-color:rgba(150,150,200,0.5);background:rgba(30,20,60,0.45); }
+
+/* Host game console */
 .phase-banner { width:100%; max-width:420px; text-align:center; padding:12px;
   background:rgba(0,0,0,0.4); border-radius:12px; font-size:0.95rem; font-weight:700;
   letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; border:1px solid rgba(255,255,255,0.08); }
 .phase-banner.night { border-color:rgba(80,0,200,0.45); color:#c3a6ff; }
 .phase-banner.day   { border-color:rgba(255,180,0,0.45); color:#FFD200; }
-.player-checks { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; width:100%; max-width:420px; margin-bottom:12px; }
-.pc-label { display:flex; align-items:center; gap:8px; padding:9px 12px;
-  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
-  border-radius:10px; cursor:pointer; transition:all 0.15s; font-size:0.84rem; }
-.pc-label.checked { border-color:rgba(139,0,0,0.6); background:rgba(80,0,0,0.2); }
-.pc-label.online { border-color:rgba(0,200,80,0.4); }
-.pc-label.online::after { content:'🟢'; font-size:.65rem; margin-left:auto; }
-.pc-av { font-size:1.2rem; }
-.section-lbl { font-size:0.62rem; letter-spacing:2.5px; text-transform:uppercase;
-  opacity:0.4; margin-bottom:7px; width:100%; max-width:420px; }
 .role-list { width:100%; max-width:420px; margin-bottom:12px; }
 .role-item { display:flex; align-items:center; gap:10px; padding:10px 14px;
   border-radius:10px; margin-bottom:6px; border:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.3); }
@@ -91,7 +115,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .vt-count { font-weight:700; color:#FFD200; }
 .divider { width:100%; max-width:420px; height:1px; background:rgba(255,255,255,0.08); margin:12px 0; }
 
-/* Player */
+/* Player view */
 .phase-card { width:100%; max-width:400px; background:linear-gradient(160deg,rgba(20,5,40,0.9),rgba(8,2,18,0.95));
   border-radius:20px; padding:32px 24px; text-align:center; margin-bottom:14px; border:1.5px solid rgba(139,0,0,0.4); }
 .phase-card.night { border-color:rgba(100,0,200,0.5); }
@@ -105,12 +129,10 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .action-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; max-width:400px; margin-bottom:12px; }
 .ag-card { border:1.5px solid rgba(100,30,30,0.4); border-radius:10px; padding:10px 4px;
   text-align:center; cursor:pointer; transition:all 0.15s; background:rgba(20,5,30,0.7); }
-.ag-card:hover:not(.dead-card) { border-color:rgba(200,50,50,0.8); }
-.ag-card.selected  { border-color:#FFD200; background:rgba(40,30,0,0.5); }
-.ag-card.dead-card { opacity:0.25; cursor:default; }
+.ag-card:hover { border-color:rgba(200,50,50,0.8); }
+.ag-card.selected { border-color:#FFD200; background:rgba(40,30,0,0.5); }
 .ag-av { font-size:1.5rem; }
 .ag-name { font-size:0.62rem; font-weight:700; margin-top:3px; }
-.ag-dead { font-size:0.52rem; color:#cc3333; }
 .rr-card { width:100%; max-width:360px; border-radius:20px; padding:42px 28px; text-align:center;
   animation:revealIn .6s cubic-bezier(.34,1.56,.64,1) both; }
 .rr-card.murderer     { border:2px solid rgba(200,0,0,0.7);    background:rgba(40,5,5,0.95);   box-shadow:0 0 50px rgba(200,0,0,0.4); }
@@ -146,62 +168,55 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 <div id="toast"></div>
 <a href="index.html" class="back-link">← Home</a>
 
-<!-- JOIN (shown only if no name in localStorage) -->
+<!-- JOIN — only if no name in localStorage -->
 <div class="screen active" id="s-join">
   <div class="m-title">🔪 FILO MAFIA</div>
   <div class="m-sub">Host-Run Edition — Who are you?</div>
   <div class="names-grid">
-    <div class="name-card" data-name="Kuya AD"   onclick="joinAs('Kuya AD')">  <div class="nc-num">01</div><div class="nc-name">Kuya AD</div></div>
-    <div class="name-card" data-name="Matt"      onclick="joinAs('Matt')">      <div class="nc-num">02</div><div class="nc-name">Matt</div></div>
-    <div class="name-card" data-name="Gianne"    onclick="joinAs('Gianne')">    <div class="nc-num">03</div><div class="nc-name">Gianne</div></div>
-    <div class="name-card" data-name="Austin"    onclick="joinAs('Austin')">    <div class="nc-num">04</div><div class="nc-name">Austin</div></div>
-    <div class="name-card" data-name="Charm"     onclick="joinAs('Charm')">     <div class="nc-num">05</div><div class="nc-name">Charm</div></div>
-    <div class="name-card" data-name="Kee"       onclick="joinAs('Kee')">       <div class="nc-num">06</div><div class="nc-name">Kee</div></div>
-    <div class="name-card" data-name="Kriselle"  onclick="joinAs('Kriselle')">  <div class="nc-num">07</div><div class="nc-name">Kriselle</div></div>
-    <div class="name-card" data-name="Monique"   onclick="joinAs('Monique')">   <div class="nc-num">08</div><div class="nc-name">Monique</div></div>
-    <div class="name-card" data-name="Tiff"      onclick="joinAs('Tiff')">      <div class="nc-num">09</div><div class="nc-name">Tiff</div></div>
-    <div class="name-card" data-name="Shantelle" onclick="joinAs('Shantelle')"> <div class="nc-num">10</div><div class="nc-name">Shantelle</div></div>
+    <div class="name-card" onclick="joinAs('Kuya AD')">  <div class="nc-num">01</div><div class="nc-name">Kuya AD</div></div>
+    <div class="name-card" onclick="joinAs('Matt')">      <div class="nc-num">02</div><div class="nc-name">Matt</div></div>
+    <div class="name-card" onclick="joinAs('Gianne')">    <div class="nc-num">03</div><div class="nc-name">Gianne</div></div>
+    <div class="name-card" onclick="joinAs('Austin')">    <div class="nc-num">04</div><div class="nc-name">Austin</div></div>
+    <div class="name-card" onclick="joinAs('Charm')">     <div class="nc-num">05</div><div class="nc-name">Charm</div></div>
+    <div class="name-card" onclick="joinAs('Kee')">       <div class="nc-num">06</div><div class="nc-name">Kee</div></div>
+    <div class="name-card" onclick="joinAs('Kriselle')">  <div class="nc-num">07</div><div class="nc-name">Kriselle</div></div>
+    <div class="name-card" onclick="joinAs('Monique')">   <div class="nc-num">08</div><div class="nc-name">Monique</div></div>
+    <div class="name-card" onclick="joinAs('Tiff')">      <div class="nc-num">09</div><div class="nc-name">Tiff</div></div>
+    <div class="name-card" onclick="joinAs('Shantelle')"> <div class="nc-num">10</div><div class="nc-name">Shantelle</div></div>
   </div>
 </div>
 
-<!-- LOBBY (shared for all players) -->
+<!-- LOBBY — shared for all players -->
 <div class="screen" id="s-lobby">
   <div class="m-title">🔪 FILO MAFIA</div>
   <div class="m-sub">Host-Run Edition</div>
 
-  <div class="section-lbl">Online now</div>
-  <div id="lobby-online" class="online-chips"></div>
+  <div class="host-bar" id="lb-host-bar"></div>
 
-  <!-- No host yet -->
-  <div id="lb-no-host" class="lb-panel">
-    <button class="btn btn-gold w100" onclick="claimHost()">👑 Be the Host</button>
-  </div>
+  <div class="section-lbl" id="lb-count-lbl">Lobby — 0 players</div>
+  <div class="lobby-list" id="lobby-list"></div>
 
-  <!-- I am the host -->
-  <div id="lb-is-host" class="lb-panel" style="display:none">
-    <div class="host-badge" style="align-self:center">You are Game Master</div>
-    <div class="section-lbl">Select players (min 5)</div>
-    <div class="player-checks" id="player-checks"></div>
-    <div class="section-lbl" id="sel-count">0 selected</div>
-    <button class="btn btn-primary w100" id="shuffle-btn" onclick="shuffleRoles()" disabled>🎲 Shuffle &amp; Assign Roles</button>
-    <div class="role-list" id="role-list"></div>
-    <button class="btn btn-gold w100" id="h-start-btn" onclick="hostStartGame()" style="display:none">▶ Start Game</button>
-  </div>
-
-  <!-- Someone else is host -->
-  <div id="lb-wait-host" class="lb-panel" style="display:none">
-    <div class="phase-card">
-      <div class="phase-icon">⏳</div>
-      <div class="phase-title" style="font-size:1rem" id="lb-host-name">Waiting for host…</div>
-      <div class="phase-desc">The Game Master is setting up.<br>Stand by, <strong id="lb-my-name"></strong>.</div>
-    </div>
-  </div>
+  <button class="btn btn-gold w100" id="lb-claim-btn" onclick="claimHost()" style="display:none">👑 Be the Host</button>
+  <button class="btn btn-primary w100" id="lb-ready-btn" onclick="toggleReady()">✅ Ready Up</button>
+  <button class="btn btn-green w100" id="lb-proceed-btn" onclick="proceedToAssign()" style="display:none">▶ Assign Roles →</button>
 </div>
 
-<!-- HOST GAME CONSOLE (night/day/vote/end panels) -->
+<!-- ROLE ASSIGNMENT — host assigns, non-hosts wait on s-player -->
+<div class="screen" id="s-assign">
+  <div class="m-title" style="font-size:1.5rem">🎭 ASSIGN ROLES</div>
+  <div class="host-badge" style="margin-bottom:14px">Game Master</div>
+  <div class="section-lbl" id="assign-hint">Tap a role icon for each player</div>
+  <div class="assign-list" id="assign-list"></div>
+  <div style="width:100%;max-width:420px;font-size:0.72rem;opacity:.38;text-align:center;margin-bottom:10px">
+    🔪 Murderer &nbsp;·&nbsp; 💊 Doctor &nbsp;·&nbsp; 🔍 Investigator &nbsp;·&nbsp; 👤 Civilian
+  </div>
+  <button class="btn btn-gold w100" id="assign-start-btn" onclick="hostStartGame()" style="display:none">▶ Start Game</button>
+</div>
+
+<!-- HOST GAME CONSOLE -->
 <div class="screen" id="s-host">
   <div class="m-title" style="font-size:1.7rem">🎭 HOST CONSOLE</div>
-  <div class="host-badge">Game Master</div>
+  <div class="host-badge" style="margin-bottom:14px">Game Master</div>
 
   <div id="h-night" style="display:none">
     <div class="phase-banner night">🌙 Night — Round <span id="h-rn">1</span></div>
