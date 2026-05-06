@@ -15,7 +15,7 @@ const MIN_READY=5;
 
 /* ─── State ─── */
 let isHost=false,myName='',myRole=null,round=1,hostName='';
-let rolesMap={},aliveMap={},myAction=null,myVote=null,ivs=[],knownPhase='';
+let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={};
 
 /* ─── Firebase ─── */
@@ -285,9 +285,10 @@ function enterHostNight(){
 }
 
 async function pollNightActions(){
-  const [killD,saveD,inspD,aliveD]=await Promise.all([
+  const [killD,saveD,inspD,aliveD,suspectD]=await Promise.all([
     fb('GET','/mafia2/night/kill'),fb('GET','/mafia2/night/save'),
     fb('GET','/mafia2/night/inspect'),fb('GET','/mafia2/alive'),
+    fb('GET','/mafia2/night/suspect'),
   ]);
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
   const murd=Object.keys(rolesMap).find(n=>rolesMap[n]==='murderer');
@@ -304,6 +305,17 @@ async function pollNightActions(){
     html+=`<div class="act-item ${inspD?'submitted':'pending'}">🔍 <b>${inv}</b>: ${txt}</div>`;
   }
   if(!html)html='<div style="opacity:.4;font-size:.83rem">No special roles alive — resolve now.</div>';
+
+  // Civilian suspicions — for host discussion next day
+  const aliveCivs=Object.keys(rolesMap).filter(n=>rolesMap[n]==='civilian'&&aliveMap[n]!==false);
+  if(aliveCivs.length){
+    html+='<div style="opacity:.4;font-size:.6rem;letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">Civilian suspicions</div>';
+    aliveCivs.forEach(name=>{
+      const s=suspectD?suspectD[encN(name)]:null;
+      html+=`<div class="act-item ${s?'submitted':'pending'}">🕵️ <b>${name}</b>: ${s?`suspects <b>${s}</b>`:'Thinking…'}</div>`;
+    });
+  }
+
   document.getElementById('h-actions').innerHTML=html;
   if(killD){
     const killed=saveD===killD?null:killD;
@@ -416,7 +428,7 @@ async function endGame(winner){
 async function hostReset(){
   await fb('DELETE','/mafia2');
   rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;
-  myRole=null;myAction=null;myVote=null;amReady=false;lobbyPlayers={};
+  myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;lobbyPlayers={};
   enterLobby();
 }
 
@@ -468,7 +480,7 @@ async function pollPhase(){
   if(phD==='assigning'){
     renderWaiting();
   } else if(phD==='night'){
-    myAction=null;
+    myAction=null;mySuspect=null;
     if(!myRole){
       const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
       if(!fetched){stopIvs();renderNotInGame();return;}
@@ -495,13 +507,39 @@ function showRoleReveal(){
 
 function showNightUI(){
   const amAlive=aliveMap[myName]!==false;
-  if(!amAlive||myRole==='civilian'){
+  if(!amAlive){
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card night">
-        <div class="phase-icon">${amAlive?'🌙':'👻'}</div>
-        <div class="phase-title">${amAlive?'Night Falls':'You Are Dead'}</div>
-        <div class="phase-desc">${amAlive?'Close your eyes.<br>Wait for the host\'s instructions.':'The night carries on without you…'}</div>
+        <div class="phase-icon">👻</div>
+        <div class="phase-title">You Are Dead</div>
+        <div class="phase-desc">The night carries on without you…</div>
       </div>`;
+    return;
+  }
+  if(myRole==='civilian'){
+    if(mySuspect){
+      document.getElementById('p-content').innerHTML=`
+        <div class="phase-card night">
+          <div class="phase-icon">🕵️</div>
+          <div class="phase-title">Suspicion Noted</div>
+          <div class="phase-desc">You suspect <strong style="color:#FFD200">${mySuspect}</strong>.<br>Keep it to yourself for now.</div>
+          <button class="btn btn-secondary" onclick="changeSuspect()"
+            style="font-size:.72rem;padding:8px 18px;margin-top:14px">↩ Change</button>
+        </div>`;
+      return;
+    }
+    const alive=Object.keys(aliveMap).filter(n=>aliveMap[n]!==false);
+    document.getElementById('p-content').innerHTML=`
+      <div class="phase-card night" style="padding:20px 16px;margin-bottom:12px">
+        <div class="rr-icon">🕵️</div>
+        <div class="phase-title" style="font-size:1rem">CIVILIAN</div>
+        <div class="phase-desc">Who do you suspect?</div>
+      </div>
+      <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
+        <div class="ag-card" onclick="submitSuspect('${n}')">
+          <div class="ag-av">${AMAP[n]||'👤'}</div>
+          <div class="ag-name">${n}</div>
+        </div>`).join('')}</div>`;
     return;
   }
   if(myAction){
@@ -534,6 +572,17 @@ async function submitAction(target){
   const paths={murderer:'/mafia2/night/kill',doctor:'/mafia2/night/save',investigator:'/mafia2/night/inspect'};
   await fb('PUT',paths[myRole],target);
   showNightUI();snd('click');
+}
+
+async function submitSuspect(target){
+  mySuspect=target;
+  await fb('PUT',`/mafia2/night/suspect/${encN(myName)}`,target);
+  showNightUI();snd('click');
+}
+
+function changeSuspect(){
+  mySuspect=null;
+  showNightUI();
 }
 
 function showDayAnn(ann){
