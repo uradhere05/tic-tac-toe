@@ -194,9 +194,10 @@ async function toggleReady(){
 }
 
 async function proceedToAssign(){
-  // Snapshot ready players — host is spectator, not a game player
+  // Fetch fresh lobby state so no last-second ready is missed
+  const freshLobby=await fb('GET','/mafia2/lobby')||{};
   rolesMap={};
-  Object.values(lobbyPlayers)
+  Object.values(freshLobby)
     .filter(p=>p&&p.name&&p.ready&&p.name!==hostName)
     .forEach(p=>rolesMap[p.name]='');
   await fb('PUT','/mafia2/phase','assigning');
