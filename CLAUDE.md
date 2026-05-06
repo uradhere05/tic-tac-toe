@@ -76,18 +76,26 @@ Face-to-face version for in-person play. One device is the GM console; each play
 - `/mafia2/roles/<name>` — `"murderer" | "doctor" | "investigator" | "civilian"`
 - `/mafia2/alive/<name>` — bool
 - `/mafia2/night/kill` · `/mafia2/night/save` · `/mafia2/night/inspect` — string (target name)
-- `/mafia2/day/votes/<name>` — string (target name)
+- `/mafia2/night/suspect/<name>` — string (civilian's death prediction for that round)
+- `/mafia2/lastSave` — string (who the doctor saved last round; doctor cannot repeat)
+- `/mafia2/day/votes/<name>` — string (target name, or `"defer"`)
 - `/mafia2/announcement` — string (host writes; all players display)
 - `/mafia2/winner` — `"murderer" | "civilians"`
 - `/mafia2/allRoles` — full role map written on game end for reveal
 
-**Night resolution (host-side):** kill target + save target → if save === kill, no one dies; otherwise kill target dies. Investigator result shown only to host. Host edits and reads announcement aloud.
+**Night resolution (host-side):** kill target + save target → if save === kill, no one dies; otherwise kill target dies. Investigator result shown only to host. Host edits and reads announcement aloud. After resolution, save target is written to `/mafia2/lastSave`.
+
+**Night UI (players):** All players — including special roles — see an identical generic `🌙 Night Action / Tap a player` screen. Role identity is only shown on the private 5-second reveal card at round start. Civilians see `Who do you think will die tonight?` and their prediction is visible to the host.
+
+**Doctor constraint:** Cannot save the same player two rounds in a row. The previously saved player appears grayed out with "saved last round" on the doctor's action grid.
 
 **Win conditions:**
-- Murderer wins: alive murderers ≥ alive civilians
+- Murderer wins: alive murderers ≥ alive civilians (civs ≤ 1)
 - Civilians win: murderer voted out
 
-**Key fix:** Player selector uses `<div onclick>` not `<label><input>` — label+input caused double-toggle (browser fires onclick twice per tap).
+**Key fixes:**
+- Player selector uses `<div onclick>` not `<label><input>` — label+input caused double-toggle (browser fires onclick twice per tap).
+- Night action screen is role-neutral so no player can be identified as a special role by observers.
 
 ---
 
