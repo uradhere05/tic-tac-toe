@@ -5,6 +5,7 @@ const AVATARS=['🧑','👱','🧔','👩','👨','🧑‍🦱','🧑‍🦰','�
 const COLORS=['#e74c3c','#3498db','#2ecc71','#9b59b6','#f39c12','#1abc9c','#e67e22','#e91e63','#00bcd4','#8bc34a'];
 const CMAP=Object.fromEntries(NAMES.map((n,i)=>[n,COLORS[i]]));
 const AMAP=Object.fromEntries(NAMES.map((n,i)=>[n,AVATARS[i]]));
+const THEMED_AVATARS=['🕵️','🥷','🤵','🧑‍⚕️','👮','🦹','🧙','🤠','🎭','🦸','🧛','🥸'];
 const ROLE_CFG={
   murderer:    {icon:'🔪',desc:'Each night, choose someone to eliminate.'},
   doctor:      {icon:'💊',desc:'Each night, choose someone to protect from the murderer.'},
@@ -16,7 +17,7 @@ const MIN_READY=5;
 /* ─── State ─── */
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
-let amReady=false,lobbyPlayers={},lastSave='';
+let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
 
 /* ─── Firebase ─── */
 async function fb(method,path,data){
@@ -32,6 +33,7 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.re
 let _tt;
 function toast(m,d=2600){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),d);}
 function stopIvs(){ivs.forEach(clearInterval);ivs=[];}
+function getAvatar(name){return avatarsMap[name]||AMAP[name]||'👤';}
 function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementById(s).style.display=s===id?'':'none');}
 
 /* ════════════════════════════════
@@ -39,13 +41,35 @@ function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementByI
 ════════════════════════════════ */
 function init(){
   const stored=localStorage.getItem('filoName');
-  if(stored){myName=stored;enterRoleSelect();}
-  else show('s-join');
+  if(stored){
+    myName=stored;
+    myAvatar=localStorage.getItem('filoAvatar')||'';
+    if(myAvatar)enterRoleSelect();else showAvatarSelect();
+  }else show('s-join');
+}
+
+function showAvatarSelect(){
+  document.getElementById('av-name-lbl').textContent=myName;
+  const saved=myAvatar;
+  document.getElementById('av-grid').innerHTML=THEMED_AVATARS.map(av=>`
+    <div onclick="pickAvatar('${av}')" style="
+      background:${saved===av?'rgba(255,255,255,.15)':'rgba(255,255,255,.05)'};
+      border:2px solid ${saved===av?'rgba(255,255,255,.7)':'rgba(255,255,255,.1)'};
+      border-radius:14px;padding:14px 4px;cursor:pointer;text-align:center;font-size:2rem
+    ">${av}</div>`).join('');
+  show('s-avatar');
+}
+
+function pickAvatar(av){
+  myAvatar=av;
+  localStorage.setItem('filoAvatar',av);
+  enterRoleSelect();
 }
 
 function joinAs(name){
   myName=name;localStorage.setItem('filoName',name);
-  enterRoleSelect();
+  myAvatar=localStorage.getItem('filoAvatar')||'';
+  showAvatarSelect();
 }
 
 function enterRoleSelect(){
@@ -78,7 +102,7 @@ async function enterLobby(){
 async function writeLobbyPresence(){
   const ts=Date.now();
   await Promise.all([
-    fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts,ready:amReady}),
+    fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts,ready:amReady,avatar:myAvatar}),
     fb('PUT',`/online/${encN(myName)}`,{ts}),
   ]);
 }
@@ -142,6 +166,7 @@ async function lobbyTick(){
 
   // Build lobby player list — exclude players not seen online within 75s
   lobbyPlayers=lobbyD||{};
+  Object.values(lobbyPlayers).forEach(p=>{if(p&&p.name&&p.avatar)avatarsMap[p.name]=p.avatar;});
   const players=Object.values(lobbyPlayers)
     .filter(p=>p&&p.name&&online.includes(p.name))
     .sort((a,b)=>a.name.localeCompare(b.name));
@@ -157,7 +182,7 @@ async function lobbyTick(){
       const isPlayerHost=p.name===hostName;
       const isPlayerReady=!!p.ready;
       return`<div class="lp-row${isPlayerReady?' is-ready':''}">
-        <span class="lp-av">${AMAP[p.name]||'👤'}</span>
+        <span class="lp-av">${getAvatar(p.name)}</span>
         <span class="lp-name">${p.name}${isOnline?' 🟢':''}</span>
         <span class="lp-badges">
           ${isPlayerHost?'<span class="lp-badge lp-host-b">👑 Host</span>':''}
@@ -252,7 +277,7 @@ function renderAssignScreen(){
     const cur=rolesMap[name]||'';
     return`<div class="ar-row">
       <div class="ar-info">
-        <span class="ar-av">${AMAP[name]||'👤'}</span>
+        <span class="ar-av">${getAvatar(name)}</span>
         <span class="ar-name">${name}</span>
         ${cur
           ?`<span class="ar-cur ${cur}">${cur}</span>`
@@ -295,12 +320,13 @@ function checkAssignDone(players){
    HOST RECONNECT
 ════════════════════════════════ */
 async function reloadHostState(){
-  const [rolesD,aliveD,roundD]=await Promise.all([
-    fb('GET','/mafia2/roles'),fb('GET','/mafia2/alive'),fb('GET','/mafia2/round'),
+  const [rolesD,aliveD,roundD,avsD]=await Promise.all([
+    fb('GET','/mafia2/roles'),fb('GET','/mafia2/alive'),fb('GET','/mafia2/round'),fb('GET','/mafia2/avatars'),
   ]);
   if(rolesD)Object.entries(rolesD).forEach(([k,v])=>{rolesMap[decN(k)]=v;});
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>{aliveMap[decN(k)]=v;});
   if(roundD)round=roundD;
+  if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
 }
 
 async function reconnectHost(phaseD){
@@ -335,6 +361,7 @@ async function hostStartGame(){
     fb('PUT','/mafia2/round',1),    fb('DELETE','/mafia2/night'),
     fb('DELETE','/mafia2/day'),     fb('DELETE','/mafia2/winner'),
     fb('DELETE','/mafia2/announcement'),fb('DELETE','/mafia2/lastSave'),fb('PUT','/mafia2/phase','night'),
+    fb('PUT','/mafia2/avatars',Object.fromEntries(Object.keys(rolesMap).filter(n=>avatarsMap[n]).map(n=>[encN(n),avatarsMap[n]]))),
   ]);
   round=1;stopIvs();show('s-host');enterHostNight();
 }
@@ -418,7 +445,7 @@ async function resolveNight(){
 function renderAliveList(){
   document.getElementById('h-alive').innerHTML=Object.keys(rolesMap).map(n=>{
     const a=aliveMap[n]!==false;
-    return`<div class="alive-chip${a?'':' dead-chip'}" style="border-color:${CMAP[n]}55;background:${CMAP[n]}18">${AMAP[n]} ${n}${a?'':' 💀'}</div>`;
+    return`<div class="alive-chip${a?'':' dead-chip'}" style="border-color:${CMAP[n]}55;background:${CMAP[n]}18">${getAvatar(n)} ${n}${a?'':' 💀'}</div>`;
   }).join('');
 }
 
@@ -437,7 +464,7 @@ async function pollVotes(){
     if(t==='defer'){deferCount++;} else {tally[t]=(tally[t]||0)+1;}
   });
   const tallyHtml=Object.entries(tally).sort(([,a],[,b])=>b-a)
-    .map(([n,c])=>`<div class="vt-row"><span>${AMAP[n]||''} ${n}</span><span class="vt-count">${c} vote${c!==1?'s':''}</span></div>`).join('');
+    .map(([n,c])=>`<div class="vt-row"><span>${getAvatar(n)} ${n}</span><span class="vt-count">${c} vote${c!==1?'s':''}</span></div>`).join('');
   const deferHtml=deferCount?`<div class="vt-row" style="opacity:.5"><span>⏭️ Deferred</span><span class="vt-count">${deferCount}</span></div>`:'';
   document.getElementById('h-tally').innerHTML=tallyHtml+deferHtml||'<div style="opacity:.4;font-size:.83rem">No votes yet…</div>';
 }
@@ -486,7 +513,7 @@ async function endGame(winner){
   document.getElementById('h-es').textContent=winner==='murderer'?'The murderer was never caught.':'Justice prevails!';
   document.getElementById('h-er').innerHTML=Object.entries(rolesMap).map(([n,r])=>`
     <div class="role-item ${r}">
-      <span class="ri-av">${AMAP[n]}</span>
+      <span class="ri-av">${getAvatar(n)}</span>
       <span class="ri-name">${n}</span>
       <span class="ri-role">${r}${aliveMap[n]===false?' · dead':' · survived'}</span>
     </div>`).join('');
@@ -536,11 +563,12 @@ function renderWaiting(){
 }
 
 async function pollPhase(){
-  const [phD,roundD,annD,winner,aliveD]=await Promise.all([
+  const [phD,roundD,annD,winner,aliveD,avsD]=await Promise.all([
     fb('GET','/mafia2/phase'),fb('GET','/mafia2/round'),fb('GET','/mafia2/announcement'),
-    fb('GET','/mafia2/winner'),fb('GET','/mafia2/alive'),
+    fb('GET','/mafia2/winner'),fb('GET','/mafia2/alive'),fb('GET','/mafia2/avatars'),
   ]);
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
+  if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
   if(roundD)round=roundD;
   if(!phD||phD===knownPhase) return;
   knownPhase=phD;
@@ -627,7 +655,7 @@ function showNightUI(){
       </div>
       <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
         <div class="ag-card" onclick="submitSuspect('${n}')">
-          <div class="ag-av">${AMAP[n]||'👤'}</div>
+          <div class="ag-av">${getAvatar(n)}</div>
           <div class="ag-name">${n}</div>
         </div>`).join('')}</div>`;
     return;
@@ -653,12 +681,12 @@ function showNightUI(){
       const blocked=myRole==='doctor'&&n===lastSave;
       return blocked
         ?`<div class="ag-card" style="opacity:.3;pointer-events:none">
-            <div class="ag-av">${AMAP[n]||'👤'}</div>
+            <div class="ag-av">${getAvatar(n)}</div>
             <div class="ag-name">${n}</div>
             <div style="font-size:.58rem;color:#ff6b6b;margin-top:3px">saved last round</div>
           </div>`
         :`<div class="ag-card" onclick="submitAction('${n}')">
-            <div class="ag-av">${AMAP[n]||'👤'}</div>
+            <div class="ag-av">${getAvatar(n)}</div>
             <div class="ag-name">${n}</div>
           </div>`;
     }).join('')}</div>`;
@@ -729,7 +757,7 @@ function showVoteUI(){
     </div>
     <div class="action-grid">${candidates.map(n=>`
       <div class="ag-card" onclick="submitVote('${n}')">
-        <div class="ag-av">${AMAP[n]||'👤'}</div>
+        <div class="ag-av">${getAvatar(n)}</div>
         <div class="ag-name">${n}</div>
       </div>`).join('')}</div>
     <button class="btn btn-secondary w100" onclick="submitVote('defer')"
