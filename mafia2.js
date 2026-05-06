@@ -101,10 +101,17 @@ async function lobbyTick(){
     }
     stopIvs();
     if(phaseD==='assigning'){
-      if(iAmHost){show('s-assign');renderAssignScreen();}
-      else{show('s-player');renderWaiting();startPlayerPolling();}
+      if(iAmHost){
+        // Rebuild player list from lobby in case rolesMap was lost on reload
+        const freshLobby=await fb('GET','/mafia2/lobby')||{};
+        rolesMap={};
+        Object.values(freshLobby)
+          .filter(p=>p&&p.name&&p.ready&&p.name!==myName)
+          .forEach(p=>rolesMap[p.name]='');
+        show('s-assign');renderAssignScreen();
+      } else {show('s-player');renderWaiting();startPlayerPolling();}
     } else {
-      if(iAmHost){show('s-host');hShow('h-night');}
+      if(iAmHost){isHost=true;await reconnectHost(phaseD);}
       else{show('s-player');startPlayerPolling();}
     }
     return;
@@ -257,6 +264,37 @@ function checkAssignDone(players){
   document.getElementById('assign-hint').textContent=complete
     ?'All roles assigned — ready to start!'
     :`Tap a role icon for each of ${players.length} players`;
+}
+
+/* ════════════════════════════════
+   HOST RECONNECT
+════════════════════════════════ */
+async function reloadHostState(){
+  const [rolesD,aliveD,roundD]=await Promise.all([
+    fb('GET','/mafia2/roles'),fb('GET','/mafia2/alive'),fb('GET','/mafia2/round'),
+  ]);
+  if(rolesD)Object.entries(rolesD).forEach(([k,v])=>{rolesMap[decN(k)]=v;});
+  if(aliveD)Object.entries(aliveD).forEach(([k,v])=>{aliveMap[decN(k)]=v;});
+  if(roundD)round=roundD;
+}
+
+async function reconnectHost(phaseD){
+  await reloadHostState();
+  show('s-host');
+  if(phaseD==='night'){
+    enterHostNight();
+  } else if(phaseD==='day'){
+    hShow('h-day');
+    document.getElementById('h-rd').textContent=round;
+    renderAliveList();
+    document.getElementById('h-vote-sec').style.display='none';
+  } else if(phaseD==='vote'){
+    hShow('h-day');
+    document.getElementById('h-rd').textContent=round;
+    renderAliveList();
+    document.getElementById('h-vote-sec').style.display='';
+    stopIvs();ivs.push(setInterval(pollVotes,1000));
+  }
 }
 
 /* ════════════════════════════════
@@ -486,10 +524,26 @@ async function pollPhase(){
       const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
       if(!fetched){stopIvs();renderNotInGame();return;}
       myRole=fetched;
-      showRoleReveal();
-    } else showNightUI();
+    }
+    // Restore any already-submitted night action (reconnect safety)
+    if(myRole==='civilian'){
+      const prev=await fb('GET',`/mafia2/night/suspect/${encN(myName)}`);
+      if(prev)mySuspect=prev;
+    } else {
+      const p={murderer:'/mafia2/night/kill',doctor:'/mafia2/night/save',investigator:'/mafia2/night/inspect'};
+      const prev=await fb('GET',p[myRole]);
+      if(prev)myAction=prev;
+    }
+    // Show role reveal only on a fresh round-1 first connect; skip it on reconnects
+    if(!myAction&&!mySuspect&&round===1) showRoleReveal();
+    else showNightUI();
   } else if(phD==='day') showDayAnn(annD||'');
-  else if(phD==='vote'){myVote=null;showVoteUI();}
+  else if(phD==='vote'){
+    // Restore existing vote on reconnect so player doesn't see the grid again
+    const prev=await fb('GET',`/mafia2/day/votes/${encN(myName)}`);
+    myVote=prev||null;
+    showVoteUI();
+  }
   else if(phD==='ended'&&winner){stopIvs();showPlayerEnd(winner);}
 }
 
