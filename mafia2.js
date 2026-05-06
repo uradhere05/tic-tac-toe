@@ -596,13 +596,15 @@ function showNightUI(){
       </div>`;
     return;
   }
+  // Generic identical screen for all roles — no role name/icon visible during
+  // action selection so bystanders can't tell who has a special role.
   if(myRole==='civilian'){
     if(mySuspect){
       document.getElementById('p-content').innerHTML=`
         <div class="phase-card night">
-          <div class="phase-icon">🕵️</div>
-          <div class="phase-title">Suspicion Noted</div>
-          <div class="phase-desc">You suspect <strong style="color:#FFD200">${mySuspect}</strong>.<br>Keep it to yourself for now.</div>
+          <div class="phase-icon">🌙</div>
+          <div class="phase-title">Choice Made</div>
+          <div class="phase-desc">Waiting for morning…</div>
           <button class="btn btn-secondary" onclick="changeSuspect()"
             style="font-size:.72rem;padding:8px 18px;margin-top:14px">↩ Change</button>
         </div>`;
@@ -611,9 +613,9 @@ function showNightUI(){
     const alive=Object.keys(aliveMap).filter(n=>aliveMap[n]!==false);
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card night" style="padding:20px 16px;margin-bottom:12px">
-        <div class="rr-icon">🕵️</div>
-        <div class="phase-title" style="font-size:1rem">CIVILIAN</div>
-        <div class="phase-desc">Who do you suspect?</div>
+        <div class="rr-icon">🌙</div>
+        <div class="phase-title" style="font-size:1rem">Night Action</div>
+        <div class="phase-desc">Tap a player</div>
       </div>
       <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
         <div class="ag-card" onclick="submitSuspect('${n}')">
@@ -625,20 +627,19 @@ function showNightUI(){
   if(myAction){
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card night">
-        <div class="phase-icon">${ROLE_CFG[myRole].icon}</div>
-        <div class="phase-title">Action Submitted</div>
-        <div class="phase-desc">You chose <strong style="color:#FFD200">${myAction}</strong>.<br>Wait for morning…</div>
+        <div class="phase-icon">🌙</div>
+        <div class="phase-title">Choice Made</div>
+        <div class="phase-desc">Waiting for morning…</div>
       </div>`;
     return;
   }
   const alive=Object.keys(aliveMap).filter(n=>aliveMap[n]!==false);
   const targets=myRole==='doctor'?alive:alive.filter(n=>n!==myName);
-  const verbs={murderer:'Who do you eliminate?',doctor:'Who do you protect?',investigator:'Who do you investigate?'};
   document.getElementById('p-content').innerHTML=`
     <div class="phase-card night" style="padding:20px 16px;margin-bottom:12px">
-      <div class="rr-icon">${ROLE_CFG[myRole].icon}</div>
-      <div class="phase-title" style="font-size:1rem">${myRole.toUpperCase()}</div>
-      <div class="phase-desc">${verbs[myRole]}</div>
+      <div class="rr-icon">🌙</div>
+      <div class="phase-title" style="font-size:1rem">Night Action</div>
+      <div class="phase-desc">Tap a player</div>
     </div>
     <div class="action-grid">${targets.map(n=>`
       <div class="ag-card" onclick="submitAction('${n}')">
