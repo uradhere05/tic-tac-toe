@@ -194,10 +194,10 @@ async function toggleReady(){
 }
 
 async function proceedToAssign(){
-  // Snapshot ready players
+  // Snapshot ready players — host is spectator, not a game player
   rolesMap={};
   Object.values(lobbyPlayers)
-    .filter(p=>p&&p.name&&p.ready)
+    .filter(p=>p&&p.name&&p.ready&&p.name!==hostName)
     .forEach(p=>rolesMap[p.name]='');
   await fb('PUT','/mafia2/phase','assigning');
   stopIvs();
@@ -353,16 +353,20 @@ async function pollVotes(){
   const votes=await fb('GET','/mafia2/day/votes');
   if(!votes){document.getElementById('h-tally').innerHTML='<div style="opacity:.4;font-size:.83rem">No votes yet…</div>';return;}
   const tally={};
-  Object.values(votes).filter(Boolean).forEach(t=>tally[t]=(tally[t]||0)+1);
-  document.getElementById('h-tally').innerHTML=Object.entries(tally).sort(([,a],[,b])=>b-a)
-    .map(([n,c])=>`<div class="vt-row"><span>${AMAP[n]||''} ${n}</span><span class="vt-count">${c} vote${c!==1?'s':''}</span></div>`).join('')
-    ||'<div style="opacity:.4;font-size:.83rem">No votes yet…</div>';
+  let deferCount=0;
+  Object.values(votes).filter(Boolean).forEach(t=>{
+    if(t==='defer'){deferCount++;} else {tally[t]=(tally[t]||0)+1;}
+  });
+  const tallyHtml=Object.entries(tally).sort(([,a],[,b])=>b-a)
+    .map(([n,c])=>`<div class="vt-row"><span>${AMAP[n]||''} ${n}</span><span class="vt-count">${c} vote${c!==1?'s':''}</span></div>`).join('');
+  const deferHtml=deferCount?`<div class="vt-row" style="opacity:.5"><span>⏭️ Deferred</span><span class="vt-count">${deferCount}</span></div>`:'';
+  document.getElementById('h-tally').innerHTML=tallyHtml+deferHtml||'<div style="opacity:.4;font-size:.83rem">No votes yet…</div>';
 }
 
 async function hostResolveVote(){
   const votes=await fb('GET','/mafia2/day/votes')||{};
   const tally={};
-  Object.values(votes).filter(Boolean).forEach(t=>tally[t]=(tally[t]||0)+1);
+  Object.values(votes).filter(t=>t&&t!=='defer').forEach(t=>tally[t]=(tally[t]||0)+1);
   let elim=null;
   if(Object.keys(tally).length){
     const max=Math.max(...Object.values(tally));
@@ -509,7 +513,7 @@ function showNightUI(){
       </div>`;
     return;
   }
-  const alive=NAMES.filter(n=>aliveMap[n]!==false);
+  const alive=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
   const targets=myRole==='doctor'?alive:alive.filter(n=>n!==myName);
   const verbs={murderer:'Who do you eliminate?',doctor:'Who do you protect?',investigator:'Who do you investigate?'};
   document.getElementById('p-content').innerHTML=`
@@ -544,43 +548,57 @@ function showDayAnn(ann){
 }
 
 function showVoteUI(){
-  const alive=NAMES.filter(n=>aliveMap[n]!==false);
+  const alive=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
   const amAlive=aliveMap[myName]!==false;
   if(!amAlive){
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card">
         <div class="phase-icon">👻</div>
         <div class="phase-title">You Are Dead</div>
-        <div class="phase-desc">Watch as the living decide who to eliminate.</div>
+        <div class="phase-desc">Watch as the living vote.</div>
       </div>`;
     return;
   }
   if(myVote){
+    const deferred=myVote==='defer';
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card day">
-        <div class="phase-icon">🗳️</div>
-        <div class="phase-title">Vote Cast</div>
-        <div class="phase-desc">You voted for <strong style="color:#FFD200">${myVote}</strong>.<br>Waiting for the host to resolve…</div>
+        <div class="phase-icon">${deferred?'⏭️':'🗳️'}</div>
+        <div class="phase-title">${deferred?'Deferred':'Vote Cast'}</div>
+        <div class="phase-desc">${deferred
+          ?'You chose not to vote this round.'
+          :`You voted for <strong style="color:#FFD200">${myVote}</strong>.`}<br>
+          Waiting for the host to resolve…</div>
+        <button class="btn btn-secondary" onclick="changeVote()"
+          style="font-size:.72rem;padding:8px 18px;margin-top:14px">↩ Change Vote</button>
       </div>`;
     return;
   }
+  const candidates=alive.filter(n=>n!==myName);
   document.getElementById('p-content').innerHTML=`
     <div class="phase-card day" style="padding:20px 16px;margin-bottom:12px">
       <div class="phase-icon">🗳️</div>
       <div class="phase-title" style="font-size:1.1rem">Vote to Eliminate</div>
       <div class="phase-desc">Who is the murderer?</div>
     </div>
-    <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
+    <div class="action-grid">${candidates.map(n=>`
       <div class="ag-card" onclick="submitVote('${n}')">
         <div class="ag-av">${AMAP[n]||'👤'}</div>
         <div class="ag-name">${n}</div>
-      </div>`).join('')}</div>`;
+      </div>`).join('')}</div>
+    <button class="btn btn-secondary w100" onclick="submitVote('defer')"
+      style="margin-top:8px;max-width:400px">⏭️ Defer — I pass this round</button>`;
 }
 
 async function submitVote(target){
   myVote=target;
   await fb('PUT',`/mafia2/day/votes/${encN(myName)}`,target);
   showVoteUI();snd('click');
+}
+
+function changeVote(){
+  myVote=null;
+  showVoteUI();
 }
 
 async function showPlayerEnd(winner){
