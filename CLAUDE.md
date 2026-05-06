@@ -20,7 +20,6 @@ No build step or server required — open any HTML file directly in a browser:
 
 ```
 open index.html            # main lobby / arena
-open mafia.html            # Filogang Mafia — Free-Play (Room 7)
 open "mafia2.html?host"    # Mafia Host-Run — GM console (Room 8, host)
 open mafia2.html           # Mafia Host-Run — player view
 open pong.html             # Pickelbol (Rooms 5–6)
@@ -59,44 +58,9 @@ Main entry point. Shows all 8 rooms; clicking a room navigates to the appropriat
 
 ---
 
-### `mafia.html` + `mafia.js` — Filogang Mafia (Room 7)
-
-Multiplayer social deduction game for 5–10 players. Two files: `mafia.html` (HTML + CSS, ~280 lines) and `mafia.js` (game logic, ~560 lines).
-
-**No external dependencies** — Firebase REST API + Web Audio API only.
-
-**Roles:** Murderer (1), Detective (1 if 8+ players), Innocents (remainder). Randomly assigned by host.
-
-**Flow:** Name screen → Lobby (ready up) → Role reveal (5s) → Game canvas → Meeting overlay → End screen
-
-**Canvas map — Bloodmoor Manor:** 5 rooms as percentage-based rectangles on a full-viewport canvas (Foyer, Library, Ballroom, Kitchen, Basement + corridors). Movement: WASD + arrow keys + D-pad. Wall collision with sliding.
-
-**Firebase paths (all under `/mafia/`):**
-- `/mafia/lobby/<name>` — `{name, ready, ts}`
-- `/mafia/host` — string
-- `/mafia/state` — `"lobby" | "playing" | "meeting" | "ended"`
-- `/mafia/roles/<name>` — `"murderer" | "innocent" | "detective"` (each player reads only their own)
-- `/mafia/alive/<name>` — bool
-- `/mafia/pos/<name>` — `{x, y, ts}` written every 300ms, polled every 500ms
-- `/mafia/bodies/<id>` — `{victim, x, y, ts}`
-- `/mafia/killCd/<name>` — timestamp when 25s kill cooldown expires
-- `/mafia/meeting` — `{trigger, by, victim, startedAt, votes, chat, result}`
-- `/mafia/winner` — `"murderer" | "innocents"`
-- `/mafia/allRoles` — full role map written on game end for reveal
-
-**Meeting flow:** 45s discussion → 30s voting → 6s result. Server-synced via `startedAt`. Alphabetically-first alive player writes vote result; all clients react identically.
-
-**Win conditions:**
-- Murderer wins: alive murderers ≥ alive innocents (checked after every kill)
-- Innocents win: murderer voted out
-
-**Key constants:** `KILL_R=70px`, `RPT_R=100px`, `KILL_CD=25s`, `DISC=45s`, `VOTE=30s`, `RSLT=6s`.
-
----
-
 ### `mafia2.html` + `mafia2.js` — Mafia: Host-Run (Room 8)
 
-Face-to-face version for in-person play. One device is the GM console; each player has their own device. Two files: `mafia2.html` (HTML + CSS, ~216 lines) and `mafia2.js` (game logic, ~410 lines).
+Face-to-face version for in-person play. One device is the GM console; each player has their own device. Two files: `mafia2.html` (HTML + CSS, ~293 lines) and `mafia2.js` (game logic, ~753 lines).
 
 **Two views from one URL:**
 - `mafia2.html?host` → Host GM console (full visibility, controls all phases)
