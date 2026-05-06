@@ -8,6 +8,7 @@ const CMAP=Object.fromEntries(NAMES.map((n,i)=>[n,COLORS[i]]));
 const AMAP=Object.fromEntries(NAMES.map((n,i)=>[n,AVATARS[i]]));
 const SPEED=3.5,PR=14,KILL_R=70,RPT_R=100,KILL_CD=25000;
 const DISC=45,VOTE=30,RSLT=6;
+const LOBBY_STALE=75000;
 
 /* ─── Canvas ─── */
 const canvas=document.getElementById('game-canvas');
@@ -52,6 +53,7 @@ async function selectName(name){
   show('s-lobby');
   stopIvs();
   ivs.push(setInterval(pollLobby,1500));
+  ivs.push(setInterval(()=>fb('PATCH',`/mafia/lobby/${encN(myName)}`,{ts:Date.now()}),20000));
   pollLobby();
 }
 
@@ -79,7 +81,8 @@ async function toggleReady(){
 
 async function hostStart(){
   const lobby=await fb('GET','/mafia/lobby')||{};
-  const vals=Object.values(lobby).filter(v=>v&&v.name);
+  const now=Date.now();
+  const vals=Object.values(lobby).filter(v=>v&&v.name&&now-v.ts<LOBBY_STALE);
   if(vals.length<5){toast('Need at least 5 players!');return;}
   if(vals.some(v=>!v.ready)){toast('Not everyone is ready!');return;}
   players=vals.map(v=>v.name);
@@ -110,7 +113,8 @@ async function pollLobby(){
   const [lobby,state]=await Promise.all([fb('GET','/mafia/lobby'),fb('GET','/mafia/state')]);
   if(!lobby) return;
   if(state==='playing'){stopIvs();beginGame();return;}
-  const vals=Object.values(lobby).filter(v=>v&&v.name);
+  const now=Date.now();
+  const vals=Object.values(lobby).filter(v=>v&&v.name&&now-v.ts<LOBBY_STALE);
   renderLobby(vals);
   updateNameCards(vals.map(v=>v.name));
 }

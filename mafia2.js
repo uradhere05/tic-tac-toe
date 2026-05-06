@@ -123,10 +123,10 @@ async function lobbyTick(){
     .filter(([,v])=>v&&(now-v.ts<75000))
     .map(([k])=>decN(k)):[];
 
-  // Build lobby player list
+  // Build lobby player list — exclude players not seen online within 75s
   lobbyPlayers=lobbyD||{};
   const players=Object.values(lobbyPlayers)
-    .filter(p=>p&&p.name)
+    .filter(p=>p&&p.name&&online.includes(p.name))
     .sort((a,b)=>a.name.localeCompare(b.name));
 
   hostName=hostD||'';
@@ -203,9 +203,10 @@ async function toggleReady(){
 async function proceedToAssign(){
   // Fetch fresh lobby state so no last-second ready is missed
   const freshLobby=await fb('GET','/mafia2/lobby')||{};
+  const _now=Date.now();
   rolesMap={};
   Object.values(freshLobby)
-    .filter(p=>p&&p.name&&p.ready&&p.name!==hostName)
+    .filter(p=>p&&p.name&&p.ready&&p.name!==hostName&&_now-p.ts<75000)
     .forEach(p=>rolesMap[p.name]='');
   await fb('PUT','/mafia2/phase','assigning');
   stopIvs();
