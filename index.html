@@ -145,6 +145,39 @@
     @keyframes waitpulse { 0%,100% { border-color: rgba(255,210,0,0.3); box-shadow: 0 0 0 0 rgba(255,210,0,0.08); } 50% { border-color: rgba(255,210,0,0.75); box-shadow: 0 0 14px 3px rgba(255,210,0,0.18); } }
     .room-card.waiting { animation: waitpulse 1.6s ease-in-out infinite; }
     .room-card.full { cursor: not-allowed; opacity: 0.5; pointer-events: none; border-color: rgba(255,80,80,0.28); }
+
+    /* ── Poker Coming Soon card ── */
+    .room-card-poker {
+      background: linear-gradient(160deg, rgba(0,35,12,0.92) 0%, rgba(2,18,8,0.97) 100%);
+      border: 1px solid rgba(50,180,80,0.35);
+      border-radius: 14px; padding: 16px 10px; text-align: center;
+      cursor: not-allowed; pointer-events: none;
+      position: relative; overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(80,200,100,0.1), 0 0 18px rgba(30,120,50,0.12);
+    }
+    .room-card-poker::before {
+      content: '♠  ♣  ♥  ♦';
+      position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+      font-size: 0.6rem; letter-spacing: 3px; opacity: 0.13; pointer-events: none;
+      white-space: nowrap;
+    }
+    .room-card-poker::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(60,200,80,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .poker-num   { font-size: 2rem; font-weight: 900; line-height: 1;
+                   color: #4caf50; text-shadow: 0 0 14px rgba(76,175,80,0.55); }
+    .poker-title { font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase;
+                   color: #a5d6a7; opacity: 0.9; margin-top: 5px; }
+    .poker-sub   { font-size: 0.56rem; letter-spacing: 2px; text-transform: uppercase;
+                   color: #81c784; opacity: 0.5; margin-top: 2px; }
+    .poker-cs    { display: inline-block; margin-top: 7px;
+                   background: rgba(255,200,0,0.12); border: 1px solid rgba(255,200,0,0.38);
+                   border-radius: 20px; padding: 3px 10px;
+                   font-size: 0.58rem; letter-spacing: 2px; font-weight: 700;
+                   color: #FFD200; text-transform: uppercase; }
     .room-card.coming-soon { cursor: not-allowed; opacity: 0.6; grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; background: linear-gradient(160deg, rgba(10,10,20,0.8) 0%, rgba(5,5,15,0.95) 100%); border: 1px dashed rgba(255,255,255,0.2); pointer-events: none; }
     .room-card.coming-soon .rn { color: rgba(255,255,255,0.35); text-shadow: none; }
     .room-card.coming-soon .rg { opacity: 0.4; }
@@ -419,10 +452,11 @@
     <div class="room-card" onclick="window.location.href='pong.html?room=6'">
       <div class="rn">6</div><div class="rg">🏓 Pickelbol</div><div class="rl" id="rp-6">Pickelbol Game</div>
     </div>
-    <div class="room-card" style="opacity:0.35;cursor:not-allowed;pointer-events:none">
-      <div class="rn" style="color:#888">7</div>
-      <div class="rg" style="opacity:0.6">🔪 Filo Mafia</div>
-      <div class="rl" id="rp-7" style="color:#ff6666;opacity:1">🚧 Out of Service</div>
+    <div class="room-card-poker">
+      <div class="poker-num">7</div>
+      <div class="poker-title">🃏 Texas Hold'em</div>
+      <div class="poker-sub">Poker</div>
+      <div><span class="poker-cs">🔜 Coming Soon</span></div>
     </div>
     <div class="room-card" onclick="window.location.href='mafia2.html'">
       <div class="rn">8</div>
@@ -519,7 +553,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.64</div>
+  <div class="app-version">v1.65</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
