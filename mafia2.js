@@ -16,7 +16,7 @@ const MIN_READY=5;
 /* ─── State ─── */
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
-let amReady=false,lobbyPlayers={};
+let amReady=false,lobbyPlayers={},lastSave='';
 
 /* ─── Firebase ─── */
 async function fb(method,path,data){
@@ -334,7 +334,7 @@ async function hostStartGame(){
     fb('PUT','/mafia2/roles',roles),fb('PUT','/mafia2/alive',alive),
     fb('PUT','/mafia2/round',1),    fb('DELETE','/mafia2/night'),
     fb('DELETE','/mafia2/day'),     fb('DELETE','/mafia2/winner'),
-    fb('DELETE','/mafia2/announcement'),fb('PUT','/mafia2/phase','night'),
+    fb('DELETE','/mafia2/announcement'),fb('DELETE','/mafia2/lastSave'),fb('PUT','/mafia2/phase','night'),
   ]);
   round=1;stopIvs();show('s-host');enterHostNight();
 }
@@ -404,6 +404,9 @@ async function resolveNight(){
     (killed?`${killed} was found dead.`:'No one was eliminated tonight.');
   if(killed){await fb('PATCH','/mafia2/alive',{[encN(killed)]:false});aliveMap[killed]=false;}
   await fb('PUT','/mafia2/announcement',ann);
+  // Track who the doctor saved so they can't save the same person next round
+  if(saveD) await fb('PUT','/mafia2/lastSave',saveD);
+  else await fb('DELETE','/mafia2/lastSave');
   await fb('PUT','/mafia2/phase','day');
   const w=checkWin();if(w){await endGame(w);return;}
   stopIvs();hShow('h-day');
@@ -559,6 +562,11 @@ async function pollPhase(){
       const prev=await fb('GET',p[myRole]);
       if(prev)myAction=prev;
     }
+    // Doctor: fetch who was saved last round (can't repeat)
+    if(myRole==='doctor'){
+      const ls=await fb('GET','/mafia2/lastSave');
+      lastSave=ls||'';
+    }
     // Show role reveal only on a fresh round-1 first connect; skip it on reconnects
     if(!myAction&&!mySuspect&&round===1) showRoleReveal();
     else showNightUI();
@@ -641,11 +649,19 @@ function showNightUI(){
       <div class="phase-title" style="font-size:1rem">Night Action</div>
       <div class="phase-desc">Tap a player</div>
     </div>
-    <div class="action-grid">${targets.map(n=>`
-      <div class="ag-card" onclick="submitAction('${n}')">
-        <div class="ag-av">${AMAP[n]||'👤'}</div>
-        <div class="ag-name">${n}</div>
-      </div>`).join('')}</div>`;
+    <div class="action-grid">${targets.map(n=>{
+      const blocked=myRole==='doctor'&&n===lastSave;
+      return blocked
+        ?`<div class="ag-card" style="opacity:.3;pointer-events:none">
+            <div class="ag-av">${AMAP[n]||'👤'}</div>
+            <div class="ag-name">${n}</div>
+            <div style="font-size:.58rem;color:#ff6b6b;margin-top:3px">saved last round</div>
+          </div>`
+        :`<div class="ag-card" onclick="submitAction('${n}')">
+            <div class="ag-av">${AMAP[n]||'👤'}</div>
+            <div class="ag-name">${n}</div>
+          </div>`;
+    }).join('')}</div>`;
 }
 
 async function submitAction(target){
