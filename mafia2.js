@@ -513,7 +513,7 @@ function showNightUI(){
       </div>`;
     return;
   }
-  const alive=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
+  const alive=Object.keys(aliveMap).filter(n=>aliveMap[n]!==false);
   const targets=myRole==='doctor'?alive:alive.filter(n=>n!==myName);
   const verbs={murderer:'Who do you eliminate?',doctor:'Who do you protect?',investigator:'Who do you investigate?'};
   document.getElementById('p-content').innerHTML=`
@@ -548,7 +548,7 @@ function showDayAnn(ann){
 }
 
 function showVoteUI(){
-  const alive=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
+  const alive=Object.keys(aliveMap).filter(n=>aliveMap[n]!==false);
   const amAlive=aliveMap[myName]!==false;
   if(!amAlive){
     document.getElementById('p-content').innerHTML=`
