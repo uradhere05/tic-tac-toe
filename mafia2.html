@@ -103,6 +103,22 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .ri-name { flex:1; font-weight:600; font-size:0.9rem; }
 .ri-role { font-size:0.62rem; letter-spacing:2px; text-transform:uppercase; opacity:0.7;
   padding:3px 10px; border-radius:12px; background:rgba(255,255,255,0.08); }
+/* ── Recap ── */
+.recap-wrap { width:100%; max-width:420px; margin-top:14px; }
+.recap-hdr { font-size:.6rem; letter-spacing:3px; text-transform:uppercase; opacity:.4; margin:8px 0 6px; }
+.recap-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; padding:7px 12px;
+  background:rgba(255,255,255,.05); border-radius:8px; margin-bottom:5px; font-size:.8rem; }
+.recap-rn { font-weight:700; opacity:.5; min-width:38px; }
+.recap-kill { color:#ff6b6b; }
+.recap-safe { color:#51cf66; }
+.recap-elim { color:#ffd200; }
+.recap-role-row { display:flex; justify-content:space-between; align-items:center;
+  padding:6px 12px; background:rgba(255,255,255,.04); border-radius:8px; margin-bottom:4px; font-size:.84rem; }
+.recap-badge { font-size:.55rem; letter-spacing:1.5px; text-transform:uppercase; padding:2px 8px; border-radius:20px; font-weight:700; }
+.recap-badge.murderer     { background:rgba(200,0,0,.25);   color:#ff6b6b; border:1px solid rgba(200,0,0,.4); }
+.recap-badge.doctor       { background:rgba(0,160,80,.2);   color:#51cf66; border:1px solid rgba(0,160,80,.35); }
+.recap-badge.investigator { background:rgba(50,100,255,.2); color:#74c0fc; border:1px solid rgba(50,100,255,.35); }
+.recap-badge.civilian     { background:rgba(255,255,255,.07); color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.15); }
 .action-feed { width:100%; max-width:420px; margin-bottom:10px; }
 .act-item { display:flex; align-items:center; gap:10px; padding:10px 14px;
   border-radius:10px; margin-bottom:6px; font-size:0.86rem; }
@@ -273,6 +289,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
     <div class="divider"></div>
     <div class="section-lbl">Full role reveal</div>
     <div class="role-list"  id="h-er"></div>
+    <div id="h-recap"></div>
     <button class="btn btn-secondary w100" style="margin-top:14px" onclick="hostReset()">🔄 Play Again</button>
   </div>
 </div>

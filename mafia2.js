@@ -44,10 +44,45 @@ function init(){
   if(stored){
     myName=stored;
     myAvatar=localStorage.getItem('filoAvatar')||'';
-    if(myAvatar)enterRoleSelect();else showAvatarSelect();
+    if(!myAvatar){showAvatarSelect();return;}
+    checkActiveGame();
   }else{
     window.location.replace('index.html');
   }
+}
+
+async function checkActiveGame(){
+  try{
+    const [phaseD,hostD]=await Promise.all([fb('GET','/mafia2/phase'),fb('GET','/mafia2/host')]);
+    if(phaseD&&phaseD!=='ended'){
+      const iAmHost=hostD===myName;
+      const myRoleInGame=iAmHost?true:await fb('GET',`/mafia2/roles/${encN(myName)}`);
+      if(myRoleInGame){
+        if(iAmHost){isHost=true;hostName=myName;}
+        await writeLobbyPresence();
+        stopIvs();
+        if(phaseD==='assigning'){
+          if(iAmHost){
+            const fl=await fb('GET','/mafia2/lobby')||{};
+            rolesMap={};
+            Object.values(fl).filter(p=>p&&p.name&&p.ready&&p.name!==myName).forEach(p=>rolesMap[p.name]='');
+            show('s-assign');renderAssignScreen();
+          }else{show('s-player');renderWaiting();startPlayerPolling();}
+        }else{
+          if(iAmHost)await reconnectHost(phaseD);
+          else{show('s-player');startPlayerPolling();}
+        }
+        return;
+      }
+    }else if(phaseD==='ended'){
+      const [winner,allRolesD]=await Promise.all([fb('GET','/mafia2/winner'),fb('GET','/mafia2/allRoles')]);
+      if(winner){
+        if(allRolesD){const e=Object.entries(allRolesD).find(([k])=>decN(k)===myName);if(e)myRole=e[1];}
+        show('s-player');showPlayerEnd(winner);return;
+      }
+    }
+  }catch{}
+  enterRoleSelect();
 }
 
 function showAvatarSelect(){
@@ -432,11 +467,12 @@ async function resolveNight(){
   const ann=document.getElementById('h-ann').value.trim()||
     (killed?`${killed} was found dead.`:'No one was eliminated tonight.');
   if(killed){await fb('PATCH','/mafia2/alive',{[encN(killed)]:false});aliveMap[killed]=false;}
-  await fb('PUT','/mafia2/announcement',ann);
-  // Track who the doctor saved so they can't save the same person next round
-  if(saveD) await fb('PUT','/mafia2/lastSave',saveD);
-  else await fb('DELETE','/mafia2/lastSave');
-  await fb('PUT','/mafia2/phase','day');
+  await Promise.all([
+    fb('PUT','/mafia2/announcement',ann),
+    fb('PUT',`/mafia2/history/r${round}`,{killed:killed||null,saved:saveD||null}),
+    saveD?fb('PUT','/mafia2/lastSave',saveD):fb('DELETE','/mafia2/lastSave'),
+    fb('PUT','/mafia2/phase','day'),
+  ]);
   const w=checkWin();if(w){await endGame(w);return;}
   stopIvs();hShow('h-day');
   document.getElementById('h-rd').textContent=round;
@@ -485,7 +521,10 @@ async function hostResolveVote(){
     await fb('PATCH','/mafia2/alive',{[encN(elim)]:false});aliveMap[elim]=false;
     const er=rolesMap[elim];
     toast(`${elim} eliminated — ${er}`);
-    await fb('PUT','/mafia2/announcement',`${elim} was eliminated. They were ${er==='murderer'?'THE MURDERER! 🔪':`a ${er}.`}`);
+    await Promise.all([
+      fb('PUT','/mafia2/announcement',`${elim} was eliminated. They were ${er==='murderer'?'THE MURDERER! 🔪':`a ${er}.`}`),
+      fb('PUT',`/mafia2/history/r${round}/eliminated`,elim),
+    ]);
   } else {
     await fb('PUT','/mafia2/announcement','Tied vote — no one eliminated.');
     toast('Tied — no elimination');
@@ -506,6 +545,32 @@ function checkWin(){
   return null;
 }
 
+async function buildRecapHtml(allRoles,showRoles){
+  const history=await fb('GET','/mafia2/history')||{};
+  const rounds=Object.keys(history).filter(k=>/^r\d+$/.test(k)).sort((a,b)=>+a.slice(1)- +b.slice(1));
+  let html='';
+  if(rounds.length){
+    html+='<div class="recap-hdr">📋 Round History</div>';
+    html+=rounds.map(k=>{
+      const h=history[k]||{};const n=k.slice(1);
+      let row=`<div class="recap-row"><span class="recap-rn">Rd ${n}</span>`;
+      row+=h.killed?`<span class="recap-kill">💀 ${h.killed}</span>`:`<span class="recap-safe">🛡️ No kill</span>`;
+      if(h.eliminated)row+=`<span class="recap-elim">🗳️ ${h.eliminated}</span>`;
+      return row+'</div>';
+    }).join('');
+  }
+  if(showRoles&&allRoles&&Object.keys(allRoles).length){
+    const icons={murderer:'🔪',doctor:'💊',investigator:'🔍',civilian:'👤'};
+    html+='<div class="recap-hdr" style="margin-top:10px">🎭 All Roles</div>';
+    html+=Object.entries(allRoles).map(([k,v])=>`
+      <div class="recap-role-row">
+        <span>${icons[v]||'👤'} ${decN(k)}</span>
+        <span class="recap-badge ${v}">${v}</span>
+      </div>`).join('');
+  }
+  return html?`<div class="recap-wrap">${html}</div>`:'';
+}
+
 async function endGame(winner){
   const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
   await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
@@ -519,6 +584,8 @@ async function endGame(winner){
       <span class="ri-name">${n}</span>
       <span class="ri-role">${r}${aliveMap[n]===false?' · dead':' · survived'}</span>
     </div>`).join('');
+  const recapEl=document.getElementById('h-recap');
+  if(recapEl)recapEl.innerHTML=await buildRecapHtml(allRoles,false);
 }
 
 async function hostReset(){
@@ -779,13 +846,14 @@ function changeVote(){
 
 async function showPlayerEnd(winner){
   const allRoles=await fb('GET','/mafia2/allRoles')||{};
+  if(!myRole){const e=Object.entries(allRoles).find(([k])=>decN(k)===myName);if(e)myRole=e[1];}
   const myWin=(winner==='murderer'&&myRole==='murderer')||(winner==='civilians'&&myRole!=='murderer');
-  const murd=Object.entries(allRoles).map(([k,v])=>({name:decN(k),role:v})).find(x=>x.role==='murderer');
+  const recap=await buildRecapHtml(allRoles,true);
   document.getElementById('p-content').innerHTML=`
     <div class="end-icon">${winner==='murderer'?'🔪':'🛡️'}</div>
     <div class="end-title">${winner==='murderer'?'MURDERER WINS!':'CIVILIANS WIN!'}</div>
     <div class="end-sub">${myWin?'You won! 🎉':'Better luck next time…'}</div>
-    ${murd?`<div class="ann-card" style="margin-top:8px">🔪 The Murderer was <strong>${murd.name}</strong></div>`:''}
+    ${recap}
     <button class="btn btn-secondary" onclick="location.href='index.html'" style="margin-top:14px">↩ Back to Arena</button>`;
 }
 
