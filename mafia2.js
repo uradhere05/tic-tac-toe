@@ -18,7 +18,7 @@ const MIN_READY=5;
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
-let isEnded=false;
+let isEnded=false,myEliminated=false,_lastAutoAnn='';
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -137,7 +137,7 @@ async function joinAsGameMaster(){
    LOBBY
 ════════════════════════════════ */
 async function enterLobby(){
-  amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';
+  amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';myEliminated=false;
   show('s-lobby');
   await writeLobbyPresence();
   startLobbyPolling();
@@ -420,6 +420,7 @@ function enterHostNight(){
   document.getElementById('h-ann').value='';
   document.getElementById('h-result').textContent='Waiting for actions…';
   document.getElementById('h-actions').innerHTML='';
+  _lastAutoAnn='';
   stopIvs();ivs.push(setInterval(pollNightActions,1500));
 }
 
@@ -461,10 +462,9 @@ async function pollNightActions(){
     document.getElementById('h-result').innerHTML=killed
       ?`💀 <b>${escHtml(killed)}</b> will be killed (Doctor did not save).`
       :`🛡️ <b>${escHtml(killD)}</b> targeted but saved by Doctor.`;
-    if(!document.getElementById('h-ann').value)
-      document.getElementById('h-ann').value=killed
-        ?`${killed} was found dead this morning.`
-        :'It was a quiet night. No one was eliminated.';
+    const annEl=document.getElementById('h-ann');
+    const autoAnn=killed?`${killed} was found dead this morning.`:'It was a quiet night. No one was eliminated.';
+    if(!annEl.value||annEl.value===_lastAutoAnn){annEl.value=autoAnn;_lastAutoAnn=autoAnn;}
   } else if(!murd||aliveMap[murd]===false){
     document.getElementById('h-result').textContent='Murderer is dead — resolve immediately.';
     if(!document.getElementById('h-ann').value)
@@ -667,6 +667,7 @@ async function pollPhase(){
     renderWaiting();
   } else if(phD==='night'){
     myAction=null;mySuspect=null;
+    if(aliveMap[myName]===false&&(knownPhase==='vote'||knownPhase==='day')) myEliminated=true;
     myRole=null;
     const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
     if(!fetched){stopIvs();renderNotInGame();return;}
@@ -717,8 +718,8 @@ async function showNightUI(){
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card night">
         <div class="phase-icon">👻</div>
-        <div class="phase-title">You Are Dead</div>
-        <div class="phase-desc">The night carries on without you…</div>
+        <div class="phase-title">${myEliminated?'You Were Eliminated':'You Are Dead'}</div>
+        <div class="phase-desc">${myEliminated?'The town has spoken.':'The night carries on without you…'}</div>
       </div>`;
     return;
   }
