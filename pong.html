@@ -531,11 +531,15 @@
   async function loadOnlineUsers() {
     try { renderOnline(await fetchOnlineNames()); } catch { renderOnline([]); }
   }
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   function renderOnline(names) {
     const el = document.getElementById('ol-pickelbol');
     if (!el) return;
     el.innerHTML = names.length
-      ? `<div class="online-pills">${names.map(n => `<div class="online-pill"><span class="online-dot"></span>${n}</div>`).join('')}</div>`
+      ? `<div class="online-pills">${names.map(n => `<div class="online-pill"><span class="online-dot"></span>${escHtml(n)}</div>`).join('')}</div>`
       : '<div class="online-empty">No one online yet</div>';
   }
 

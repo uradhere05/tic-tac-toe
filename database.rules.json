@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": true,
+
+    "online": {
+      "$name": {
+        ".write": true,
+        ".validate": "newData.val() === null || (newData.hasChildren(['ts']) && newData.child('ts').isNumber())"
+      }
+    },
+
+    "rooms": {
+      "$room": {
+        "$role": {
+          ".write": true,
+          ".validate": "newData.val() === null || (newData.hasChildren(['name','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 30 && newData.child('ts').isNumber())"
+        }
+      }
+    },
+
+    "leaderboard": {
+      "$week": {
+        "$name": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+        }
+      }
+    },
+
+    "chat": {
+      "$ts": {
+        ".write": true,
+        ".validate": "newData.val() === null || (newData.hasChildren(['name','text','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 30 && newData.child('text').isString() && newData.child('text').val().length <= 120 && newData.child('ts').isNumber())"
+      }
+    },
+
+    "mafia2": {
+      ".write": true
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

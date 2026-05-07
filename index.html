@@ -642,7 +642,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.95</div>
+  <div class="app-version">v1.96</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -861,7 +861,7 @@
   function renderOnline(names) {
     const html = names.length
       ? `<div class="online-pills">${names.map(n =>
-          `<div class="online-pill"><span class="online-dot"></span>${n}</div>`
+          `<div class="online-pill"><span class="online-dot"></span>${escHtml(n)}</div>`
         ).join('')}</div>`
       : '<div class="online-empty">No one online yet</div>';
     ['ol-name', 'ol-lobby', 'ol-wait'].forEach(id => {
@@ -969,11 +969,11 @@
       if (!el) continue;
       const card = el.closest('.room-card');
       if (host && guest) {
-        el.innerHTML = `<span class="rp-playing">${host.name} vs ${guest.name}</span>`;
+        el.innerHTML = `<span class="rp-playing">${escHtml(host.name)} vs ${escHtml(guest.name)}</span>`;
         card && card.classList.add('full');
         card && card.classList.remove('waiting');
       } else if (host) {
-        el.innerHTML = `<span class="rp-waiting">${host.name} waiting…</span>`;
+        el.innerHTML = `<span class="rp-waiting">${escHtml(host.name)} waiting…</span>`;
         card && card.classList.remove('full');
         card && card.classList.add('waiting');
       } else {

@@ -40,6 +40,7 @@ const encN=n=>n.replace(/\s/g,'_');
 const decN=k=>k.replace(/_/g,' ');
 
 /* ─── UI helpers ─── */
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 let _tt;
 function toast(m,d=2600){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),d);}
@@ -231,7 +232,7 @@ async function lobbyTick(){
       const isPlayerReady=!!p.ready;
       return`<div class="lp-row${isPlayerReady?' is-ready':''}">
         <span class="lp-av">${getAvatar(p.name)}</span>
-        <span class="lp-name">${p.name}${isOnline?' 🟢':''}</span>
+        <span class="lp-name">${escHtml(p.name)}${isOnline?' 🟢':''}</span>
         <span class="lp-badges">
           ${isPlayerHost?'<span class="lp-badge lp-host-b">👑 Host</span>':''}
           ${isPlayerReady
@@ -435,13 +436,13 @@ async function pollNightActions(){
   const inv =Object.keys(rolesMap).find(n=>rolesMap[n]==='investigator');
   let html='';
   if(murd&&aliveMap[murd]!==false)
-    html+=`<div class="act-item ${killD?'submitted':'pending'}">🔪 <b>${murd}</b>: ${killD?`Kill → <b>${killD}</b>`:'Choosing…'}</div>`;
+    html+=`<div class="act-item ${killD?'submitted':'pending'}">🔪 <b>${escHtml(murd)}</b>: ${killD?`Kill → <b>${escHtml(killD)}</b>`:'Choosing…'}</div>`;
   if(doct&&aliveMap[doct]!==false)
-    html+=`<div class="act-item ${saveD?'submitted':'pending'}">💊 <b>${doct}</b>: ${saveD?`Save → <b>${saveD}</b>`:'Choosing…'}</div>`;
+    html+=`<div class="act-item ${saveD?'submitted':'pending'}">💊 <b>${escHtml(doct)}</b>: ${saveD?`Save → <b>${escHtml(saveD)}</b>`:'Choosing…'}</div>`;
   if(inv&&aliveMap[inv]!==false){
     let txt='Choosing…';
-    if(inspD){const r=await fb('GET',`/mafia2/roles/${encN(inspD)}`);txt=`Inspect → <b>${inspD}</b> = ${r==='murderer'?'⚠️ MURDERER':'✅ Innocent'}`;}
-    html+=`<div class="act-item ${inspD?'submitted':'pending'}">🔍 <b>${inv}</b>: ${txt}</div>`;
+    if(inspD){const r=await fb('GET',`/mafia2/roles/${encN(inspD)}`);txt=`Inspect → <b>${escHtml(inspD)}</b> = ${r==='murderer'?'⚠️ MURDERER':'✅ Innocent'}`;}
+    html+=`<div class="act-item ${inspD?'submitted':'pending'}">🔍 <b>${escHtml(inv)}</b>: ${txt}</div>`;
   }
   if(!html)html='<div style="opacity:.4;font-size:.83rem">No special roles alive — resolve now.</div>';
 
@@ -451,7 +452,7 @@ async function pollNightActions(){
     html+='<div style="opacity:.4;font-size:.6rem;letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">Civilian predictions — who dies tonight?</div>';
     aliveCivs.forEach(name=>{
       const s=suspectD?suspectD[encN(name)]:null;
-      html+=`<div class="act-item ${s?'submitted':'pending'}">🕵️ <b>${name}</b>: ${s?`predicts <b>${s}</b>`:'Thinking…'}</div>`;
+      html+=`<div class="act-item ${s?'submitted':'pending'}">🕵️ <b>${escHtml(name)}</b>: ${s?`predicts <b>${escHtml(s)}</b>`:'Thinking…'}</div>`;
     });
   }
 
@@ -459,8 +460,8 @@ async function pollNightActions(){
   if(killD){
     const killed=saveD===killD?null:killD;
     document.getElementById('h-result').innerHTML=killed
-      ?`💀 <b>${killed}</b> will be killed (Doctor did not save).`
-      :`🛡️ <b>${killD}</b> targeted but saved by Doctor.`;
+      ?`💀 <b>${escHtml(killed)}</b> will be killed (Doctor did not save).`
+      :`🛡️ <b>${escHtml(killD)}</b> targeted but saved by Doctor.`;
     if(!document.getElementById('h-ann').value)
       document.getElementById('h-ann').value=killed
         ?`${killed} was found dead this morning.`
