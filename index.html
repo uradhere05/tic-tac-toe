@@ -642,7 +642,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.88</div>
+  <div class="app-version">v1.89</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -688,6 +688,7 @@
     startOnlinePresence(name);
     show('s-lobby');
     document.getElementById('lobby-greeting').textContent = 'Hi, ' + name + '!';
+    clearMyRoomPresence();
     startPresencePoll();
     loadAndRenderLeaderboard();
   }
@@ -884,6 +885,21 @@
   }
 
   /* ── Firebase — room presence ── */
+  async function clearMyRoomPresence() {
+    if (!myName) return;
+    try {
+      const data = await fetch(`${DB}/rooms.json`).then(r => r.json()) || {};
+      for (let n = 1; n <= 6; n++) {
+        const room = data[`room-${n}`] || {};
+        for (const role of ['host', 'guest']) {
+          if (room[role] && room[role].name === myName) {
+            fetch(`${DB}/rooms/room-${n}/${role}.json`, { method: 'DELETE' });
+          }
+        }
+      }
+    } catch {}
+  }
+
   async function writePresence(roomN, role) {
     try {
       await fetch(`${DB}/rooms/room-${roomN}/${role}.json`, {
@@ -1292,6 +1308,7 @@
     show('s-lobby');
     document.getElementById('lobby-greeting').textContent = 'Hi, ' + myName + '!';
     startOnlinePresence(myName);
+    clearMyRoomPresence();
     startPresencePoll();
     loadAndRenderLeaderboard();
     if (_startScreen === 'lobby') history.replaceState(null, '', 'index.html');
