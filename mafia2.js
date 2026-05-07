@@ -402,13 +402,15 @@ async function hostStartGame(){
   if(!players.length||!players.every(n=>rolesMap[n])) return;
   const roles={},alive={};
   players.forEach(n=>{roles[encN(n)]=rolesMap[n];alive[encN(n)]=true;aliveMap[n]=true;});
+  // Write all game data first, then flip phase so clients never read new phase with stale roles
   await Promise.all([
     fb('PUT','/mafia2/roles',roles),fb('PUT','/mafia2/alive',alive),
     fb('PUT','/mafia2/round',1),    fb('DELETE','/mafia2/night'),
     fb('DELETE','/mafia2/day'),     fb('DELETE','/mafia2/winner'),
-    fb('DELETE','/mafia2/announcement'),fb('DELETE','/mafia2/lastSave'),fb('PUT','/mafia2/phase','night'),
+    fb('DELETE','/mafia2/announcement'),fb('DELETE','/mafia2/lastSave'),
     fb('PUT','/mafia2/avatars',Object.fromEntries(Object.keys(rolesMap).filter(n=>avatarsMap[n]).map(n=>[encN(n),avatarsMap[n]]))),
   ]);
+  await fb('PUT','/mafia2/phase','night');
   round=1;stopIvs();show('s-host');enterHostNight();
 }
 
@@ -665,11 +667,10 @@ async function pollPhase(){
     renderWaiting();
   } else if(phD==='night'){
     myAction=null;mySuspect=null;
-    if(!myRole){
-      const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
-      if(!fetched){stopIvs();renderNotInGame();return;}
-      myRole=fetched;
-    }
+    myRole=null;
+    const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
+    if(!fetched){stopIvs();renderNotInGame();return;}
+    myRole=fetched;
     // Restore any already-submitted night action (reconnect safety)
     if(myRole==='civilian'){
       const prev=await fb('GET',`/mafia2/night/suspect/${encN(myName)}`);
