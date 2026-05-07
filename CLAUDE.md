@@ -52,27 +52,34 @@ Main entry point. Shows all 8 rooms; clicking a room navigates to the appropriat
 - `/rooms/room-N/host` and `/rooms/room-N/guest` — `{name, ts}` room occupancy
 - `/leaderboard/<YYYY-MM-DD>/<name>` — number, weekly win counts (Monday-keyed)
 
-**Leaderboard timezone fix:** Fetches entire `/leaderboard.json` and merges wins from keys within ±1 day of current week to handle UTC-offset drift.
+**Leaderboard:** Weekly board with win bars, silver/bronze rank highlights, animated count rollup, and a "you" badge on the current player's row. `fetchOnlineNames()` auto-purges stale/malformed Firebase entries on every poll. `clearMyRoomPresence()` is called on lobby entry to remove ghost "waiting" status left over from other game pages.
 
-**`WINS_NEED = 2`** — best of 3 (first to 2 game wins). Presence stale after 75s.
+**Encoding:** Online presence keys use `encodeURIComponent(name)` — spaces stored as spaces in Firebase. Never use underscore encoding (`name.replace(/\s/g,'_')`) — this created duplicate keys in the past.
+
+**`WINS_NEED = 2`** — best of 3 (first to 2 game wins). Online presence stale after 75s (`ONLINE_STALE`); room presence stale after 30s (`STALE_MS`).
 
 ---
 
 ### `mafia2.html` + `mafia2.js` — Mafia: Host-Run (Room 8)
 
-Face-to-face version for in-person play. One device is the GM console; each player has their own device. Two files: `mafia2.html` (HTML + CSS, ~293 lines) and `mafia2.js` (game logic, ~753 lines).
+Face-to-face version for in-person play. One device is the GM console; each player has their own device.
+
+**Login guard:** Direct access without a saved `localStorage.filoName` redirects to `index.html`. The old inline name-picker (`s-join`) has been removed.
 
 **Two views from one URL:**
 - `mafia2.html?host` → Host GM console (full visibility, controls all phases)
 - `mafia2.html` → Player screen (role-gated, auto-joined via `localStorage.filoName`)
 
-**Roles:** Murderer (1), Doctor (1), Investigator (1), Civilians (rest). Host selects players, shuffles roles, sees all assignments.
+**Roles:** Murderer (1), Doctor (1), Investigator (1), Civilians (rest). GM manually assigns roles from the assign screen.
 
-**Flow:** Host setup (select players, shuffle) → Night (special roles submit actions; host sees results) → Day (host announces, opens vote) → Vote (players tap a card; host resolves) → repeat until win.
+**Flow:** Role select → Lobby (ready up) → GM assigns roles → Night → Day → Vote → repeat until win.
+
+**Reconnect recovery:** `init()` calls `checkActiveGame()` which checks Firebase on load. If the player is already in a live game, they skip role-select and jump directly to the correct phase screen. Role, action, and vote state are all restored from Firebase.
 
 **Firebase paths (all under `/mafia2/`):**
-- `/mafia2/phase` — `"night" | "day" | "vote" | "ended"`
+- `/mafia2/phase` — `"assigning" | "night" | "day" | "vote" | "ended"`
 - `/mafia2/round` — number
+- `/mafia2/host` — string (GM's name)
 - `/mafia2/roles/<name>` — `"murderer" | "doctor" | "investigator" | "civilian"`
 - `/mafia2/alive/<name>` — bool
 - `/mafia2/night/kill` · `/mafia2/night/save` · `/mafia2/night/inspect` — string (target name)
@@ -82,31 +89,50 @@ Face-to-face version for in-person play. One device is the GM console; each play
 - `/mafia2/announcement` — string (host writes; all players display)
 - `/mafia2/winner` — `"murderer" | "civilians"`
 - `/mafia2/allRoles` — full role map written on game end for reveal
+- `/mafia2/history/r<N>` — `{killed, saved, eliminated}` per-round recap data
+- `/mafia2/lobby/<name>` — `{name, ts, ready, avatar}` lobby presence
 
-**Night resolution (host-side):** kill target + save target → if save === kill, no one dies; otherwise kill target dies. Investigator result shown only to host. Host edits and reads announcement aloud. After resolution, save target is written to `/mafia2/lastSave`.
+**Night resolution:** kill target + save target → if save === kill, no one dies; otherwise kill target dies. Round history written to `/mafia2/history/rN`. Save target written to `/mafia2/lastSave`.
 
-**Night UI (players):** All players — including special roles — see an identical generic `🌙 Night Action / Tap a player` screen. Role identity is only shown on the private 5-second reveal card at round start. Civilians see `Who do you think will die tonight?` and their prediction is visible to the host.
+**Night UI (players):** Identical generic screen for all roles — role identity only shown on the private 5-second reveal card at round start. Civilians see "Who do you think will die tonight?".
 
-**Doctor constraint:** Cannot save the same player two rounds in a row. The previously saved player appears grayed out with "saved last round" on the doctor's action grid.
+**Doctor constraint:** Cannot save the same player two rounds in a row.
 
 **Win conditions:**
-- Murderer wins: alive murderers ≥ alive civilians (civs ≤ 1)
+- Murderer wins: alive civilians ≤ 1
 - Civilians win: murderer voted out
 
-**Key fixes:**
-- Player selector uses `<div onclick>` not `<label><input>` — label+input caused double-toggle (browser fires onclick twice per tap).
-- Night action screen is role-neutral so no player can be identified as a special role by observers.
+**Post-game recap:** `buildRecapHtml()` fetches `/mafia2/history` and `/mafia2/allRoles` and renders a round-by-round timeline plus full role reveal. Shown to all players (host and players) at game end.
+
+**Leaderboard integration:** `endGame()` calls `recordWin()` for each winner. Civilians win → all non-murderer players +1. Murderer wins → murderer +1. Uses same `/leaderboard/<YYYY-MM-DD>/<name>` path as other games.
+
+**Key implementation notes:**
+- Player selector uses `<div onclick>` not `<label><input>` — label+input caused double-toggle.
+- Night action screen is role-neutral so observers cannot identify special roles.
+- `beforeunload` deletes `/online/<name>` and `/mafia2/lobby/<name>` on exit.
 
 ---
 
 ### `pong.html` — Pickelbol (Rooms 5–6)
 
-PeerJS-based 2-player Pong variant. Room via `?room=N` query param.
+PeerJS-based 2-player Pong variant. Room via `?room=N` query param. First to `WINS_NEED = 5` wins.
+
+**Login guard:** Redirects to `index.html` if no `localStorage.filoName`.
+
+**Rematch:** Champion screen shows `🔄 Rematch`. Two-click handshake: first click sends `rematch-req` and shows "Waiting for opponent…" toast; game only resets when both players click (`rematch-ok` completes the handshake).
+
+---
 
 ### `connect5.html` — Streytlima Connect 5 (Rooms 3–4)
 
 PeerJS-based 2-player Connect 5. Room via `?room=N` query param.
 
+**Login guard:** Redirects to `index.html` if no `localStorage.filoName`.
+
+**Rematch:** Champion screen shows `🔄 Rematch`. Uses the `requestRestart()` two-click handshake.
+
+---
+
 ### `tictactoe.html` — Solo/AI Tictactoe
 
-Standalone: 2-player local or vs-AI (minimax). No Firebase or PeerJS.
+Standalone: 2-player local or vs-AI (minimax). No Firebase or PeerJS. No login guard needed.
