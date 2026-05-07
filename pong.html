@@ -806,10 +806,14 @@
           (mySide === 'right' && scores.right >= WINS_NEED)
         );
         break;
-      case 'rematch':
-        if (wantsRematch) { doRematch(); }
-        else { wantsRematch = true; send({ type: 'rematch' }); doRematch(); }
+      case 'rematch-req':
+        wantsRematch = true;
+        toast('Opponent wants a rematch — tap 🔄 Rematch!');
         break;
+      case 'rematch-ok':
+        doRematch();
+        break;
+      case 'rematch': doRematch(); break;
     }
   }
 
@@ -943,8 +947,8 @@
   }
 
   function requestRematch() {
-    if (wantsRematch) { doRematch(); send({ type: 'rematch' }); }
-    else { wantsRematch = true; send({ type: 'rematch' }); toast('Waiting for opponent…'); }
+    if (wantsRematch) { doRematch(); send({ type: 'rematch-ok' }); }
+    else { wantsRematch = true; send({ type: 'rematch-req' }); toast('Waiting for opponent…'); }
   }
 
   function doRematch() {
