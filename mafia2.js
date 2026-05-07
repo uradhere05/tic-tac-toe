@@ -18,7 +18,7 @@ const MIN_READY=5;
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
-let isEnded=false,myEliminated=false,_lastAutoAnn='',_aliveAtVoteStart=true;
+let isEnded=false,myEliminated=false,_lastAutoAnn='';
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -137,7 +137,7 @@ async function joinAsGameMaster(){
    LOBBY
 ════════════════════════════════ */
 async function enterLobby(){
-  amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';myEliminated=false;_aliveAtVoteStart=true;
+  amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';myEliminated=false;
   show('s-lobby');
   await writeLobbyPresence();
   startLobbyPolling();
@@ -537,6 +537,7 @@ async function hostResolveVote(){
     await Promise.all([
       fb('PUT','/mafia2/announcement',`${elim} was eliminated. They were ${er==='murderer'?'THE MURDERER! 🔪':`a ${er}.`}`),
       fb('PUT',`/mafia2/history/r${round}/eliminated`,elim),
+      fb('PUT',`/mafia2/eliminatedByVote/${encN(elim)}`,true),
     ]);
   } else {
     await fb('PUT','/mafia2/announcement','Tied vote — no one eliminated.');
@@ -685,7 +686,10 @@ async function pollPhase(){
     renderWaiting();
   } else if(phD==='night'){
     myAction=null;mySuspect=null;
-    if(aliveMap[myName]===false&&prevPhase==='vote'&&_aliveAtVoteStart) myEliminated=true;
+    if(aliveMap[myName]===false&&!myEliminated){
+      const wasVoted=await fb('GET',`/mafia2/eliminatedByVote/${encN(myName)}`);
+      if(wasVoted) myEliminated=true;
+    }
     myRole=null;
     const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
     if(!fetched){stopIvs();renderNotInGame();return;}
@@ -717,7 +721,6 @@ async function pollPhase(){
         </div>`;
     } else showDayAnn(annD||'');
   } else if(phD==='vote'){
-    _aliveAtVoteStart=aliveMap[myName]!==false;
     // Restore existing vote on reconnect so player doesn't see the grid again
     const prev=await fb('GET',`/mafia2/day/votes/${encN(myName)}`);
     myVote=prev||null;
