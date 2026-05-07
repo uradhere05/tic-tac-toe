@@ -642,7 +642,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.89</div>
+  <div class="app-version">v1.90</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -843,9 +843,15 @@
   async function fetchOnlineNames() {
     const data = await fetch(`${DB}/online.json`).then(r => r.json()).catch(() => ({})) || {};
     const now = Date.now();
-    return Object.entries(data)
-      .filter(([, v]) => v && (now - v.ts < ONLINE_STALE))
-      .map(([n]) => { try { return decodeURIComponent(n); } catch { return n; } });
+    const active = [];
+    for (const [k, v] of Object.entries(data)) {
+      if (!v || typeof v !== 'object' || !v.ts || (now - v.ts >= ONLINE_STALE)) {
+        fetch(`${DB}/online/${encodeURIComponent(k)}.json`, { method: 'DELETE' });
+      } else {
+        try { active.push(decodeURIComponent(k)); } catch { active.push(k); }
+      }
+    }
+    return active;
   }
 
   async function loadOnlineUsers() {

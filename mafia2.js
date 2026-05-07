@@ -105,7 +105,7 @@ async function writeLobbyPresence(){
   const ts=Date.now();
   await Promise.all([
     fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts,ready:amReady,avatar:myAvatar}),
-    fb('PUT',`/online/${encN(myName)}`,{ts}),
+    fb('PUT',`/online/${encodeURIComponent(myName)}`,{ts}),
   ]);
 }
 
@@ -797,4 +797,11 @@ function snd(type){
 }
 
 /* ─── Init ─── */
+window.addEventListener('beforeunload', () => {
+  if (myName) {
+    fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
+    fetch(`${DB}/mafia2/lobby/${encN(myName)}.json`, { method: 'DELETE', keepalive: true });
+  }
+});
+
 init();
