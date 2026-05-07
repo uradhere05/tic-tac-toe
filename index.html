@@ -358,11 +358,25 @@
     /* ── Leaderboard ── */
     .lb-section { width: 100%; margin-top: 22px; }
     .lb-title { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
-    .lb-row { display: flex; align-items: center; padding: 9px 14px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 6px; }
-    .lb-row.gold { background: rgba(255,210,0,0.1); border: 1px solid rgba(255,210,0,0.22); }
-    .lb-rank { font-size: 0.9rem; min-width: 28px; }
-    .lb-name { font-size: 0.88rem; font-weight: 600; flex: 1; margin-left: 6px; }
-    .lb-wins { font-size: 1rem; font-weight: 700; color: #ffd200; }
+    .lb-row { display: flex; align-items: center; padding: 9px 14px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 6px; gap: 8px; }
+    .lb-row.gold   { background: rgba(255,210,0,0.10); border: 1px solid rgba(255,210,0,0.28); }
+    .lb-row.silver { background: rgba(180,200,220,0.07); border: 1px solid rgba(180,200,220,0.2); }
+    .lb-row.bronze { background: rgba(180,100,40,0.07);  border: 1px solid rgba(180,100,40,0.2); }
+    .lb-row.me     { box-shadow: 0 0 0 1.5px rgba(140,80,255,0.55), 0 0 12px rgba(140,80,255,0.18); }
+    .lb-rank { font-size: 1.1rem; min-width: 26px; text-align: center; line-height: 1; }
+    .lb-row:not(.gold):not(.silver):not(.bronze) .lb-rank { font-size: 0.78rem; opacity: 0.5; }
+    .lb-mid  { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .lb-name { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+    .lb-you  { font-size: 0.52rem; letter-spacing: 1.5px; text-transform: uppercase; background: rgba(140,80,255,0.25); border: 1px solid rgba(160,100,255,0.4); border-radius: 20px; padding: 1px 7px; color: #c4a0ff; font-weight: 700; flex-shrink: 0; }
+    .lb-bar-track { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+    .lb-bar-fill  { height: 100%; border-radius: 2px; width: 0%; transition: width 0.65s cubic-bezier(0.16,1,0.3,1); }
+    .lb-row.gold   .lb-bar-fill { background: linear-gradient(90deg,#f7971e,#ffd200); }
+    .lb-row.silver .lb-bar-fill { background: linear-gradient(90deg,#7aa,#c8d8e8); }
+    .lb-row.bronze .lb-bar-fill { background: linear-gradient(90deg,#b46428,#e8935a); }
+    .lb-row:not(.gold):not(.silver):not(.bronze) .lb-bar-fill { background: rgba(255,255,255,0.22); }
+    .lb-wins { font-size: 0.92rem; font-weight: 700; color: #ffd200; white-space: nowrap; min-width: 48px; text-align: right; }
+    .lb-row.silver .lb-wins { color: #c8d8e8; }
+    .lb-row.bronze .lb-wins { color: #e8935a; }
     .lb-empty { font-size: 0.75rem; opacity: 0.3; text-align: center; letter-spacing: 1px; padding: 14px 0; }
 
     /* ── Online now ── */
@@ -628,7 +642,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.86</div>
+  <div class="app-version">v1.87</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -739,16 +753,41 @@
       }
 
       const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+      const maxWins = sorted.length ? sorted[0][1] : 1;
       const medals = ['🥇','🥈','🥉'];
+      const rankClasses = ['gold', 'silver', 'bronze'];
       const html = sorted.length
-        ? sorted.map(([name, w], i) =>
-            `<div class="lb-row ${i===0?'gold':''}">
-              <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
-              <span class="lb-name">${name}</span>
-              <span class="lb-wins">${w} win${w!==1?'s':''}</span>
-            </div>`).join('')
+        ? sorted.map(([name, w], i) => {
+            const pct = Math.round((w / maxWins) * 100);
+            const isMe = name === myName;
+            const rc = rankClasses[i] || '';
+            return `<div class="lb-row${rc ? ' ' + rc : ''}${isMe ? ' me' : ''}">
+              <span class="lb-rank">${medals[i] || (i + 1) + '.'}</span>
+              <div class="lb-mid">
+                <span class="lb-name">${name}${isMe ? ' <span class="lb-you">you</span>' : ''}</span>
+                <div class="lb-bar-track"><div class="lb-bar-fill" data-pct="${pct}"></div></div>
+              </div>
+              <span class="lb-wins" data-target="${w}">0</span>
+            </div>`;
+          }).join('')
         : '<div class="lb-empty">No wins yet this week</div>';
       listEls.forEach(el => el.innerHTML = html);
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.lb-bar-fill[data-pct]').forEach(el => {
+          el.style.width = el.dataset.pct + '%';
+        });
+        document.querySelectorAll('.lb-wins[data-target]').forEach(el => {
+          const target = parseInt(el.dataset.target, 10);
+          if (!target) { el.textContent = '0 wins'; return; }
+          let cur = 0;
+          const step = Math.max(1, Math.ceil(target / 20));
+          const iv = setInterval(() => {
+            cur = Math.min(cur + step, target);
+            el.textContent = cur + (cur !== 1 ? ' wins' : ' win');
+            if (cur >= target) clearInterval(iv);
+          }, 40);
+        });
+      });
     } catch { listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'); }
   }
 
