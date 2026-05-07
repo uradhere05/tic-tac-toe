@@ -518,9 +518,14 @@ async function resolveNight(){
 }
 
 function renderAliveList(){
-  document.getElementById('h-alive').innerHTML=Object.keys(rolesMap).map(n=>{
+  const players=Object.keys(rolesMap).sort((a,b)=>{
+    const aAlive=aliveMap[a]!==false, bAlive=aliveMap[b]!==false;
+    if(aAlive!==bAlive) return aAlive?-1:1;
+    return a.localeCompare(b);
+  });
+  document.getElementById('h-alive').innerHTML=players.map(n=>{
     const a=aliveMap[n]!==false;
-    return`<div class="alive-chip${a?'':' dead-chip'}" style="border-color:${CMAP[n]}55;background:${CMAP[n]}18">${getAvatar(n)} ${n}${a?'':' 💀'}</div>`;
+    return`<div class="alive-chip${a?'':' dead-chip'}" style="border-color:${CMAP[n]}55;background:${CMAP[n]}18;${a?'':'opacity:.45'}">${getAvatar(n)} ${n}${a?'':' 💀'}</div>`;
   }).join('');
 }
 
