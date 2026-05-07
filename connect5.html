@@ -3,9 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
   <title>Connect 5 — FILO GANG ARENA</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -220,6 +217,12 @@
   <div class="online-section">
     <div class="online-title">Online Now</div>
     <div id="ol-c5"><div class="online-empty">Checking…</div></div>
+  </div>
+
+  <div class="lb-section" style="margin-top:18px;">
+    <div class="lb-title">Weekly Leaderboard</div>
+    <div class="lb-week" id="lb-week-wait"></div>
+    <div id="lb-list-wait"><div class="lb-empty">Loading…</div></div>
   </div>
 </div>
 
@@ -490,14 +493,21 @@
   let lbLoading = false, lbLastLoad = 0;
   const LB_REFRESH_MS = 5000;
 
+  function _setLbEls(html) {
+    const ids = ['lb-list-champ', 'lb-list-wait'];
+    for (const id of ids) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
+  }
+  function _setWeekEls(label) {
+    const ids = ['lb-week-champ', 'lb-week-wait'];
+    for (const id of ids) { const el = document.getElementById(id); if (el) el.textContent = label; }
+  }
+
   async function loadAndRenderLeaderboard(force = false) {
     if (lbLoading) return;
     if (!force && Date.now() - lbLastLoad < LB_REFRESH_MS) return;
     lbLoading = true;
-    const listEl = document.getElementById('lb-list-champ');
-    const weekEl = document.getElementById('lb-week-champ');
-    if (weekEl) weekEl.textContent = getWeekLabel();
-    if (listEl) listEl.innerHTML = '<div class="lb-empty">Loading…</div>';
+    _setWeekEls(getWeekLabel());
+    _setLbEls('<div class="lb-empty">Loading…</div>');
     try {
       const allData = (await fetch(`${DB}/leaderboard.json`).then(r=>r.json()).catch(()=>({}))) || {};
       const now  = new Date();
@@ -526,10 +536,10 @@
               <span class="lb-wins">${w} win${w!==1?'s':''}</span>
             </div>`).join('')
         : '<div class="lb-empty">No wins yet this week</div>';
-      if (listEl) listEl.innerHTML = html;
+      _setLbEls(html);
       lbLastLoad = Date.now();
     } catch {
-      if (listEl) listEl.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>';
+      _setLbEls('<div class="lb-empty">Could not load leaderboard</div>');
     } finally { lbLoading = false; }
   }
 
@@ -822,6 +832,7 @@
   clearStalePresence();
   startOnlinePresence(myName);
   startOnlinePoll();
+  loadAndRenderLeaderboard(true);
   enterRoom();
 </script>
 </body>
