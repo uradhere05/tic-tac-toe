@@ -637,6 +637,8 @@ function renderNotInGame(){
 ════════════════════════════════ */
 function startPlayerPolling(){
   stopIvs();
+  const badge=document.getElementById('p-name-badge');
+  if(badge&&myName) badge.innerHTML=`<span>${myAvatar||getAvatar(myName)}</span><span>${escHtml(myName)}</span>`;
   ivs.push(setInterval(pollPhase,1500));
 }
 
@@ -878,6 +880,8 @@ function changeVote(){
 }
 
 async function showPlayerEnd(winner){
+  const badge=document.getElementById('p-name-badge');
+  if(badge&&myName&&!badge.textContent) badge.innerHTML=`<span>${myAvatar||getAvatar(myName)}</span><span>${escHtml(myName)}</span>`;
   const allRoles=await fb('GET','/mafia2/allRoles')||{};
   if(!myRole){const e=Object.entries(allRoles).find(([k])=>decN(k)===myName);if(e)myRole=e[1];}
   const myWin=(winner==='murderer'&&myRole==='murderer')||(winner==='civilians'&&myRole!=='murderer');
