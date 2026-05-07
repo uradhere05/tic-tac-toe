@@ -689,8 +689,16 @@ async function pollPhase(){
     // Show role reveal only on a fresh round-1 first connect; skip it on reconnects
     if(!myAction&&!mySuspect&&round===1) showRoleReveal();
     else showNightUI();
-  } else if(phD==='day') showDayAnn(annD||'');
-  else if(phD==='vote'){
+  } else if(phD==='day'){
+    if(aliveMap[myName]===false){
+      document.getElementById('p-content').innerHTML=`
+        <div class="phase-card day">
+          <div class="phase-icon">👻</div>
+          <div class="phase-title">${myEliminated?'You Were Eliminated':'You Are Dead'}</div>
+          <div class="phase-desc">Watch as the town discusses.</div>
+        </div>`;
+    } else showDayAnn(annD||'');
+  } else if(phD==='vote'){
     // Restore existing vote on reconnect so player doesn't see the grid again
     const prev=await fb('GET',`/mafia2/day/votes/${encN(myName)}`);
     myVote=prev||null;
