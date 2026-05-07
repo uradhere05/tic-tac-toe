@@ -383,11 +383,13 @@ async function reconnectHost(phaseD){
     document.getElementById('h-rd').textContent=round;
     renderAliveList();
     document.getElementById('h-vote-sec').style.display='none';
+    document.getElementById('h-open-vote-btn').style.display='';
   } else if(phaseD==='vote'){
     hShow('h-day');
     document.getElementById('h-rd').textContent=round;
     renderAliveList();
     document.getElementById('h-vote-sec').style.display='';
+    document.getElementById('h-open-vote-btn').style.display='none';
     stopIvs();ivs.push(setInterval(pollVotes,1000));
   }
 }
@@ -485,6 +487,7 @@ async function resolveNight(){
   document.getElementById('h-rd').textContent=round;
   renderAliveList();
   document.getElementById('h-vote-sec').style.display='none';
+  document.getElementById('h-open-vote-btn').style.display='';
 }
 
 function renderAliveList(){
@@ -497,6 +500,7 @@ function renderAliveList(){
 async function hostOpenVote(){
   await Promise.all([fb('DELETE','/mafia2/day/votes'),fb('PUT','/mafia2/phase','vote')]);
   document.getElementById('h-vote-sec').style.display='';
+  document.getElementById('h-open-vote-btn').style.display='none';
   stopIvs();ivs.push(setInterval(pollVotes,1000));
 }
 
