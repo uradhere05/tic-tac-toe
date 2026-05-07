@@ -456,7 +456,32 @@ async function pollNightActions(){
     });
   }
 
-  document.getElementById('h-actions').innerHTML=html;
+  // Locked-in summary: one chip per alive player
+  const alivePlayers=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
+  const lockedIn=name=>{
+    const r=rolesMap[name];
+    if(r==='murderer')    return !!killD;
+    if(r==='doctor')      return !!saveD;
+    if(r==='investigator')return !!inspD;
+    return !!(suspectD&&suspectD[encN(name)]);
+  };
+  const doneCount=alivePlayers.filter(lockedIn).length;
+  const chips=alivePlayers.map(n=>{
+    const done=lockedIn(n);
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;margin:2px;
+      background:${done?'rgba(0,180,80,0.15)':'rgba(255,255,255,0.05)'};
+      border:1px solid ${done?'rgba(0,200,80,0.4)':'rgba(255,255,255,0.12)'};
+      color:${done?'#4caf50':'rgba(255,255,255,0.45)'}">
+      ${done?'✅':'⏳'} ${escHtml(n)}
+    </span>`;
+  }).join('');
+  const summary=`<div style="width:100%;margin-bottom:10px">
+    <div style="font-size:.6rem;letter-spacing:2px;text-transform:uppercase;opacity:.4;margin-bottom:5px">
+      Locked in — ${doneCount} / ${alivePlayers.length}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;">${chips}</div>
+  </div>`;
+  document.getElementById('h-actions').innerHTML=summary+html;
   if(killD){
     const killed=saveD===killD?null:killD;
     document.getElementById('h-result').innerHTML=killed
