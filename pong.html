@@ -290,7 +290,7 @@
   <div class="game-title" style="margin-bottom:8px;">🏓 Picklebol Champion!</div>
   <div class="slogan" id="champ-sub" style="margin-bottom:28px;"></div>
   <div class="btn-row" style="width:100%;">
-    <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
+    <button class="btn btn-primary"   onclick="requestRematch()">🔄 Rematch</button>
     <button class="btn btn-secondary" onclick="goHome()">Home</button>
   </div>
 
@@ -331,6 +331,7 @@
   let animFrameId = null;
   let frameCount  = 0;
   let scores = { left: 0, right: 0 };
+  let wantsRematch = false;
 
   function updateFormatBadge() {
     const bestOf = WINS_NEED * 2 - 1;
@@ -806,7 +807,8 @@
         );
         break;
       case 'rematch':
-        doRematch();
+        if (wantsRematch) { doRematch(); }
+        else { wantsRematch = true; send({ type: 'rematch' }); doRematch(); }
         break;
     }
   }
@@ -941,11 +943,12 @@
   }
 
   function requestRematch() {
-    send({ type: 'rematch' });
-    doRematch();
+    if (wantsRematch) { doRematch(); send({ type: 'rematch' }); }
+    else { wantsRematch = true; send({ type: 'rematch' }); toast('Waiting for opponent…'); }
   }
 
   function doRematch() {
+    wantsRematch = false;
     scores = { left: 0, right: 0 };
     refreshScores();
     resetPositions();

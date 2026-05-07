@@ -20,6 +20,17 @@ let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],know
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
 
 /* ─── Firebase ─── */
+function getWeekKey(){
+  const now=new Date();
+  const diff=now.getDay()===0?-6:1-now.getDay();
+  const mon=new Date(now);mon.setDate(now.getDate()+diff);
+  return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
+}
+async function recordWin(name){
+  const url=`${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
+  try{const cur=await fetch(url).then(r=>r.json()).catch(()=>0)||0;await fetch(url,{method:'PUT',body:JSON.stringify(cur+1)});}catch{}
+}
+
 async function fb(method,path,data){
   const opts={method};
   if(data!==undefined){opts.headers={'Content-Type':'application/json'};opts.body=JSON.stringify(data);}
@@ -586,6 +597,11 @@ async function endGame(winner){
     </div>`).join('');
   const recapEl=document.getElementById('h-recap');
   if(recapEl)recapEl.innerHTML=await buildRecapHtml(allRoles,false);
+  const winners=winner==='civilians'
+    ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer')
+    :Object.keys(rolesMap).filter(n=>rolesMap[n]==='murderer');
+  await Promise.all(winners.map(n=>recordWin(n)));
+  toast(`${winners.length} win${winners.length!==1?'s':''} recorded on leaderboard!`);
 }
 
 async function hostReset(){
