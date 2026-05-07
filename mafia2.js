@@ -860,7 +860,7 @@ function showVoteUI(){
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card">
         <div class="phase-icon">👻</div>
-        <div class="phase-title">You Are Dead</div>
+        <div class="phase-title">${myEliminated?'You Were Eliminated':'You Are Dead'}</div>
         <div class="phase-desc">Watch as the living vote.</div>
       </div>`;
     return;
