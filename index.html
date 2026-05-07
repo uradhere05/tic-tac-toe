@@ -642,7 +642,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v1.96</div>
+  <div class="app-version">v1.97</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -929,7 +929,7 @@
     startChatPoll();
   }
 
-  function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; stopChatPoll(); }
+  function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; stopChatPoll(); stopOnlinePoll(); }
 
   async function loadRoomPresence() {
     try {
@@ -1305,7 +1305,9 @@
 
   // Show online users and leaderboard on the name screen immediately
   const _startScreen = new URLSearchParams(window.location.search).get('screen');
-  const _nameFromQuery = new URLSearchParams(window.location.search).get('name');
+  const _VALID_NAMES = new Set(['Kuya AD','Matt','Gianne','Austin','Charm','Kee','Kriselle','Monique','Tiff','Shantelle']);
+  const _rawQuery    = (new URLSearchParams(window.location.search).get('name') || '').trim();
+  const _nameFromQuery = _VALID_NAMES.has(_rawQuery) ? _rawQuery : null;
   const _bootName = (_nameFromQuery || _prevName || '').trim();
   // Auto-restore lobby if player already has a saved name (persists chat + state across refresh)
   if (_bootName) {
@@ -1370,16 +1372,19 @@
     if(!text||!myName){if(!myName)toast('Pick your name first!');return;}
     inp.value='';
     const ts=Date.now();
-    await fetch(`${DB}/chat/${ts}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:myName,text,ts})}).catch(()=>{});
+    const key=`${ts}_${Math.random().toString(36).slice(2,7)}`;
+    await fetch(`${DB}/chat/${key}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:myName,text,ts})}).catch(()=>{});
     loadChat();
-    // Prune messages older than 24h to keep Firebase tidy
+  }
+
+  function pruneChatOnce(){
     fetch(`${DB}/chat.json`).then(r=>r.json()).then(data=>{
       const cutoff=Date.now()-86400000;
       Object.entries(data||{}).forEach(([k,v])=>{if(v&&v.ts<cutoff)fetch(`${DB}/chat/${k}.json`,{method:'DELETE'});});
     }).catch(()=>{});
   }
 
-  function startChatPoll(){loadChat();clearInterval(_chatIv);_chatIv=setInterval(loadChat,2500);}
+  function startChatPoll(){loadChat();clearInterval(_chatIv);_chatIv=setInterval(loadChat,2500);pruneChatOnce();}
   function stopChatPoll(){clearInterval(_chatIv);_chatIv=null;}
 
   /* ── Sound ── */

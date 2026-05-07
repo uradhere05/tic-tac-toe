@@ -18,6 +18,7 @@ const MIN_READY=5;
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
+let isEnded=false;
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -113,12 +114,6 @@ function pickAvatar(av){
   myAvatar=av;
   localStorage.setItem('filoAvatar',av);
   enterRoleSelect();
-}
-
-function joinAs(name){
-  myName=name;localStorage.setItem('filoName',name);
-  myAvatar=localStorage.getItem('filoAvatar')||'';
-  showAvatarSelect();
 }
 
 function enterRoleSelect(){
@@ -333,10 +328,10 @@ function renderAssignScreen(){
           :'<span style="opacity:.3;font-size:.7rem">unassigned</span>'}
       </div>
       <div class="ar-roles">
-        <div class="rb${cur==='murderer'?' on-murderer':''}"     onclick="assignRole('${name}','murderer')">🔪</div>
-        <div class="rb${cur==='doctor'?' on-doctor':''}"         onclick="assignRole('${name}','doctor')">💊</div>
-        <div class="rb${cur==='investigator'?' on-investigator':''}" onclick="assignRole('${name}','investigator')">🔍</div>
-        <div class="rb${cur==='civilian'?' on-civilian':''}"     onclick="assignRole('${name}','civilian')">👤</div>
+        <div class="rb${cur==='murderer'?' on-murderer':''}"     data-name="${escHtml(name)}" data-role="murderer"     onclick="assignRole(this.dataset.name,this.dataset.role)">🔪</div>
+        <div class="rb${cur==='doctor'?' on-doctor':''}"         data-name="${escHtml(name)}" data-role="doctor"       onclick="assignRole(this.dataset.name,this.dataset.role)">💊</div>
+        <div class="rb${cur==='investigator'?' on-investigator':''}" data-name="${escHtml(name)}" data-role="investigator" onclick="assignRole(this.dataset.name,this.dataset.role)">🔍</div>
+        <div class="rb${cur==='civilian'?' on-civilian':''}"     data-name="${escHtml(name)}" data-role="civilian"     onclick="assignRole(this.dataset.name,this.dataset.role)">👤</div>
       </div>
     </div>`;
   }).join('');
@@ -584,6 +579,7 @@ async function buildRecapHtml(allRoles,showRoles){
 }
 
 async function endGame(winner){
+  if(isEnded)return; isEnded=true;
   const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
   await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
   stopIvs();hShow('h-end');
@@ -607,14 +603,15 @@ async function endGame(winner){
 
 async function hostReset(){
   await fb('DELETE','/mafia2');
-  rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;
+  rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
   myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;lobbyPlayers={};
   enterLobby();
 }
 
 async function resetStaleGame(){
+  if(!isHost){const h=await fb('GET','/mafia2/host');if(h&&h!==myName){toast('Only the host can reset the game.');return;}}
   await fb('DELETE','/mafia2');
-  rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;
+  rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
   myRole=null;myAction=null;myVote=null;amReady=false;lobbyPlayers={};
   toast('Game data cleared — lobby is open');
   enterLobby();
@@ -740,9 +737,9 @@ function showNightUI(){
         <div class="phase-desc">Who do you think will die tonight?</div>
       </div>
       <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
-        <div class="ag-card" onclick="submitSuspect('${n}')">
+        <div class="ag-card" data-n="${escHtml(n)}" onclick="submitSuspect(this.dataset.n)">
           <div class="ag-av">${getAvatar(n)}</div>
-          <div class="ag-name">${n}</div>
+          <div class="ag-name">${escHtml(n)}</div>
         </div>`).join('')}</div>`;
     return;
   }
@@ -771,9 +768,9 @@ function showNightUI(){
             <div class="ag-name">${n}</div>
             <div style="font-size:.58rem;color:#ff6b6b;margin-top:3px">saved last round</div>
           </div>`
-        :`<div class="ag-card" onclick="submitAction('${n}')">
+        :`<div class="ag-card" data-n="${escHtml(n)}" onclick="submitAction(this.dataset.n)">
             <div class="ag-av">${getAvatar(n)}</div>
-            <div class="ag-name">${n}</div>
+            <div class="ag-name">${escHtml(n)}</div>
           </div>`;
     }).join('')}</div>`;
 }
@@ -802,7 +799,7 @@ function showDayAnn(ann){
       <div class="phase-icon">☀️</div>
       <div class="phase-title">Morning</div>
     </div>
-    <div class="ann-card">${ann||'The town awakens…'}</div>
+    <div class="ann-card">${escHtml(ann||'The town awakens…')}</div>
     <div style="opacity:.45;font-size:.8rem;text-align:center;letter-spacing:1px;padding:0 8px">
       Discuss with the group.<br>The host will open voting soon.</div>`;
 }
@@ -842,9 +839,9 @@ function showVoteUI(){
       <div class="phase-desc">Who is the murderer?</div>
     </div>
     <div class="action-grid">${candidates.map(n=>`
-      <div class="ag-card" onclick="submitVote('${n}')">
+      <div class="ag-card" data-n="${escHtml(n)}" onclick="submitVote(this.dataset.n)">
         <div class="ag-av">${getAvatar(n)}</div>
-        <div class="ag-name">${n}</div>
+        <div class="ag-name">${escHtml(n)}</div>
       </div>`).join('')}</div>
     <button class="btn btn-secondary w100" onclick="submitVote('defer')"
       style="margin-top:8px;max-width:400px">⏭️ Defer — I pass this round</button>`;
@@ -882,6 +879,12 @@ function snd(type){
 }
 
 /* ─── Init ─── */
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) stopIvs();
+  else if(myName&&document.getElementById('s-lobby')?.classList.contains('active')) startLobbyPolling();
+  else if(myName&&document.getElementById('s-player')?.classList.contains('active')) startPlayerPolling();
+});
+
 window.addEventListener('beforeunload', () => {
   if (myName) {
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });

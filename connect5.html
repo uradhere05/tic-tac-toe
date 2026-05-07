@@ -301,7 +301,6 @@
   let gameOver = false;
   let scores = { X: 0, O: 0 };
   let wantsRestart = false;
-  let over = false;
 
   /* ── Board ── */
   function initBoard() {
@@ -309,7 +308,6 @@
     currentTurn = 'X';
     gameOver = false;
     wantsRestart = false;
-    over = false;
     renderBoard();
     updateStatus();
   }
@@ -335,8 +333,8 @@
   }
 
   function tap(i) {
-    if (gameOver || over || board[i] || currentTurn !== myPiece) {
-      if (!gameOver && !over && !board[i] && currentTurn !== myPiece) {
+    if (gameOver || board[i] || currentTurn !== myPiece) {
+      if (!gameOver && !board[i] && currentTurn !== myPiece) {
         toast("⏳ Wait for opponent's turn!");
       }
       return;
@@ -649,7 +647,8 @@
   function stopWaitHeartbeat() { clearInterval(waitHeartbeat); }
 
   function destroyPeer() {
-    stopHeartbeat(); stopWaitHeartbeat();
+    stopHeartbeat(); stopWaitHeartbeat(); stopOnlinePoll();
+    clearInterval(onlineHeartbeat); onlineHeartbeat = null;
     try { conn && conn.close(); } catch {}
     try { peer && peer.destroy(); } catch {}
     conn = null; peer = null;
@@ -771,7 +770,7 @@
   function onDrop() {
     stopHeartbeat();
     if (myRole) { clearPresence(myRole); myRole = null; }
-    over = true;
+    gameOver = true;
     setConn(false);
     let secs = 5;
     const tick = () => {

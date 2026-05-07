@@ -623,7 +623,9 @@
   function stopWaitHeartbeat() { clearInterval(waitHeartbeat); }
 
   function destroyPeer() {
-    stopHeartbeat(); stopLoop();
+    stopHeartbeat(); stopLoop(); stopOnlinePoll();
+    clearInterval(onlineHeartbeat); onlineHeartbeat = null;
+    wantsRematch = false;
     if (myRole) { clearPresence(myRole); myRole = null; }
     try { conn && conn.close(); } catch {}
     try { peer && peer.destroy(); } catch {}
@@ -734,8 +736,6 @@
   function joinPickelbolRoom() {
     peer = new Peer(PEER_CFG);
     myRole = 'guest';
-    writePresence('guest');
-    startWaitHeartbeat();
 
     const giveUp = setTimeout(() => {
       destroyPeer();
@@ -746,11 +746,13 @@
     peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
 
     peer.on('open', () => {
+      writePresence('guest');
+      startWaitHeartbeat();
       conn = peer.connect(PEER_ID, { reliable: true, serialization: 'json' });
       wireConn();
       conn.on('open', () => {
         clearTimeout(giveUp);
-        writePresence('guest'); // refresh ts now that connection is live
+        writePresence('guest'); // refresh ts on connection live
         startHeartbeat();
       });
     });
