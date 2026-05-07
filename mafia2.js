@@ -533,9 +533,28 @@ async function hostOpenVote(){
 
 async function pollVotes(){
   const votes=await fb('GET','/mafia2/day/votes');
+  const alivePlayers=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
+
+  // Locked-in chips
+  const doneCount=alivePlayers.filter(n=>votes&&votes[encN(n)]).length;
+  const chips=alivePlayers.map(n=>{
+    const done=!!(votes&&votes[encN(n)]);
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;margin:2px;
+      background:${done?'rgba(0,180,80,0.15)':'rgba(255,255,255,0.05)'};
+      border:1px solid ${done?'rgba(0,200,80,0.4)':'rgba(255,255,255,0.12)'};
+      color:${done?'#4caf50':'rgba(255,255,255,0.45)'}">
+      ${done?'✅':'⏳'} ${escHtml(n)}
+    </span>`;
+  }).join('');
+  document.getElementById('h-vote-locked').innerHTML=`
+    <div style="font-size:.6rem;letter-spacing:2px;text-transform:uppercase;opacity:.4;margin-bottom:5px">
+      Voted — ${doneCount} / ${alivePlayers.length}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;margin-bottom:4px">${chips}</div>`;
+
+  // Tally
   if(!votes){document.getElementById('h-tally').innerHTML='<div style="opacity:.4;font-size:.83rem">No votes yet…</div>';return;}
-  const tally={};
-  let deferCount=0;
+  const tally={};let deferCount=0;
   Object.values(votes).filter(Boolean).forEach(t=>{
     if(t==='defer'){deferCount++;} else {tally[t]=(tally[t]||0)+1;}
   });

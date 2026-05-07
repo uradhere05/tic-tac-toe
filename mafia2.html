@@ -277,7 +277,8 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
     <button class="btn btn-blue w100" id="h-open-vote-btn" onclick="hostOpenVote()">🗳 Open Vote</button>
     <div id="h-vote-sec" style="display:none">
       <div class="divider"></div>
-      <div class="section-lbl">Live tally</div>
+      <div id="h-vote-locked"></div>
+      <div class="section-lbl" style="margin-top:10px">Live tally</div>
       <div class="vote-tally" id="h-tally"></div>
       <button class="btn btn-primary w100" style="margin-top:6px" onclick="hostResolveVote()">⚖️ Resolve Vote</button>
     </div>
