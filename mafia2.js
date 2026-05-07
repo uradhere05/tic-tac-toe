@@ -261,8 +261,8 @@ async function lobbyTick(){
   rBtn.textContent=amReady?'⬜ Cancel Ready':'✅ Ready Up';
   rBtn.className='btn w100'+(amReady?' btn-secondary':' btn-primary');
 
-  // Proceed button: host only, when MIN_READY players are ready
-  const canProceed=isHost&&readyCount>=MIN_READY;
+  // Proceed button: host only, when ALL lobby players are ready (minimum MIN_READY)
+  const canProceed=isHost&&players.length>=MIN_READY&&readyCount===players.length;
   const proceedBtn=document.getElementById('lb-proceed-btn');
   proceedBtn.style.display=canProceed?'':'none';
   if(canProceed) proceedBtn.textContent=`▶ Assign Roles (${readyCount} ready)`;
