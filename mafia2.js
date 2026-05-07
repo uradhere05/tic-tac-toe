@@ -607,6 +607,16 @@ async function endGame(winner){
   toast(`${winners.length} win${winners.length!==1?'s':''} recorded on leaderboard!`);
 }
 
+async function endGameEarly(){
+  if(!confirm('End the game and send all players back to lobby?')) return;
+  await fb('PUT','/mafia2/phase','reset');
+  setTimeout(()=>fb('DELETE','/mafia2'),3000);
+  isHost=false;hostName='';rolesMap={};aliveMap={};round=1;
+  knownPhase='';isEnded=false;myRole=null;myAction=null;myVote=null;
+  mySuspect=null;amReady=false;lobbyPlayers={};myEliminated=false;
+  enterLobby();
+}
+
 async function hostReset(){
   await fb('DELETE','/mafia2');
   rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
@@ -664,6 +674,13 @@ async function pollPhase(){
   if(!phD||phD===knownPhase) return;
   const prevPhase=knownPhase;
   knownPhase=phD;
+  if(phD==='reset'){
+    stopIvs();
+    toast('Host ended the game — returning to lobby…',3000);
+    myRole=null;myAction=null;myVote=null;mySuspect=null;myEliminated=false;knownPhase='';
+    setTimeout(enterLobby,1500);
+    return;
+  }
   if(phD==='assigning'){
     renderWaiting();
   } else if(phD==='night'){
