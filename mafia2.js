@@ -746,14 +746,14 @@ async function showNightUI(){
   if(myAction){
     if(myRole==='investigator'){
       const r=await fb('GET',`/mafia2/roles/${encN(myAction)}`);
-      const guilty=r==='murderer';
+      const suspicious=r==='murderer'||r==='doctor';
       document.getElementById('p-content').innerHTML=`
         <div class="phase-card night">
-          <div class="phase-icon">${guilty?'⚠️':'✅'}</div>
-          <div class="phase-title">${guilty?'MURDERER FOUND!':'Innocent'}</div>
+          <div class="phase-icon">${suspicious?'⚠️':'✅'}</div>
+          <div class="phase-title">${suspicious?'Suspicious':'Not Suspicious'}</div>
           <div class="phase-desc">
             <strong style="color:#FFD200">${escHtml(myAction)}</strong>
-            is ${guilty?'<strong style="color:#ff6b6b">the murderer!</strong>':'innocent.'}<br>
+            seems ${suspicious?'<strong style="color:#ff6b6b">suspicious.</strong>':'clear.'}<br>
             <span style="opacity:.55">Keep this to yourself — or not.</span>
           </div>
         </div>`;
