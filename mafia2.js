@@ -45,7 +45,9 @@ function init(){
     myName=stored;
     myAvatar=localStorage.getItem('filoAvatar')||'';
     if(myAvatar)enterRoleSelect();else showAvatarSelect();
-  }else show('s-join');
+  }else{
+    window.location.replace('index.html');
+  }
 }
 
 function showAvatarSelect(){
