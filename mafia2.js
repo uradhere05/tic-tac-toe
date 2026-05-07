@@ -662,12 +662,13 @@ async function pollPhase(){
   if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
   if(roundD)round=roundD;
   if(!phD||phD===knownPhase) return;
+  const prevPhase=knownPhase;
   knownPhase=phD;
   if(phD==='assigning'){
     renderWaiting();
   } else if(phD==='night'){
     myAction=null;mySuspect=null;
-    if(aliveMap[myName]===false&&(knownPhase==='vote'||knownPhase==='day')) myEliminated=true;
+    if(aliveMap[myName]===false&&(prevPhase==='vote'||prevPhase==='day')) myEliminated=true;
     myRole=null;
     const fetched=await fb('GET',`/mafia2/roles/${encN(myName)}`);
     if(!fetched){stopIvs();renderNotInGame();return;}
