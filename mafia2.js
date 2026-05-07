@@ -704,7 +704,7 @@ function showRoleReveal(){
   const t=setInterval(()=>{cd.textContent=`Starting in ${--s}…`;if(s<=0){clearInterval(t);showNightUI();}},1000);
 }
 
-function showNightUI(){
+async function showNightUI(){
   const amAlive=aliveMap[myName]!==false;
   if(!amAlive){
     document.getElementById('p-content').innerHTML=`
@@ -744,6 +744,21 @@ function showNightUI(){
     return;
   }
   if(myAction){
+    if(myRole==='investigator'){
+      const r=await fb('GET',`/mafia2/roles/${encN(myAction)}`);
+      const guilty=r==='murderer';
+      document.getElementById('p-content').innerHTML=`
+        <div class="phase-card night">
+          <div class="phase-icon">${guilty?'⚠️':'✅'}</div>
+          <div class="phase-title">${guilty?'MURDERER FOUND!':'Innocent'}</div>
+          <div class="phase-desc">
+            <strong style="color:#FFD200">${escHtml(myAction)}</strong>
+            is ${guilty?'<strong style="color:#ff6b6b">the murderer!</strong>':'innocent.'}<br>
+            <span style="opacity:.55">Keep this to yourself — or not.</span>
+          </div>
+        </div>`;
+      return;
+    }
     document.getElementById('p-content').innerHTML=`
       <div class="phase-card night">
         <div class="phase-icon">🌙</div>
@@ -880,9 +895,16 @@ function snd(type){
 
 /* ─── Init ─── */
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden) stopIvs();
-  else if(myName&&document.getElementById('s-lobby')?.classList.contains('active')) startLobbyPolling();
-  else if(myName&&document.getElementById('s-player')?.classList.contains('active')) startPlayerPolling();
+  if(document.hidden){stopIvs();return;}
+  if(!myName) return;
+  if(document.getElementById('s-lobby')?.classList.contains('active')) startLobbyPolling();
+  else if(document.getElementById('s-player')?.classList.contains('active')) startPlayerPolling();
+  else if(isHost&&document.getElementById('s-host')?.classList.contains('active')){
+    fb('GET','/mafia2/phase').then(phD=>{
+      if(phD==='night'){stopIvs();ivs.push(setInterval(pollNightActions,1500));}
+      else if(phD==='vote'){stopIvs();ivs.push(setInterval(pollVotes,1000));}
+    });
+  }
 });
 
 window.addEventListener('beforeunload', () => {
