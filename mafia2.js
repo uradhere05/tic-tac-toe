@@ -53,15 +53,25 @@ function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementByI
    ENTRY
 ════════════════════════════════ */
 function init(){
+  const params=new URLSearchParams(location.search);
+  const simName=params.get('simName');
+  const simAvatar=params.get('simAvatar');
+  const autoJoin=params.get('autoJoin');
+  // sim mode: name/avatar from URL so multiple tabs can coexist on same origin
+  if(simName){
+    myName=simName;
+    myAvatar=simAvatar||'🕵️';
+    if(autoJoin==='host'){joinAsGameMaster();return;}
+    joinAsPlayer();return;
+  }
   const stored=localStorage.getItem('filoName');
   if(stored){
     myName=stored;
     myAvatar=localStorage.getItem('filoAvatar')||'🕵️';
     if(!localStorage.getItem('filoAvatar')) localStorage.setItem('filoAvatar',myAvatar);
-    const autoJoin=new URLSearchParams(location.search).get('autoJoin');
     if(autoJoin==='host'){joinAsGameMaster();return;}
     if(autoJoin==='player'){joinAsPlayer();return;}
-    if(!localStorage.getItem('filoAvatar')){showAvatarSelect();return;}
+    if(!myAvatar){showAvatarSelect();return;}
     checkActiveGame();
   }else{
     window.location.replace('index.html');
