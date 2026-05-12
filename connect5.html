@@ -272,7 +272,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-    <div class="app-version">v2.23</div>
+    <div class="app-version">v2.24</div>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
@@ -324,7 +324,7 @@
   }
 
   function updateCellCursors() {
-    const isMyTurn = currentTurn === myPiece && !gameOver && !over;
+    const isMyTurn = currentTurn === myPiece && !gameOver;
     document.querySelectorAll('.c5-cell:not(.taken)').forEach(c => {
       c.classList.toggle('not-your-turn', !isMyTurn);
     });
@@ -445,7 +445,8 @@
   function requestRematch() {
     scores = { X: 0, O: 0 };
     refreshScores();
-    requestRestart();
+    send({ type: 'rematch' });
+    doRestart();
   }
 
   function doRestart() {
@@ -683,7 +684,12 @@
     if (msg.type === 'start') {
       opponentName = msg.hostName;
       myPiece = 'O';
+      send({ type: 'player-name', name: myName });
       startGame();
+    }
+    if (msg.type === 'player-name') {
+      opponentName = msg.name;
+      document.getElementById('sr').textContent = opponentName;
     }
     if (msg.type === 'move') {
       placeStone(msg.idx, currentTurn, true);

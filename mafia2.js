@@ -67,7 +67,7 @@ function init(){
 async function checkActiveGame(){
   try{
     const [phaseD,hostD]=await Promise.all([fb('GET','/mafia2/phase'),fb('GET','/mafia2/host')]);
-    if(phaseD&&phaseD!=='ended'){
+    if(phaseD&&phaseD!=='ended'&&phaseD!=='reset'){
       const iAmHost=hostD===myName;
       const myRoleInGame=iAmHost?true:await fb('GET',`/mafia2/roles/${encN(myName)}`);
       if(myRoleInGame){
@@ -285,7 +285,7 @@ async function stepDownHost(){
 
 async function toggleReady(){
   amReady=!amReady;
-  await fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts:Date.now(),ready:amReady});
+  await fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts:Date.now(),ready:amReady,avatar:myAvatar});
   if(lobbyPlayers[encN(myName)]) lobbyPlayers[encN(myName)].ready=amReady;
   const rBtn=document.getElementById('lb-ready-btn');
   rBtn.textContent=amReady?'⬜ Cancel Ready':'✅ Ready Up';
