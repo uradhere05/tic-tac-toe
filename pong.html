@@ -4,36 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
   <title>Picklebol — FILO GANG ARENA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold: #FFD200;
+      --orange: #f7971e;
+      --cyan: #56ccf2;
+      --green: #4caf50;
+      --glass-blur: blur(24px) saturate(160%);
+      --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
     body {
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background:
-        radial-gradient(ellipse 90% 50% at 50% -5%, rgba(255,90,0,0.22) 0%, transparent 65%),
-        radial-gradient(ellipse 70% 40% at 50% 105%, rgba(120,0,220,0.18) 0%, transparent 65%),
-        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(180,0,60,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 60% at 90% 50%, rgba(0,80,200,0.08) 0%, transparent 60%),
-        linear-gradient(160deg, #07020f 0%, #0e0420 40%, #130318 70%, #060110 100%);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #fff; padding: 20px;
-    }
-    body::before {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 900;
-      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
-    }
-    body::after {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 901;
-      background: radial-gradient(ellipse 120% 120% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
+        radial-gradient(ellipse 90% 50% at 50% -5%, rgba(255,90,0,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 70% 40% at 50% 105%, rgba(120,0,220,0.14) 0%, transparent 65%),
+        linear-gradient(160deg, #030008 0%, #08021a 40%, #0d0218 70%, #030008 100%);
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #fff; padding: 20px; overflow-x: hidden;
     }
 
-    /* ── Screens ── */
     .screen {
       display: none; flex-direction: column; align-items: center;
       width: 100%; max-width: 640px;
@@ -42,185 +39,187 @@
     }
     .screen::-webkit-scrollbar { display: none; }
     .screen.active { display: flex; }
-    .app-version { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.38; margin-top: 4px; text-align: center; width: 100%; }
+    .app-version { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.28; margin-top: 4px; text-align: center; width: 100%; }
     .credits { width: 100%; text-align: center; margin-top: 8px; }
 
-    /* ── Title ── */
     h1 {
-      font-size: 2.2rem; letter-spacing: 5px; text-transform: uppercase;
-      background: linear-gradient(90deg, #f7971e, #ffd200);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem; letter-spacing: 5px; text-transform: uppercase;
+      background: linear-gradient(90deg, #f7971e 0%, #ffd200 35%, #fffbe0 50%, #ffd200 65%, #f7971e 100%);
+      background-size: 250% auto;
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       margin-bottom: 6px; text-align: center; width: 100%;
+      filter: drop-shadow(0 0 28px rgba(255,150,0,0.45));
     }
     .game-title {
-      font-size: 1.1rem; letter-spacing: 6px; text-transform: uppercase;
-      color: #fff; opacity: 0.75; margin-bottom: 8px; text-align: center; width: 100%;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem; letter-spacing: 6px; text-transform: uppercase;
+      color: #fff; opacity: 0.65; margin-bottom: 8px; text-align: center; width: 100%;
     }
     .slogan {
       font-size: 0.78rem; letter-spacing: 1.5px; font-style: italic;
-      color: #ffd200; opacity: 0.85; margin-bottom: 30px; text-align: center;
+      color: var(--gold); opacity: 0.85; margin-bottom: 28px; text-align: center;
     }
     .subtitle {
       font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase;
-      opacity: 0.45; margin-bottom: 36px;
+      opacity: 0.4; margin-bottom: 36px;
     }
     .format-badge {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: rgba(255, 210, 0, 0.14);
-      border: 1px solid rgba(255, 210, 0, 0.35);
-      color: #ffd200;
-      font-size: 0.68rem;
-      letter-spacing: 1.6px;
-      text-transform: uppercase;
-      font-weight: 700;
+      display: inline-block; margin-bottom: 12px; padding: 6px 16px; border-radius: 999px;
+      background: rgba(255,210,0,0.12); border: 1px solid rgba(255,210,0,0.3);
+      color: var(--gold); font-size: 0.68rem; letter-spacing: 1.6px; text-transform: uppercase; font-weight: 700;
     }
 
-    /* ── Buttons ── */
     .btn {
       width: 100%; padding: 15px; border: none; border-radius: 50px;
-      font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;
-      cursor: pointer; font-weight: 700;
-      transition: transform 0.1s, opacity 0.12s;
+      font-size: 0.88rem; letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif;
+      transition: transform 150ms ease, box-shadow 300ms ease;
       margin-bottom: 12px; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      position: relative; overflow: hidden;
     }
+    .btn::after { content:''; position:absolute; inset:0; background:linear-gradient(to bottom,rgba(255,255,255,0.09),transparent); border-radius:inherit; pointer-events:none; }
     .btn:active { transform: scale(0.96); }
-    .btn-primary  { background: linear-gradient(90deg, #f7971e, #ffd200); color: #1a1a2e; }
-    .btn-secondary{ background: rgba(255,255,255,0.09); color: #fff; border: 1.5px solid rgba(255,255,255,0.2); }
-    .btn-danger   { background: rgba(255,80,80,0.12); color: #ff8888; border: 1.5px solid rgba(255,80,80,0.25); }
-    .btn-sm { width: auto; padding: 10px 22px; font-size: 0.75rem; margin-bottom: 0; }
-    .btn-row { display: flex; gap: 10px; width: 100%; }
-    .btn-row .btn { margin-bottom: 0; }
+    .btn-primary { background: linear-gradient(90deg,#f7971e,#ffd200,#f7971e); background-size:200% auto; color:#1a1a2e; box-shadow:0 4px 22px rgba(247,151,30,0.28); }
+    .btn-primary:hover { background-position: right center; box-shadow:0 6px 32px rgba(255,210,0,0.38); }
+    .btn-secondary { background:rgba(255,255,255,0.07); color:#fff; border:1px solid rgba(255,255,255,0.16); backdrop-filter:blur(10px); }
+    .btn-danger   { background:rgba(255,80,80,0.09); color:#ff8888; border:1px solid rgba(255,80,80,0.2); }
+    .btn-sm { width:auto; padding:10px 22px; font-size:0.74rem; margin-bottom:0; }
+    .btn-row { display:flex; gap:10px; width:100%; }
+    .btn-row .btn { margin-bottom:0; }
 
-    /* ── Scoreboard ── */
-    .scoreboard { display: flex; gap: 40px; margin-bottom: 10px; }
+    /* Scoreboard */
+    .scoreboard { display:flex; gap:40px; margin-bottom:10px; }
     .score-box {
-      text-align: center; background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
-      padding: 8px 20px; min-width: 80px;
+      text-align:center; background:rgba(255,255,255,0.05); backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:10px 22px; min-width:90px;
     }
-    .score-label { font-size: 0.7rem; opacity: 0.6; margin-bottom: 4px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
-    .score-val   { font-size: 1.8rem; font-weight: 700; }
-    .score-box.lbox .score-val { color: #f7971e; }
-    .score-box.rbox .score-val { color: #56ccf2; }
+    .score-label { font-size:0.7rem; opacity:0.55; margin-bottom:4px; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+    .score-val   { font-family:'Orbitron',sans-serif; font-size:1.8rem; font-weight:700; }
+    .score-box.lbox .score-val { color:var(--orange); text-shadow:0 0 12px rgba(247,151,30,0.45); }
+    .score-box.rbox .score-val { color:var(--cyan);   text-shadow:0 0 12px rgba(86,204,242,0.45); }
 
-    /* ── Canvas — no aspect-ratio; JS sets height explicitly for correct touch scaling ── */
-    canvas {
-      display: block;
-      border: 2px solid rgba(255,255,255,0.18);
-      border-radius: 10px;
-      background: #000;
-      touch-action: none;
+    /* 3D game canvas */
+    canvas#pickelbolCanvas {
+      display:block; border:1px solid rgba(255,255,255,0.1); border-radius:12px; touch-action:none;
+      box-shadow: 0 0 60px rgba(86,204,242,0.08), 0 0 30px rgba(247,151,30,0.06);
     }
 
-    /* ── Touch controls ── */
-    .touch-controls { display: flex; gap: 12px; margin-top: 10px; width: 100%; }
+    /* Touch controls */
+    .touch-controls { display:flex; gap:12px; margin-top:10px; width:100%; }
     .touch-btn {
-      flex: 1; height: 52px;
-      background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.14);
-      border-radius: 14px; color: #fff; font-size: 1.3rem; cursor: pointer;
-      user-select: none; -webkit-tap-highlight-color: transparent;
-      display: flex; align-items: center; justify-content: center;
+      flex:1; height:54px;
+      background:rgba(255,255,255,0.06); backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,0.12); border-radius:14px;
+      color:#fff; font-size:1.3rem; cursor:pointer;
+      user-select:none; -webkit-tap-highlight-color:transparent;
+      display:flex; align-items:center; justify-content:center;
+      transition:background 150ms ease;
     }
-    .touch-btn.pressed { background: rgba(255,255,255,0.2); }
+    .touch-btn.pressed { background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.3); }
 
-    /* ── Player badge ── */
     .player-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14);
-      border-radius: 30px; padding: 6px 16px;
-      font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+      display:inline-flex; align-items:center; gap:8px;
+      background:rgba(255,255,255,0.05); backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,0.11); border-radius:30px; padding:6px 16px;
+      font-size:0.75rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;
     }
-    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .dot-left  { background: #f7971e; }
-    .dot-right { background: #56ccf2; }
+    .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .dot-left  { background:var(--orange); box-shadow:0 0 8px rgba(247,151,30,0.55); }
+    .dot-right { background:var(--cyan);   box-shadow:0 0 8px rgba(86,204,242,0.55); }
 
-    /* ── VS / Status ── */
-    .vs-display { font-size: 0.72rem; letter-spacing: 1px; opacity: 0.5; margin-bottom: 8px; text-align: center; }
-    .status { font-size: 0.88rem; letter-spacing: 1.5px; min-height: 22px; margin-bottom: 8px; text-align: center; }
-    .lc { color: #f7971e; font-weight: 700; }
-    .rc { color: #56ccf2; font-weight: 700; }
-    .wc { color: #ffd200; font-weight: 700; }
-    .dc { color: #aaa;    font-weight: 700; }
+    .vs-display { font-size:0.72rem; letter-spacing:1px; opacity:0.42; margin-bottom:8px; text-align:center; }
+    .status { font-size:0.88rem; letter-spacing:1.5px; min-height:22px; margin-bottom:8px; text-align:center; }
+    .lc { color:var(--orange); font-weight:700; }
+    .rc { color:var(--cyan);   font-weight:700; }
+    .wc { color:var(--gold);   font-weight:700; }
+    .dc { color:#aaa;          font-weight:700; }
 
-    /* ── Connection bar ── */
-    .conn-bar {
-      display: flex; align-items: center; gap: 6px; margin-top: 10px;
-      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.4;
-    }
-    .cdot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
-    .cdot.off { background: #f44336; animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0.2; } }
+    .conn-bar { display:flex; align-items:center; gap:6px; margin-top:10px; font-size:0.68rem; letter-spacing:1.5px; text-transform:uppercase; opacity:0.38; }
+    .cdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .cdot.off { background:#f44336; animation:blink 1s infinite; }
+    @keyframes blink { 50% { opacity:0.2; } }
 
-    /* ── Code box ── */
     .code-box {
-      width: 100%; max-width: 340px;
-      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12);
-      border-radius: 20px; padding: 22px; text-align: center; margin-bottom: 16px;
+      width:100%; max-width:340px;
+      background:rgba(8,4,24,0.58); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+      border:1px solid rgba(255,255,255,0.09); border-radius:20px; padding:22px; text-align:center; margin-bottom:16px;
+      box-shadow:0 4px 30px rgba(0,0,0,0.42);
     }
-    .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
-    .code-value { font-size: 2.4rem; font-weight: 900; letter-spacing: 4px; color: #ffd200; }
+    .code-label { font-size:0.68rem; letter-spacing:3px; text-transform:uppercase; opacity:0.38; margin-bottom:8px; }
+    .code-value { font-family:'Orbitron',sans-serif; font-size:2.2rem; font-weight:900; letter-spacing:4px; color:var(--gold); text-shadow:0 0 20px rgba(255,210,0,0.38); }
 
-    /* ── Spinner ── */
     .spinner {
-      width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: #ffd200; border-radius: 50%;
-      margin: 18px auto 10px; transform: translateZ(0);
-      -webkit-animation: spin 0.8s linear infinite;
-      animation: spin 0.8s linear infinite;
+      width: 48px; height: 48px;
+      border: 4px solid rgba(255,255,255,0.18);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      margin: 22px auto 12px;
+      transform: translateZ(0);
+      -webkit-animation: spin 0.85s linear infinite;
+      animation: spin 0.85s linear infinite;
     }
     @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
-    @keyframes spin          { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
+    @keyframes spin           { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
 
-    /* ── Leaderboard ── */
-    .lb-section { width: 100%; margin-top: 22px; }
-    .lb-title { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
-    .lb-week  { font-size: 0.6rem; letter-spacing: 1.5px; text-align: center; opacity: 0.35; margin-bottom: 10px; }
-    .lb-row { display: flex; align-items: center; padding: 9px 14px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 6px; }
-    .lb-row.gold { background: rgba(255,210,0,0.1); border: 1px solid rgba(255,210,0,0.22); }
-    .lb-rank { font-size: 0.9rem; min-width: 28px; }
-    .lb-name { font-size: 0.88rem; font-weight: 600; flex: 1; margin-left: 6px; }
-    .lb-wins { font-size: 1rem; font-weight: 700; color: #ffd200; }
-    .lb-empty { font-size: 0.75rem; opacity: 0.3; text-align: center; letter-spacing: 1px; padding: 14px 0; }
+    .lb-section { width:100%; margin-top:22px; background:rgba(8,4,24,0.48); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:18px 16px; }
+    .lb-title { font-size:0.65rem; letter-spacing:3px; text-transform:uppercase; opacity:0.32; text-align:center; margin-bottom:12px; color:#c87fff; }
+    .lb-week  { font-size:0.6rem; letter-spacing:1.5px; text-align:center; opacity:0.28; margin-bottom:10px; }
+    .lb-row { display:flex; align-items:center; padding:9px 12px; background:rgba(255,255,255,0.035); border-radius:10px; margin-bottom:6px; }
+    .lb-row.gold { background:rgba(255,210,0,0.07); border:1px solid rgba(255,210,0,0.2); }
+    .lb-rank { font-size:0.9rem; min-width:28px; }
+    .lb-name { font-size:0.88rem; font-weight:600; flex:1; margin-left:6px; }
+    .lb-wins { font-size:1rem; font-weight:700; color:var(--gold); }
+    .lb-empty { font-size:0.75rem; opacity:0.26; text-align:center; letter-spacing:1px; padding:14px 0; }
 
-    /* ── Online now ── */
-    .online-section { width: 100%; margin-top: 20px; }
-    .online-title { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; text-align: center; margin-bottom: 10px; }
-    .online-pills { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
-    .online-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 5px 13px; font-size: 0.8rem; font-weight: 600; }
-    .online-dot { width: 7px; height: 7px; border-radius: 50%; background: #4caf50; animation: pdot 1.8s ease-in-out infinite; }
-    @keyframes pdot { 0%,100% { opacity:1; box-shadow:0 0 0 0 #4caf5066; } 50% { opacity:.6; box-shadow:0 0 0 4px #4caf5000; } }
-    .online-empty { font-size: 0.72rem; opacity: 0.28; text-align: center; letter-spacing: 1px; padding: 6px 0; }
+    .online-section { width:100%; margin-top:16px; background:rgba(8,4,24,0.48); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:16px; }
+    .online-title { font-size:0.64rem; letter-spacing:3px; text-transform:uppercase; opacity:0.32; text-align:center; margin-bottom:12px; color:#ff9900; }
+    .online-pills { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+    .online-pill { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.055); border:1px solid rgba(255,255,255,0.09); border-radius:20px; padding:5px 13px; font-size:0.8rem; font-weight:600; }
+    .online-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pdot 1.8s ease-in-out infinite; box-shadow:0 0 6px rgba(76,175,80,0.55); }
+    @keyframes pdot { 0%,100% { opacity:1; } 50% { opacity:0.45; } }
+    .online-empty { font-size:0.72rem; opacity:0.22; text-align:center; letter-spacing:1px; padding:6px 0; }
 
-    /* ── Champion ── */
-    .trophy-icon { font-size: 3.6rem; margin-bottom: 4px; animation: tbounce 1.2s ease-in-out infinite alternate; }
-    @keyframes tbounce { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-10px) rotate(5deg); } }
+    .trophy-icon { font-size:3.6rem; margin-bottom:6px; animation:tbounce 1.2s ease-in-out infinite alternate; filter:drop-shadow(0 0 20px rgba(255,210,0,0.55)); }
+    @keyframes tbounce { from { transform:translateY(0) rotate(-5deg); } to { transform:translateY(-12px) rotate(5deg); } }
 
-    /* ── Error ── */
-    .err { color: #ff8888; font-size: 0.8rem; letter-spacing: 1px; min-height: 18px; margin-top: 4px; text-align: center; }
-
-    /* ── Footer ── */
-    footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.25; margin-top: 20px; }
-
-    /* ── Toast ── */
     #toast {
-      position: fixed; top: 18px; left: 50%;
-      transform: translateX(-50%) translateY(-70px);
-      background: #ffd200; color: #1a1a2e;
-      padding: 10px 22px; border-radius: 30px;
-      font-weight: 700; font-size: 0.82rem; letter-spacing: 1px;
-      transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
-      z-index: 999; pointer-events: none;
+      position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-70px);
+      background:linear-gradient(90deg,var(--orange),var(--gold)); color:#1a1a2e;
+      padding:10px 24px; border-radius:30px; font-weight:700; font-size:0.82rem; letter-spacing:1px;
+      transition:transform 0.3s var(--ease-expo); z-index:999; pointer-events:none;
+      box-shadow:0 4px 22px rgba(255,150,0,0.32);
     }
-    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.show { transform:translateX(-50%) translateY(0); }
+
+    footer { font-size:0.6rem; letter-spacing:3px; text-transform:uppercase; opacity:0.18; margin-top:20px; }
+
+    /* ── Mobile optimisations ── */
+    @media (max-width: 480px) {
+      h1 { font-size: 1.5rem; letter-spacing: 3px; }
+      .scoreboard { gap: 16px; }
+      .score-box { padding: 8px 12px; min-width: 70px; }
+      .score-val { font-size: 1.5rem; }
+      .touch-btn { height: 64px; font-size: 1.6rem; border-radius: 16px; }
+      .touch-controls { gap: 10px; margin-top: 12px; }
+      .lb-section, .online-section { border-radius: 14px; padding: 14px 12px; }
+    }
+    @supports not (backdrop-filter: blur(1px)) {
+      .score-box, .player-badge, .lb-section, .online-section, .code-box, .touch-btn {
+        background: rgba(8, 4, 28, 0.92) !important;
+      }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+    }
   </style>
 </head>
 <body>
 
 <div id="toast"></div>
-<button id="sound-btn" onclick="toggleSound()" title="Toggle sound" style="position:fixed;top:14px;right:14px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:50%;width:36px;height:36px;font-size:1.1rem;cursor:pointer;z-index:200;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;">🔊</button>
+<button id="sound-btn" onclick="toggleSound()" title="Toggle sound"
+  style="position:fixed;top:14px;right:14px;background:rgba(8,4,24,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:50%;width:38px;height:38px;font-size:1.05rem;cursor:pointer;z-index:200;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;">🔊</button>
 
 <!-- ══ WAITING ══ -->
 <div class="screen active" id="s-wait">
@@ -233,9 +232,8 @@
     <div class="code-value" id="room-display">Room 5</div>
   </div>
   <div class="spinner"></div>
-  <p style="opacity:.45;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;" id="room-hint">Ask your friend to pick Room 5!</p>
+  <p style="opacity:.38;font-size:.82rem;letter-spacing:1px;margin-top:6px;text-align:center;" id="room-hint">Ask your friend to pick Room 5!</p>
   <button class="btn btn-danger btn-sm" style="margin-top:22px;" onclick="cancelGame()">Cancel</button>
-
   <div class="online-section">
     <div class="online-title">Online Now</div>
     <div id="ol-pickelbol"><div class="online-empty">Checking…</div></div>
@@ -247,13 +245,11 @@
   <h1 style="margin-bottom:2px;">FILO GANG ARENA</h1>
   <div class="game-title" style="margin-bottom:4px;">🏓 Picklebol</div>
   <div class="format-badge" id="format-badge-game">First to 5 wins</div>
-
   <div class="player-badge">
     <span class="dot dot-left" id="bdot"></span>
     <span id="btext">You</span>
   </div>
   <div class="vs-display" id="vs-display"></div>
-
   <div class="scoreboard">
     <div class="score-box lbox">
       <div class="score-label" id="sl-left">Left</div>
@@ -264,21 +260,16 @@
       <div class="score-val"   id="sc-right">0</div>
     </div>
   </div>
-
   <div class="status" id="status"></div>
-
   <canvas id="pickelbolCanvas"></canvas>
-
   <div class="touch-controls">
     <button class="touch-btn" id="btn-up">▲</button>
     <button class="touch-btn" id="btn-dn">▼</button>
   </div>
-
   <div class="conn-bar">
     <span class="cdot" id="cdot"></span>
     <span id="ctext">Connected</span>
   </div>
-
   <div class="lb-section">
     <div class="lb-title">Weekly Leaderboard</div>
     <div class="lb-week"></div>
@@ -293,10 +284,9 @@
   <div class="game-title" style="margin-bottom:8px;">🏓 Picklebol Champion!</div>
   <div class="slogan" id="champ-sub" style="margin-bottom:28px;"></div>
   <div class="btn-row" style="width:100%;">
-    <button class="btn btn-primary"   onclick="requestRematch()">New Game</button>
+    <button class="btn btn-primary"   onclick="requestRematch()">🔄 Rematch</button>
     <button class="btn btn-secondary" onclick="goHome()">Home</button>
   </div>
-
   <div class="lb-section">
     <div class="lb-title">Weekly Leaderboard</div>
     <div class="lb-week"></div>
@@ -306,21 +296,24 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-    <div class="app-version">v1.51</div>
+  <div class="app-version">v2.17</div>
+</div>
+
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-  /* ── Constants ── */
+  /* ── Constants (unchanged) ── */
   const roomNum   = parseInt(new URLSearchParams(window.location.search).get('room') || '5', 10);
   const PEER_ID   = `filo-gang-pickelbol-${roomNum}`;
   const WINS_NEED = 5;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const SCORE_SYNC_KEY = 'filo-score-sync';
 
-  const CW       = 600, CH       = 340;  // logical canvas dimensions
-  const PW       = 12,  PH       = 70;   // paddle size
-  const PSPEED   = 7;                    // paddle px/frame
-  const BR       = 8;                    // ball radius
-  const BASE_SPD = 5, MAX_SPD = 12;     // ball speed range
+  const CW = 600, CH = 340;
+  const PW = 12,  PH = 70;
+  const PSPEED   = 7;
+  const BR       = 8;
+  const BASE_SPD = 5, MAX_SPD = 12;
 
   /* ── State ── */
   let myName = localStorage.getItem('filoName') || '';
@@ -328,28 +321,145 @@
 
   let opponentName = '';
   let peer = null, conn = null;
-  let mySide = null;  // 'left' | 'right'
-  let myRole = null;  // 'host' | 'guest' — for Firebase presence
+  let mySide = null, myRole = null;
   let gameRunning = false;
   let animFrameId = null;
   let frameCount  = 0;
   let scores = { left: 0, right: 0 };
+  let wantsRematch = false;
 
   function updateFormatBadge() {
-    const bestOf = WINS_NEED * 2 - 1;
-    const txt = `Best of ${bestOf} • First to ${WINS_NEED} wins`;
-    const badges = [document.getElementById('format-badge'), document.getElementById('format-badge-game')];
-    badges.forEach(badge => {
-      if (badge) badge.textContent = txt;
-    });
+    const txt = `Best of ${WINS_NEED*2-1} • First to ${WINS_NEED} wins`;
+    [document.getElementById('format-badge'), document.getElementById('format-badge-game')]
+      .forEach(b => { if (b) b.textContent = txt; });
   }
 
-  /* ── Canvas — logical size fixed; CSS size set by fitCanvas() ── */
+  /* ════════════════════════════════════════
+     THREE.JS SCENE SETUP
+     Replaces the original 2D canvas context.
+     Game coordinate space (CW×CH) is unchanged;
+     draw() maps pixel coords → world units.
+  ════════════════════════════════════════ */
   const canvas = document.getElementById('pickelbolCanvas');
-  const ctx    = canvas.getContext('2d');
-  canvas.width  = CW;
-  canvas.height = CH;
 
+  /* Coordinate mapping helpers */
+  const S  = 20 / CW;           // 1 game-pixel = S world-units  (≈1/30)
+  const W3 = CW * S;            // court width  = 20 world-units
+  const H3 = CH * S;            // court height ≈ 11.33 world-units
+  const pw3 = PW * S, ph3 = PH * S, br3 = BR * S;
+
+  function gx(px) { return  px * S - W3 / 2; }   // pixel-x → world-x
+  function gy(py) { return -(py * S - H3 / 2); }  // pixel-y → world-y (flipped)
+
+  /* Renderer */
+  const _isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !_isMobile });
+  renderer.setPixelRatio(_isMobile ? 1 : Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0x000814, 1);
+  renderer.setSize(CW, CH, false); // internal buffer fixed at 600×340; CSS scales display
+
+  const scene  = new THREE.Scene();
+  scene.fog    = new THREE.Fog(0x000814, 25, 55);
+
+  /* Camera — slight elevation for depth feel without distorting gameplay */
+  const camera = new THREE.PerspectiveCamera(55, CW / CH, 0.1, 100);
+  camera.position.set(0, 2.5, 17);
+  camera.lookAt(0, 0, 0);
+
+  /* Court floor */
+  scene.add(Object.assign(new THREE.Mesh(
+    new THREE.PlaneGeometry(W3 + 4, H3 + 4),
+    new THREE.MeshStandardMaterial({ color: 0x000814, roughness: 1 })
+  ), { position: new THREE.Vector3(0, 0, -0.5) }));
+
+  /* Subtle grid on floor */
+  const grid = new THREE.GridHelper(22, 22, 0x0a1a3a, 0x0a1a3a);
+  grid.rotation.x = Math.PI / 2;
+  grid.position.z = -0.48;
+  scene.add(grid);
+
+  /* Neon top/bottom walls */
+  function addWall(y) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(W3 + 0.3, 0.06, 0.35),
+      new THREE.MeshStandardMaterial({ color: 0x56ccf2, emissive: 0x56ccf2, emissiveIntensity: 0.7 })
+    );
+    m.position.set(0, y, 0);
+    scene.add(m);
+    const l = new THREE.PointLight(0x56ccf2, 1.5, 4);
+    l.position.set(0, y, 0.5);
+    scene.add(l);
+  }
+  addWall( H3 / 2);
+  addWall(-H3 / 2);
+
+  /* Dashed center line */
+  const dashPts = [];
+  for (let i = 0; i < 12; i++) {
+    dashPts.push(0, -H3/2 + (i + 0.1) * (H3 / 12), 0.01);
+    dashPts.push(0, -H3/2 + (i + 0.78) * (H3 / 12), 0.01);
+  }
+  const dashGeo = new THREE.BufferGeometry();
+  dashGeo.setAttribute('position', new THREE.Float32BufferAttribute(dashPts, 3));
+  scene.add(new THREE.LineSegments(dashGeo, new THREE.LineBasicMaterial({ color: 0x1a3355 })));
+
+  /* Left paddle — orange */
+  const lpMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(pw3, ph3, 0.35),
+    new THREE.MeshStandardMaterial({ color: 0xf7971e, emissive: 0xf7971e, emissiveIntensity: 0.45, roughness: 0.25, metalness: 0.6 })
+  );
+  scene.add(lpMesh);
+  const lpLight = new THREE.PointLight(0xf7971e, 3, 3.5);
+  scene.add(lpLight);
+
+  /* Right paddle — cyan */
+  const rpMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(pw3, ph3, 0.35),
+    new THREE.MeshStandardMaterial({ color: 0x56ccf2, emissive: 0x56ccf2, emissiveIntensity: 0.45, roughness: 0.25, metalness: 0.6 })
+  );
+  scene.add(rpMesh);
+  const rpLight = new THREE.PointLight(0x56ccf2, 3, 3.5);
+  scene.add(rpLight);
+
+  /* Ball — gold */
+  const ballMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(br3, _isMobile ? 12 : 20, _isMobile ? 12 : 20),
+    new THREE.MeshStandardMaterial({ color: 0xffd200, emissive: 0xffd200, emissiveIntensity: 0.7, roughness: 0.15, metalness: 0.7 })
+  );
+  scene.add(ballMesh);
+  const ballLight = new THREE.PointLight(0xffd200, 5, 5);
+  scene.add(ballLight);
+
+  /* Ball trail — fewer spheres on mobile for perf */
+  const TRAIL_LEN = _isMobile ? 3 : 7;
+  const trailMeshes = Array.from({ length: TRAIL_LEN }, (_, i) => {
+    const t = new THREE.Mesh(
+      new THREE.SphereGeometry(br3 * (1 - i * 0.1), _isMobile ? 6 : 8, _isMobile ? 6 : 8),
+      new THREE.MeshStandardMaterial({ color: 0xffd200, emissive: 0xffd200, emissiveIntensity: 0.3, transparent: true, opacity: 0, depthWrite: false })
+    );
+    t.visible = false;
+    scene.add(t);
+    return t;
+  });
+  const trailPos = [];
+
+  /* Score flash plane */
+  const flashPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(W3, H3),
+    new THREE.MeshBasicMaterial({ color: 0xffd200, transparent: true, opacity: 0, depthWrite: false })
+  );
+  flashPlane.position.z = 0.6;
+  scene.add(flashPlane);
+  let flashVal = 0, flashCol = 0xffd200;
+
+  /* Lighting */
+  scene.add(new THREE.AmbientLight(0x0a1025, 3));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+  dirLight.position.set(0, 8, 12);
+  scene.add(dirLight);
+
+  /* fitCanvas — updates CSS display size; Three.js internal buffer stays at CW×CH */
   function fitCanvas() {
     const w = Math.min(CW, window.innerWidth - 32);
     canvas.style.width  = w + 'px';
@@ -358,10 +468,50 @@
   window.addEventListener('resize', fitCanvas);
   fitCanvas();
 
-  /* ── Game objects ── */
-  const ball = { x: CW / 2, y: CH / 2, vx: 0, vy: 0 };
-  const lp   = { x: 14,           y: CH / 2 - PH / 2 }; // left paddle
-  const rp   = { x: CW - PW - 14, y: CH / 2 - PH / 2 }; // right paddle
+  /* draw() — replaces original 2D draw(), called every frame from loop() */
+  function draw() {
+    /* Paddles */
+    const lx = gx(lp.x + PW/2), ly = gy(lp.y + PH/2);
+    const rx = gx(rp.x + PW/2), ry = gy(rp.y + PH/2);
+    lpMesh.position.set(lx, ly, 0);
+    rpMesh.position.set(rx, ry, 0);
+    lpLight.position.set(lx + pw3, ly, 0.8);
+    rpLight.position.set(rx - pw3, ry, 0.8);
+
+    /* Ball */
+    const bx = gx(ball.x), by = gy(ball.y);
+    ballMesh.position.set(bx, by, 0);
+    ballMesh.rotation.z += 0.06;
+    ballLight.position.set(bx, by, 1.2);
+
+    /* Trail */
+    trailPos.unshift({ x: bx, y: by });
+    if (trailPos.length > TRAIL_LEN + 1) trailPos.length = TRAIL_LEN + 1;
+    trailMeshes.forEach((tm, i) => {
+      const p = trailPos[i + 1];
+      if (p && gameRunning && (ball.vx !== 0 || ball.vy !== 0)) {
+        tm.position.set(p.x, p.y, 0);
+        tm.material.opacity = (1 - (i + 1) / (TRAIL_LEN + 1)) * 0.45;
+        tm.visible = true;
+      } else { tm.visible = false; }
+    });
+
+    /* Score flash */
+    if (flashVal > 0) {
+      flashPlane.material.color.setHex(flashCol);
+      flashPlane.material.opacity = flashVal * 0.18;
+      flashVal = Math.max(0, flashVal - 0.06);
+    } else {
+      flashPlane.material.opacity = 0;
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  /* ── Game objects (unchanged) ── */
+  const ball = { x: CW/2, y: CH/2, vx: 0, vy: 0 };
+  const lp   = { x: 14,           y: CH/2 - PH/2 };
+  const rp   = { x: CW - PW - 14, y: CH/2 - PH/2 };
 
   /* ── Keyboard ── */
   const keys = {};
@@ -375,15 +525,8 @@
   let touchUp = false, touchDn = false;
   function bindBtn(id, isUp) {
     const el = document.getElementById(id);
-    const press = e => {
-      e.preventDefault();
-      if (isUp) touchUp = true; else touchDn = true;
-      el.classList.add('pressed');
-    };
-    const release = () => {
-      if (isUp) touchUp = false; else touchDn = false;
-      el.classList.remove('pressed');
-    };
+    const press = e => { e.preventDefault(); if (isUp) touchUp=true; else touchDn=true; el.classList.add('pressed'); };
+    const release = () => { if (isUp) touchUp=false; else touchDn=false; el.classList.remove('pressed'); };
     el.addEventListener('touchstart',  press,   { passive: false });
     el.addEventListener('mousedown',   press);
     el.addEventListener('touchend',    release);
@@ -394,7 +537,7 @@
   bindBtn('btn-up', true);
   bindBtn('btn-dn', false);
 
-  /* ── Canvas drag control — uses JS-set pixel dimensions for accurate scaling ── */
+  /* ── Canvas drag control (unchanged — uses CSS rect dimensions for correct scaling) ── */
   canvas.addEventListener('touchstart', onCanvasTouch, { passive: false });
   canvas.addEventListener('touchmove',  onCanvasTouch, { passive: false });
   function onCanvasTouch(e) {
@@ -402,648 +545,361 @@
     if (!gameRunning || !mySide) return;
     const t    = e.touches[0];
     const rect = canvas.getBoundingClientRect();
-    // rect.height matches the JS-set style height — scaling is exact
-    const y = (t.clientY - rect.top) * (CH / rect.height);
-    const p = mySide === 'left' ? lp : rp;
-    p.y = Math.max(0, Math.min(CH - PH, y - PH / 2));
+    const y    = (t.clientY - rect.top) * (CH / rect.height);
+    const p    = mySide === 'left' ? lp : rp;
+    p.y = Math.max(0, Math.min(CH - PH, y - PH/2));
   }
 
   /* ── Screens ── */
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    if (['s-wait', 's-game', 's-champ'].includes(id)) {
-      loadAndRenderLeaderboard();
-    }
+    if (['s-wait','s-game','s-champ'].includes(id)) loadAndRenderLeaderboard();
   }
 
   /* ── Firebase — leaderboard ── */
   function getWeekKey() {
-    const now  = new Date();
-    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
-    const mon  = new Date(now); mon.setDate(now.getDate() + diff);
+    const now = new Date();
+    const diff = now.getDay()===0 ? -6 : 1-now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate()+diff);
     return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
   }
-
   function getWeekLabel() {
-    const now  = new Date();
-    const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
-    const mon  = new Date(now); mon.setDate(now.getDate() + diff);
-    const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);
-    const fmt  = d => d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
+    const now = new Date();
+    const diff = now.getDay()===0 ? -6 : 1-now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate()+diff);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    const fmt = d => d.toLocaleDateString('en-AU',{month:'short',day:'numeric'});
     return `${fmt(mon)} – ${fmt(sun)}`;
-  }
-
-  const LB_ROOTS = ['leaderboard'];
-
-  async function fbGet(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`GET failed (${res.status})`);
-    return res.json();
-  }
-
-  async function fbPut(url, value) {
-    const res = await fetch(url, { method: 'PUT', body: JSON.stringify(value) });
-    if (!res.ok) throw new Error(`PUT failed (${res.status})`);
   }
 
   async function recordWin(name) {
     const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
     try {
-      const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
-      await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
+      const cur = await fetch(url).then(r=>r.json()).catch(()=>0)||0;
+      await fetch(url,{method:'PUT',body:JSON.stringify(cur+1)});
       broadcastScoreSync();
-    } catch(e) { console.error('recordWin failed', e); }
+    } catch(e) { console.error('recordWin failed',e); }
   }
 
-  let lbLoading = false;
-  let lbLastLoad = 0;
-  const LB_REFRESH_MS = 5000;
+  let lbLoading=false, lbLastLoad=0;
+  const LB_REFRESH_MS=5000;
 
-  async function loadAndRenderLeaderboard(force = false) {
-    const listEls = [...document.querySelectorAll('.lb-list')];
-    const weekEls = [...document.querySelectorAll('.lb-week')];
-    if (!listEls.length) return;
-    if (lbLoading) return;
-    if (!force && Date.now() - lbLastLoad < LB_REFRESH_MS) return;
-
-    weekEls.forEach(el => { el.textContent = getWeekLabel(); });
-    listEls.forEach(el => { el.innerHTML = '<div class="lb-empty">Loading…</div>'; });
-    lbLoading = true;
+  async function loadAndRenderLeaderboard(force=false) {
+    const listEls=[...document.querySelectorAll('.lb-list')];
+    const weekEls=[...document.querySelectorAll('.lb-week')];
+    if (!listEls.length||lbLoading) return;
+    if (!force && Date.now()-lbLastLoad<LB_REFRESH_MS) return;
+    weekEls.forEach(el=>{el.textContent=getWeekLabel();});
+    listEls.forEach(el=>{el.innerHTML='<div class="lb-empty">Loading…</div>';});
+    lbLoading=true;
     try {
-      const allData = await fetch(`${DB}/leaderboard.json`).then(r => r.json()).catch(() => ({})) || {};
-      // Merge wins across ±1 day of the current week to tolerate timezone-offset keys
-      const now  = new Date();
-      const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
-      const mon  = new Date(now); mon.setDate(now.getDate() + diff); mon.setHours(0,0,0,0);
-      const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);    sun.setHours(23,59,59,999);
-      const rs   = new Date(mon); rs.setDate(mon.getDate() - 1);
-      const re   = new Date(sun); re.setDate(sun.getDate() + 1);
-
-      const totals = {};
-      for (const [key, players] of Object.entries(allData || {})) {
-        const d = new Date(key);
-        if (d >= rs && d <= re && players) {
-          for (const [name, wins] of Object.entries(players)) {
-            const n = decodeURIComponent(name);
-            totals[n] = (totals[n] || 0) + wins;
+      const allData=await fetch(`${DB}/leaderboard.json`).then(r=>r.json()).catch(()=>({}))||{};
+      const now=new Date(); const diff=now.getDay()===0?-6:1-now.getDay();
+      const mon=new Date(now); mon.setDate(now.getDate()+diff); mon.setHours(0,0,0,0);
+      const sun=new Date(mon); sun.setDate(mon.getDate()+6);   sun.setHours(23,59,59,999);
+      const rs=new Date(mon); rs.setDate(mon.getDate()-1);
+      const re=new Date(sun); re.setDate(sun.getDate()+1);
+      const totals={};
+      for (const [key,players] of Object.entries(allData||{})) {
+        const d=new Date(key);
+        if (d>=rs&&d<=re&&players)
+          for (const [name,wins] of Object.entries(players)) {
+            const n=decodeURIComponent(name);
+            totals[n]=(totals[n]||0)+wins;
           }
-        }
       }
-
-      const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-      const medals = ['🥇','🥈','🥉'];
-      const html = sorted.length
-        ? sorted.map(([name, w], i) =>
-            `<div class="lb-row ${i===0?'gold':''}">
-              <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
-              <span class="lb-name">${name}</span>
-              <span class="lb-wins">${w} win${w!==1?'s':''}</span>
-            </div>`).join('')
-        : '<div class="lb-empty">No Picklebol wins yet this week</div>';
-      listEls.forEach(el => { el.innerHTML = html; });
-      lbLastLoad = Date.now();
-    } catch {
-      listEls.forEach(el => { el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'; });
-    } finally {
-      lbLoading = false;
-    }
+      const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+      const medals=['🥇','🥈','🥉'];
+      const html=sorted.length
+        ?sorted.map(([name,w],i)=>`<div class="lb-row ${i===0?'gold':''}"><span class="lb-rank">${medals[i]||(i+1)+'.'}</span><span class="lb-name">${name}</span><span class="lb-wins">${w} win${w!==1?'s':''}</span></div>`).join('')
+        :'<div class="lb-empty">No Picklebol wins yet this week</div>';
+      listEls.forEach(el=>{el.innerHTML=html;});
+      lbLastLoad=Date.now();
+    } catch { listEls.forEach(el=>{el.innerHTML='<div class="lb-empty">Could not load leaderboard</div>';}); }
+    finally { lbLoading=false; }
   }
 
-  function broadcastScoreSync() {
-    try { localStorage.setItem(SCORE_SYNC_KEY, String(Date.now())); } catch {}
-  }
+  function broadcastScoreSync() { try{localStorage.setItem(SCORE_SYNC_KEY,String(Date.now()));}catch{} }
 
   /* ── Firebase — online presence ── */
-  const ONLINE_STALE = 75 * 1000;
-  let onlineHeartbeat = null;
-  let onlineInterval  = null;
+  const ONLINE_STALE=75*1000;
+  let onlineHeartbeat=null, onlineInterval=null;
 
   async function setOnline(name) {
-    try { await fetch(`${DB}/online/${encodeURIComponent(name)}.json`, { method: 'PUT', body: JSON.stringify({ ts: Date.now() }) }); } catch {}
+    try{await fetch(`${DB}/online/${encodeURIComponent(name)}.json`,{method:'PUT',body:JSON.stringify({ts:Date.now()})});}catch{}
   }
   async function setOffline(name) {
-    try { await fetch(`${DB}/online/${encodeURIComponent(name)}.json`, { method: 'DELETE' }); } catch {}
+    try{await fetch(`${DB}/online/${encodeURIComponent(name)}.json`,{method:'DELETE'});}catch{}
   }
-  function startOnlinePresence(name) {
-    setOnline(name);
-    clearInterval(onlineHeartbeat);
-    onlineHeartbeat = setInterval(() => setOnline(name), 30000);
+  function startOnlinePresence(name){setOnline(name);clearInterval(onlineHeartbeat);onlineHeartbeat=setInterval(()=>setOnline(name),30000);}
+  function startOnlinePoll(){loadOnlineUsers();clearInterval(onlineInterval);onlineInterval=setInterval(loadOnlineUsers,5000);}
+  function stopOnlinePoll(){clearInterval(onlineInterval);onlineInterval=null;}
+
+  function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  async function fetchOnlineNames(){
+    const data=(await fetch(`${DB}/online.json`).then(r=>r.json()).catch(()=>({})))||{};
+    const now=Date.now();
+    return Object.entries(data).filter(([,v])=>v&&(now-v.ts<ONLINE_STALE)).map(([n])=>{try{return decodeURIComponent(n);}catch{return n;}});
   }
-  function startOnlinePoll() {
-    loadOnlineUsers();
-    clearInterval(onlineInterval);
-    onlineInterval = setInterval(loadOnlineUsers, 5000);
-  }
-  function stopOnlinePoll() { clearInterval(onlineInterval); onlineInterval = null; }
-  async function fetchOnlineNames() {
-    const data = (await fetch(`${DB}/online.json`).then(r => r.json()).catch(() => ({}))) || {};
-    const now = Date.now();
-    return Object.entries(data)
-      .filter(([, v]) => v && (now - v.ts < ONLINE_STALE))
-      .map(([n]) => { try { return decodeURIComponent(n); } catch { return n; } });
-  }
-  async function loadOnlineUsers() {
-    try { renderOnline(await fetchOnlineNames()); } catch { renderOnline([]); }
-  }
-  function renderOnline(names) {
-    const el = document.getElementById('ol-pickelbol');
-    if (!el) return;
-    el.innerHTML = names.length
-      ? `<div class="online-pills">${names.map(n => `<div class="online-pill"><span class="online-dot"></span>${n}</div>`).join('')}</div>`
-      : '<div class="online-empty">No one online yet</div>';
+  async function loadOnlineUsers(){try{renderOnline(await fetchOnlineNames());}catch{renderOnline([]);}}
+  function renderOnline(names){
+    const el=document.getElementById('ol-pickelbol'); if(!el)return;
+    el.innerHTML=names.length
+      ?`<div class="online-pills">${names.map(n=>`<div class="online-pill"><span class="online-dot"></span>${escHtml(n)}</div>`).join('')}</div>`
+      :'<div class="online-empty">No one online yet</div>';
   }
 
-  /* ── Firebase — room presence (mirrors TTT's /rooms/ pattern) ── */
-  async function writePresence(role) {
-    try {
-      await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, {
-        method: 'PUT', body: JSON.stringify({ name: myName, ts: Date.now() })
-      });
-    } catch {}
-  }
-
-  async function clearPresence(role) {
-    try {
-      await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`, { method: 'DELETE' });
-    } catch {}
-  }
-
-  async function clearStalePresence() {
-    try {
-      const data = await fetch(`${DB}/rooms.json`).then(r => r.json()).catch(() => ({})) || {};
-      for (const [key, room] of Object.entries(data)) {
-        if (key === `room-${roomNum}`) continue;
-        for (const role of ['host', 'guest']) {
-          if (room[role] && room[role].name === myName)
-            fetch(`${DB}/rooms/${key}/${role}.json`, { method: 'DELETE' });
+  /* ── Firebase — room presence ── */
+  async function writePresence(role){try{await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`,{method:'PUT',body:JSON.stringify({name:myName,ts:Date.now()})});}catch{}}
+  async function clearPresence(role){try{await fetch(`${DB}/rooms/room-${roomNum}/${role}.json`,{method:'DELETE'});}catch{}}
+  async function clearStalePresence(){
+    try{
+      const data=await fetch(`${DB}/rooms.json`).then(r=>r.json()).catch(()=>({}))||{};
+      for(const [key,room] of Object.entries(data)){
+        if(key===`room-${roomNum}`)continue;
+        for(const role of ['host','guest']){
+          if(room[role]&&room[role].name===myName)fetch(`${DB}/rooms/${key}/${role}.json`,{method:'DELETE'});
         }
       }
-    } catch {}
+    }catch{}
   }
 
   /* ── Helpers ── */
-  function send(data) { if (conn && conn.open) conn.send(data); }
-
-  function setConn(on) {
-    document.getElementById('cdot').className = 'cdot' + (on ? '' : ' off');
-    document.getElementById('ctext').textContent = on ? 'Connected' : 'Disconnected';
-  }
-
-  function setStatus(html) { document.getElementById('status').innerHTML = html; }
-
-  function refreshScores() {
-    document.getElementById('sc-left').textContent  = scores.left;
-    document.getElementById('sc-right').textContent = scores.right;
-  }
-
+  function send(data){if(conn&&conn.open)conn.send(data);}
+  function setConn(on){document.getElementById('cdot').className='cdot'+(on?'':' off');document.getElementById('ctext').textContent=on?'Connected':'Disconnected';}
+  function setStatus(html){document.getElementById('status').innerHTML=html;}
+  function refreshScores(){document.getElementById('sc-left').textContent=scores.left;document.getElementById('sc-right').textContent=scores.right;}
   let toastT;
-  function toast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg; el.classList.add('show');
-    clearTimeout(toastT);
-    toastT = setTimeout(() => el.classList.remove('show'), 2800);
-  }
+  function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
 
-  /* ── PeerJS config ── */
-  const PEER_CFG = {
-    debug: 0,
-    config: { iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-    ]}
-  };
+  const PEER_CFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun2.l.google.com:19302'}]}};
 
-  /* ── Heartbeat — pings opponent AND refreshes Firebase presence ── */
-  let heartbeat;
-  let waitHeartbeat;
-  function startHeartbeat() {
-    stopWaitHeartbeat();
-    clearInterval(heartbeat);
-    heartbeat = setInterval(() => {
-      send({ type: 'ping' });
-      if (myRole) writePresence(myRole);
-    }, 10000);
-  }
-  function stopHeartbeat() { clearInterval(heartbeat); }
-  function startWaitHeartbeat() {
-    clearInterval(waitHeartbeat);
-    waitHeartbeat = setInterval(() => { if (myRole) writePresence(myRole); }, 10000);
-  }
-  function stopWaitHeartbeat() { clearInterval(waitHeartbeat); }
+  let heartbeat, waitHeartbeat;
+  function startHeartbeat(){stopWaitHeartbeat();clearInterval(heartbeat);heartbeat=setInterval(()=>{send({type:'ping'});if(myRole)writePresence(myRole);},10000);}
+  function stopHeartbeat(){clearInterval(heartbeat);}
+  function startWaitHeartbeat(){clearInterval(waitHeartbeat);waitHeartbeat=setInterval(()=>{if(myRole)writePresence(myRole);},10000);}
+  function stopWaitHeartbeat(){clearInterval(waitHeartbeat);}
 
-  function destroyPeer() {
-    stopHeartbeat(); stopLoop();
-    if (myRole) { clearPresence(myRole); myRole = null; }
-    try { conn && conn.close(); } catch {}
-    try { peer && peer.destroy(); } catch {}
-    conn = null; peer = null;
+  function destroyPeer(){
+    stopHeartbeat();stopLoop();stopOnlinePoll();
+    clearInterval(onlineHeartbeat);onlineHeartbeat=null;
+    wantsRematch=false;
+    if(myRole){clearPresence(myRole);myRole=null;}
+    try{conn&&conn.close();}catch{}
+    try{peer&&peer.destroy();}catch{}
+    conn=null;peer=null;
   }
 
   /* ── Game loop ── */
-  function startLoop() {
-    stopLoop();
-    gameRunning = true;
-    frameCount  = 0;
-    animFrameId = requestAnimationFrame(loop);
-  }
-
-  function stopLoop() {
-    gameRunning = false;
-    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
-  }
-
-  function loop() {
-    if (!gameRunning) return;
-    update();
-    draw();
-    frameCount++;
-    animFrameId = requestAnimationFrame(loop);
-  }
+  function startLoop(){stopLoop();gameRunning=true;frameCount=0;animFrameId=requestAnimationFrame(loop);}
+  function stopLoop(){gameRunning=false;if(animFrameId){cancelAnimationFrame(animFrameId);animFrameId=null;}}
+  function loop(){if(!gameRunning)return;update();draw();frameCount++;animFrameId=requestAnimationFrame(loop);}
 
   /* ── Game start ── */
-  function startPickelbolGame() {
-    mySide = 'left';
-    document.getElementById('bdot').className    = 'dot dot-left';
-    document.getElementById('btext').textContent = 'You • Left Paddle';
-    updateNameDisplays();
-    setConn(true);
-    resetPositions();
-    resetBall();
-    show('s-game');
-    startLoop();
+  function startPickelbolGame(){
+    mySide='left';
+    document.getElementById('bdot').className='dot dot-left';
+    document.getElementById('btext').textContent='You • Left Paddle';
+    updateNameDisplays();setConn(true);resetPositions();resetBall();show('s-game');startLoop();
   }
-
-  function joinPickelbolGame() {
-    mySide = 'right';
-    document.getElementById('bdot').className    = 'dot dot-right';
-    document.getElementById('btext').textContent = 'You • Right Paddle';
-    updateNameDisplays();
-    setConn(true);
-    resetPositions();
-    ball.x = CW / 2; ball.y = CH / 2; ball.vx = 0; ball.vy = 0;
-    show('s-game');
-    startLoop();
+  function joinPickelbolGame(){
+    mySide='right';
+    document.getElementById('bdot').className='dot dot-right';
+    document.getElementById('btext').textContent='You • Right Paddle';
+    updateNameDisplays();setConn(true);resetPositions();
+    ball.x=CW/2;ball.y=CH/2;ball.vx=0;ball.vy=0;
+    show('s-game');startLoop();
   }
+  function resetPositions(){lp.y=CH/2-PH/2;rp.y=CH/2-PH/2;}
 
-  function resetPositions() {
-    lp.y = CH / 2 - PH / 2;
-    rp.y = CH / 2 - PH / 2;
-  }
-
-  function updateNameDisplays() {
-    let ln = mySide === 'left'  ? myName : opponentName;
-    let rn = mySide === 'right' ? myName : opponentName;
-
-    // Avoid ambiguous UI when both ends have the same stored name (e.g. same browser profile/tab).
-    if (ln && rn && ln === rn) {
-      ln = `${ln} (L)`;
-      rn = `${rn} (R)`;
-    }
-
-    document.getElementById('sl-left').textContent  = ln || 'Left';
-    document.getElementById('sl-right').textContent = rn || 'Right';
-    const vsName = (opponentName && opponentName !== myName) ? opponentName : 'Opponent';
-    document.getElementById('vs-display').textContent = `vs ${vsName}`;
+  function updateNameDisplays(){
+    let ln=mySide==='left'?myName:opponentName;
+    let rn=mySide==='right'?myName:opponentName;
+    if(ln&&rn&&ln===rn){ln+=' (L)';rn+=' (R)';}
+    document.getElementById('sl-left').textContent=ln||'Left';
+    document.getElementById('sl-right').textContent=rn||'Right';
+    document.getElementById('vs-display').textContent=(opponentName&&opponentName!==myName)?`vs ${opponentName}`:'vs Opponent';
     setStatus('');
   }
 
-  /* ── Room entry — exact mirror of TTT's enterRoom / joinRoomN ── */
-  function enterPickelbolRoom() {
+  /* ── Room entry ── */
+  function enterPickelbolRoom(){
     show('s-wait');
-
-    peer = new Peer(PEER_ID, PEER_CFG);
-
-    peer.on('open', () => {
-      myRole = 'host';
-      writePresence('host');
-      startWaitHeartbeat();
-      peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
-      peer.on('connection', c => {
-        conn = c; wireConn();
-        conn.on('open', () => {
-          send({ type: 'start', hostName: myName });
-          writePresence('host'); // refresh ts
-          startPickelbolGame();
-          startHeartbeat();
-        });
+    peer=new Peer(PEER_ID,PEER_CFG);
+    peer.on('open',()=>{
+      myRole='host';writePresence('host');startWaitHeartbeat();
+      peer.on('disconnected',()=>{try{peer.reconnect();}catch{}});
+      peer.on('connection',c=>{
+        conn=c;wireConn();
+        conn.on('open',()=>{send({type:'start',hostName:myName});writePresence('host');startPickelbolGame();startHeartbeat();});
       });
     });
-
-    peer.on('error', err => {
-      if (err.type === 'unavailable-id') {
-        destroyPeer(); joinPickelbolRoom();
-      } else {
-        destroyPeer();
-        toast('Connection error — try again.');
-        setTimeout(() => window.location.href = 'index.html', 2000);
-      }
+    peer.on('error',err=>{
+      if(err.type==='unavailable-id'){destroyPeer();joinPickelbolRoom();}
+      else{destroyPeer();toast('Connection error — try again.');setTimeout(()=>window.location.href='index.html',2000);}
     });
   }
 
-  function joinPickelbolRoom() {
-    peer = new Peer(PEER_CFG);
-    myRole = 'guest';
-    writePresence('guest');
-    startWaitHeartbeat();
-
-    const giveUp = setTimeout(() => {
-      destroyPeer();
-      toast('No host found — try again.');
-      setTimeout(() => window.location.href = 'index.html', 2500);
-    }, 12000);
-
-    peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
-
-    peer.on('open', () => {
-      conn = peer.connect(PEER_ID, { reliable: true, serialization: 'json' });
+  function joinPickelbolRoom(){
+    peer=new Peer(PEER_CFG);myRole='guest';
+    const giveUp=setTimeout(()=>{destroyPeer();toast('No host found — try again.');setTimeout(()=>window.location.href='index.html',2500);},12000);
+    peer.on('disconnected',()=>{try{peer.reconnect();}catch{}});
+    peer.on('open',()=>{
+      writePresence('guest');startWaitHeartbeat();
+      conn=peer.connect(PEER_ID,{reliable:true,serialization:'json'});
       wireConn();
-      conn.on('open', () => {
-        clearTimeout(giveUp);
-        writePresence('guest'); // refresh ts now that connection is live
-        startHeartbeat();
-      });
+      conn.on('open',()=>{clearTimeout(giveUp);writePresence('guest');startHeartbeat();});
     });
-
-    peer.on('error', () => {
-      clearTimeout(giveUp); destroyPeer();
-      toast('Could not join Picklebol — try again.');
-      setTimeout(() => window.location.href = 'index.html', 2500);
-    });
+    peer.on('error',()=>{clearTimeout(giveUp);destroyPeer();toast('Could not join Picklebol — try again.');setTimeout(()=>window.location.href='index.html',2500);});
   }
 
-  function wireConn() {
-    conn.on('data',  handleData);
-    conn.on('close', onDrop);
-    conn.on('error', onDrop);
-  }
+  function wireConn(){conn.on('data',handleData);conn.on('close',onDrop);conn.on('error',onDrop);}
 
-  /* ── Incoming messages ── */
-  function handleData(msg) {
-    switch (msg.type) {
-      case 'ping':
-        send({ type: 'pickelbol' });
-        break;
-      case 'pickelbol':
-        break;
-      case 'start':
-        opponentName = msg.hostName || '?';
-        joinPickelbolGame();
-        send({ type: 'player-name', name: myName });
-        break;
-      case 'player-name':
-        opponentName = msg.name;
-        updateNameDisplays();
-        break;
-      case 'paddle-pos':
-        // Update opponent's paddle
-        if (mySide === 'left') rp.y = msg.y;
-        else                   lp.y = msg.y;
-        break;
-      case 'ball-state':
-        ball.x = msg.x; ball.y = msg.y;
-        ball.vx = msg.vx; ball.vy = msg.vy;
-        break;
+  /* ── Incoming messages (unchanged) ── */
+  function handleData(msg){
+    switch(msg.type){
+      case 'ping':         send({type:'pickelbol'}); break;
+      case 'pickelbol':    break;
+      case 'start':        opponentName=msg.hostName||'?';joinPickelbolGame();send({type:'player-name',name:myName}); break;
+      case 'player-name':  opponentName=msg.name;updateNameDisplays(); break;
+      case 'paddle-pos':   if(mySide==='left')rp.y=msg.y;else lp.y=msg.y; break;
+      case 'ball-state':   ball.x=msg.x;ball.y=msg.y;ball.vx=msg.vx;ball.vy=msg.vy; break;
       case 'score':
-        scores.left  = msg.left;
-        scores.right = msg.right;
-        refreshScores();
-        if (msg.reset) {
-          // Centre visually; host's next ball-state messages will take over
-          ball.x = CW / 2; ball.y = CH / 2; ball.vx = 0; ball.vy = 0;
-        }
+        scores.left=msg.left;scores.right=msg.right;refreshScores();
+        if(msg.reset){ball.x=CW/2;ball.y=CH/2;ball.vx=0;ball.vy=0;}
         break;
       case 'game-over':
         stopLoop();
-        showChampion(
-          (mySide === 'left'  && scores.left  >= WINS_NEED) ||
-          (mySide === 'right' && scores.right >= WINS_NEED)
-        );
+        showChampion((mySide==='left'&&scores.left>=WINS_NEED)||(mySide==='right'&&scores.right>=WINS_NEED));
         break;
-      case 'rematch':
-        doRematch();
-        break;
+      case 'rematch-req':  wantsRematch=true;toast('Opponent wants a rematch — tap 🔄 Rematch!'); break;
+      case 'rematch-ok':   doRematch(); break;
+      case 'rematch':      doRematch(); break;
     }
   }
 
-  /* ── Physics ── */
-  function update() {
-    const myPaddle = mySide === 'left' ? lp : rp;
+  /* ── Physics (unchanged from original) ── */
+  function update(){
+    const myPaddle=mySide==='left'?lp:rp;
+    const goUp=keys['w']||keys['W']||keys['ArrowUp']  ||touchUp;
+    const goDn=keys['s']||keys['S']||keys['ArrowDown']||touchDn;
+    if(goUp)myPaddle.y=Math.max(0,      myPaddle.y-PSPEED);
+    if(goDn)myPaddle.y=Math.min(CH-PH,  myPaddle.y+PSPEED);
+    if(frameCount%3===0)send({type:'paddle-pos',y:myPaddle.y});
+    if(mySide!=='left')return;
 
-    // Paddle movement — keyboard or touch buttons or canvas drag
-    const goUp = keys['w'] || keys['W'] || keys['ArrowUp']   || touchUp;
-    const goDn = keys['s'] || keys['S'] || keys['ArrowDown'] || touchDn;
-    if (goUp) myPaddle.y = Math.max(0,       myPaddle.y - PSPEED);
-    if (goDn) myPaddle.y = Math.min(CH - PH, myPaddle.y + PSPEED);
+    ball.x+=ball.vx; ball.y+=ball.vy;
 
-    // Throttle paddle updates to every 3 frames to reduce network traffic
-    if (frameCount % 3 === 0) {
-      send({ type: 'paddle-pos', y: myPaddle.y });
+    if(ball.y-BR<0) {ball.y=BR;     ball.vy= Math.abs(ball.vy);sndWall();}
+    if(ball.y+BR>CH){ball.y=CH-BR;  ball.vy=-Math.abs(ball.vy);sndWall();}
+
+    if(ball.vx<0&&ball.x-BR<=lp.x+PW&&ball.x>=lp.x&&ball.y+BR>=lp.y&&ball.y-BR<=lp.y+PH){
+      ball.x=lp.x+PW+BR; paddleBounce(lp,1);
+    }
+    if(ball.vx>0&&ball.x+BR>=rp.x&&ball.x<=rp.x+PW&&ball.y+BR>=rp.y&&ball.y-BR<=rp.y+PH){
+      ball.x=rp.x-BR; paddleBounce(rp,-1);
     }
 
-    // Only host (left) drives ball physics
-    if (mySide !== 'left') return;
+    if(ball.x<0) {scores.right++;flashCol=0x56ccf2;flashVal=1;onPoint();return;}
+    if(ball.x>CW){scores.left++; flashCol=0xf7971e;flashVal=1;onPoint();return;}
 
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-
-    // Wall bounce
-    if (ball.y - BR < 0)  { ball.y = BR;      ball.vy =  Math.abs(ball.vy); }
-    if (ball.y + BR > CH) { ball.y = CH - BR; ball.vy = -Math.abs(ball.vy); }
-
-    // Left paddle collision
-    if (ball.vx < 0
-        && ball.x - BR <= lp.x + PW
-        && ball.x      >= lp.x
-        && ball.y + BR >= lp.y
-        && ball.y - BR <= lp.y + PH) {
-      ball.x = lp.x + PW + BR;
-      paddleBounce(lp, 1);
-    }
-
-    // Right paddle collision
-    if (ball.vx > 0
-        && ball.x + BR >= rp.x
-        && ball.x      <= rp.x + PW
-        && ball.y + BR >= rp.y
-        && ball.y - BR <= rp.y + PH) {
-      ball.x = rp.x - BR;
-      paddleBounce(rp, -1);
-    }
-
-    // Scoring
-    if (ball.x < 0)  { scores.right++; onPoint(); return; }
-    if (ball.x > CW) { scores.left++;  onPoint(); return; }
-
-    // Throttle ball-state to every 4 frames — reduces lag further without hurting sync
-    if (frameCount % 4 === 0) {
-      send({ type: 'ball-state', x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy });
-    }
+    if(frameCount%4===0)send({type:'ball-state',x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy});
   }
 
-  function paddleBounce(paddle, xSign) {
-    const rel   = (ball.y - (paddle.y + PH / 2)) / (PH / 2); // −1 … 1
-    const angle = rel * (Math.PI / 4);                         // max ±45°
-    const spd   = Math.min(Math.hypot(ball.vx, ball.vy) + 0.5, MAX_SPD);
-    ball.vx = xSign * spd * Math.cos(angle);
-    ball.vy = spd * Math.sin(angle);
+  function paddleBounce(paddle,xSign){
+    const rel=(ball.y-(paddle.y+PH/2))/(PH/2);
+    const angle=rel*(Math.PI/4);
+    const spd=Math.min(Math.hypot(ball.vx,ball.vy)+0.5,MAX_SPD);
+    ball.vx=xSign*spd*Math.cos(angle);
+    ball.vy=spd*Math.sin(angle);
     sndHit();
+    /* brief emissive flash on the hit paddle */
+    const mesh=xSign>0?lpMesh:rpMesh;
+    mesh.material.emissiveIntensity=1.4;
+    setTimeout(()=>{mesh.material.emissiveIntensity=0.45;},120);
   }
 
-  function onPoint() {
-    sndScore();
-    refreshScores();
-    const over = scores.left >= WINS_NEED || scores.right >= WINS_NEED;
-    if (over) {
-      send({ type: 'score', left: scores.left, right: scores.right, reset: false });
-      stopLoop();
-      send({ type: 'game-over' });
-      showChampion(scores.left >= WINS_NEED);
-    } else {
-      send({ type: 'score', left: scores.left, right: scores.right, reset: true });
+  function onPoint(){
+    sndScore();refreshScores();
+    const over=scores.left>=WINS_NEED||scores.right>=WINS_NEED;
+    if(over){
+      send({type:'score',left:scores.left,right:scores.right,reset:false});
+      stopLoop();send({type:'game-over'});
+      showChampion(scores.left>=WINS_NEED);
+    }else{
+      send({type:'score',left:scores.left,right:scores.right,reset:true});
       resetBall();
     }
   }
 
-  function resetBall() {
-    ball.x = CW / 2; ball.y = CH / 2;
-    const angle = Math.random() * 0.5 - 0.25; // ±0.25 rad
-    const dir   = Math.random() > 0.5 ? 1 : -1;
-    ball.vx = dir * BASE_SPD * Math.cos(angle);
-    ball.vy = BASE_SPD * Math.sin(angle) * (Math.random() > 0.5 ? 1 : -1);
-  }
-
-  /* ── Draw — no roundRect; fillRect works on all browsers including old iOS Safari ── */
-  function draw() {
-    ctx.clearRect(0, 0, CW, CH);
-
-    // Centre dashed line
-    ctx.save();
-    ctx.setLineDash([6, 14]);
-    ctx.beginPath();
-    ctx.moveTo(CW / 2, 0); ctx.lineTo(CW / 2, CH);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth   = 2;
-    ctx.stroke();
-    ctx.restore();
-
-    // Left paddle (orange)
-    ctx.fillStyle = '#f7971e';
-    ctx.fillRect(lp.x, lp.y, PW, PH);
-
-    // Right paddle (blue)
-    ctx.fillStyle = '#56ccf2';
-    ctx.fillRect(rp.x, rp.y, PW, PH);
-
-    // Ball — removed expensive shadow blur for better performance
-    ctx.fillStyle = '#ffd200';
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, BR, 0, Math.PI * 2);
-    ctx.fill();
+  function resetBall(){
+    ball.x=CW/2;ball.y=CH/2;
+    const angle=Math.random()*0.5-0.25;
+    const dir=Math.random()>0.5?1:-1;
+    ball.vx=dir*BASE_SPD*Math.cos(angle);
+    ball.vy=BASE_SPD*Math.sin(angle)*(Math.random()>0.5?1:-1);
+    trailPos.length=0;
   }
 
   /* ── Champion ── */
-  function showChampion(iAmWinner) {
-    iAmWinner ? sndWin() : sndLose();
-    const winner = iAmWinner ? myName : (opponentName || 'Opponent');
-    document.getElementById('champ-sub').textContent =
-      iAmWinner ? `${myName} is the Picklebol Champion! 🎉` : `${winner} is the Picklebol Champion!`;
-    if (iAmWinner) {
-      recordWin(myName).then(() => loadAndRenderLeaderboard(true));
-      setTimeout(() => toast(`${myName} added to the leaderboard!`), 600);
-    }
+  function showChampion(iAmWinner){
+    iAmWinner?sndWin():sndLose();
+    const winner=iAmWinner?myName:(opponentName||'Opponent');
+    document.getElementById('champ-sub').textContent=
+      iAmWinner?`${myName} is the Picklebol Champion! 🎉`:`${winner} is the Picklebol Champion!`;
+    if(iAmWinner){recordWin(myName).then(()=>loadAndRenderLeaderboard(true));setTimeout(()=>toast(`${myName} added to the leaderboard!`),600);}
     show('s-champ');
   }
 
-  function requestRematch() {
-    send({ type: 'rematch' });
-    doRematch();
+  function requestRematch(){
+    if(wantsRematch){doRematch();send({type:'rematch-ok'});}
+    else{wantsRematch=true;send({type:'rematch-req'});toast('Waiting for opponent…');}
   }
-
-  function doRematch() {
-    scores = { left: 0, right: 0 };
-    refreshScores();
-    resetPositions();
-    show('s-game');
-    if (mySide === 'left') resetBall();
-    else { ball.x = CW / 2; ball.y = CH / 2; ball.vx = 0; ball.vy = 0; }
+  function doRematch(){
+    wantsRematch=false;scores={left:0,right:0};refreshScores();resetPositions();show('s-game');
+    if(mySide==='left')resetBall();else{ball.x=CW/2;ball.y=CH/2;ball.vx=0;ball.vy=0;}
     startLoop();
   }
+  function goHome(){destroyPeer();opponentName='';scores={left:0,right:0};refreshScores();window.location.href=`index.html?screen=lobby&name=${encodeURIComponent(myName||'')}`;}
+  function cancelGame(){destroyPeer();window.location.href=`index.html?screen=lobby&name=${encodeURIComponent(myName||'')}`;}
 
-  function goHome() {
-    destroyPeer(); // clears myRole + Firebase presence
-    opponentName = '';
-    scores = { left: 0, right: 0 };
-    refreshScores();
-    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName || '')}`;
-  }
-
-  function cancelGame() {
-    destroyPeer();
-    window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName || '')}`;
-  }
-
-  function onDrop() {
-    stopHeartbeat();
-    if (myRole) { clearPresence(myRole); myRole = null; }
-    setConn(false);
-    stopLoop();
-    let secs = 5;
-    const tick = () => {
-      setStatus(`<span class="dc">Opponent disconnected — returning in ${secs}s</span>`);
-      if (secs-- <= 0) { clearInterval(iv); window.location.href = `index.html?screen=lobby&name=${encodeURIComponent(myName)}`; }
-    };
-    tick();
-    const iv = setInterval(tick, 1000);
+  function onDrop(){
+    stopHeartbeat();if(myRole){clearPresence(myRole);myRole=null;}setConn(false);stopLoop();
+    let secs=5;
+    const tick=()=>{setStatus(`<span class="dc">Opponent disconnected — returning in ${secs}s</span>`);if(secs--<=0){clearInterval(iv);window.location.href=`index.html?screen=lobby&name=${encodeURIComponent(myName)}`;}};
+    tick();const iv=setInterval(tick,1000);
   }
 
   /* ── Boot ── */
-  // Clean up Firebase presence if page closes mid-game (matches TTT pattern)
-  window.addEventListener('beforeunload', () => {
-    if (myRole) {
-      fetch(`${DB}/rooms/room-${roomNum}/${myRole}.json`, { method: 'DELETE', keepalive: true });
-    }
-    if (myName) fetch(`${DB}/online/${encodeURIComponent(myName)}.json`, { method: 'DELETE', keepalive: true });
+  window.addEventListener('beforeunload',()=>{
+    if(myRole)fetch(`${DB}/rooms/room-${roomNum}/${myRole}.json`,{method:'DELETE',keepalive:true});
+    if(myName)fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
   });
+  window.addEventListener('storage',e=>{if(e.key===SCORE_SYNC_KEY)loadAndRenderLeaderboard(true);});
 
-  window.addEventListener('storage', e => {
-    if (e.key === SCORE_SYNC_KEY) {
-      loadAndRenderLeaderboard(true);
-    }
-  });
-
-  draw();
-  updateFormatBadge();
   /* ── Sound ── */
-  let _actx = null;
-  let soundOn = localStorage.getItem('filoSound') !== 'off';
-  function _actxGet() { if (!_actx) _actx = new (window.AudioContext||window.webkitAudioContext)(); return _actx; }
-  function _tone(freq, dur, type='sine', vol=0.28) {
-    if (!soundOn) return;
-    try {
-      const ctx = _actxGet(), o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime);
-      g.gain.setValueAtTime(vol, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      o.start(); o.stop(ctx.currentTime + dur);
-    } catch(e) {}
+  let _actx=null;
+  let soundOn=localStorage.getItem('filoSound')!=='off';
+  function _actxGet(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
+  function _tone(freq,dur,type='sine',vol=0.28){
+    if(!soundOn)return;
+    try{const ctx=_actxGet(),o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.setValueAtTime(freq,ctx.currentTime);g.gain.setValueAtTime(vol,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);o.start();o.stop(ctx.currentTime+dur);}catch(e){}
   }
-  function sndHit()   { _tone(320, 0.04, 'square', 0.15); }
-  function sndScore() { _tone(180, 0.25, 'sine',   0.22); }
-  function sndWin()   { [523,659,784,1047].forEach((f,i) => setTimeout(() => _tone(f,0.18,'sine',0.28), i*90)); }
-  function sndLose()  { [392,330,261].forEach((f,i) => setTimeout(() => _tone(f,0.2,'sine',0.18), i*110)); }
-  function toggleSound() {
-    soundOn = !soundOn;
-    localStorage.setItem('filoSound', soundOn ? 'on' : 'off');
-    document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
-    if (soundOn) _tone(440, 0.1);
-  }
-  document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
+  function sndHit()   {_tone(320,0.04,'square',0.15);}
+  function sndWall()  {_tone(180,0.04,'square',0.08);}
+  function sndScore() {_tone(180,0.25,'sine',0.22);}
+  function sndWin()   {[523,659,784,1047].forEach((f,i)=>setTimeout(()=>_tone(f,0.18,'sine',0.28),i*90));}
+  function sndLose()  {[392,330,261].forEach((f,i)=>setTimeout(()=>_tone(f,0.2,'sine',0.18),i*110));}
+  function toggleSound(){soundOn=!soundOn;localStorage.setItem('filoSound',soundOn?'on':'off');document.getElementById('sound-btn').textContent=soundOn?'🔊':'🔇';if(soundOn)_tone(440,0.1);}
+  document.getElementById('sound-btn').textContent=soundOn?'🔊':'🔇';
 
-  document.getElementById('room-display').textContent = `Room ${roomNum}`;
-  document.getElementById('room-hint').textContent = `Ask your friend to pick Room ${roomNum}!`;
+  /* ── Initial render + boot ── */
+  draw(); // render the 3D court before game starts
+  updateFormatBadge();
+  document.getElementById('room-display').textContent=`Room ${roomNum}`;
+  document.getElementById('room-hint').textContent=`Ask your friend to pick Room ${roomNum}!`;
   clearStalePresence();
   startOnlinePresence(myName);
   startOnlinePoll();
