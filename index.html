@@ -266,9 +266,7 @@
     .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; margin-bottom: 8px; }
     .code-value { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 20px rgba(255,210,0,0.38); }
 
-    .spinner { width:48px; height:48px; border:4px solid rgba(255,255,255,0.18); border-top-color:var(--gold); border-radius:50%; margin:22px auto 12px; transform:translateZ(0); will-change:transform; -webkit-animation:spin 0.85s linear infinite !important; animation:spin 0.85s linear infinite !important; animation-play-state:running !important; }
-    @-webkit-keyframes spin { to { -webkit-transform:rotate(360deg); transform:rotate(360deg); } }
-    @keyframes spin          { to { -webkit-transform:rotate(360deg); transform:rotate(360deg); } }
+    .spinner { width:48px; height:48px; border:4px solid rgba(255,255,255,0.18); border-top-color:var(--gold); border-radius:50%; margin:22px auto 12px; will-change:transform; }
 
     .player-badge {
       display: inline-flex; align-items: center; gap: 8px;
@@ -406,7 +404,6 @@
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-      .spinner { animation-duration: 0.85s !important; animation-play-state: running !important; }
     }
   </style>
 </head>
@@ -592,7 +589,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.18</div>
+  <div class="app-version">v2.19</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1306,6 +1303,25 @@
     attach('.name-card:not(.taken)', 10);
     attach('.room-card:not(.full)', 12);
     attach('.room-card-mafia', 12);
+  })();
+
+  /* JS-driven spinner — immune to WebGL/CSS animation conflicts on iOS */
+  (function() {
+    let rafId = null, angle = 0, lastTs = null;
+    const el = document.querySelector('.spinner');
+    function tick(ts) {
+      if (lastTs !== null) angle = (angle + (ts - lastTs) * 0.306) % 360; // 0.306 deg/ms ≈ 0.85s/rev
+      lastTs = ts;
+      el.style.transform = 'rotate(' + angle + 'deg)';
+      rafId = requestAnimationFrame(tick);
+    }
+    function startSpinner() { if (!rafId) { lastTs = null; rafId = requestAnimationFrame(tick); } }
+    function stopSpinner()  { if (rafId)  { cancelAnimationFrame(rafId); rafId = null; } }
+    const origShow = window.show;
+    window.show = function(id) {
+      origShow(id);
+      if (id === 's-wait') startSpinner(); else stopSpinner();
+    };
   })();
 </script>
 </body>
