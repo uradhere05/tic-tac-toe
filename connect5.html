@@ -272,7 +272,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-    <div class="app-version">v2.21</div>
+    <div class="app-version">v2.22</div>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
@@ -557,6 +557,7 @@
     clearInterval(onlineHeartbeat);
     onlineHeartbeat = setInterval(() => setOnline(name), 30000);
   }
+  function stopOnlinePoll() { clearInterval(onlineInterval); onlineInterval = null; }
   function startOnlinePoll() {
     loadOnlineUsers();
     clearInterval(onlineInterval);
