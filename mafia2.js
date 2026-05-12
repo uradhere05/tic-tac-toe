@@ -326,6 +326,20 @@ async function proceedToAssign(){
    ROLE ASSIGNMENT
 ════════════════════════════════ */
 function renderAssignScreen(){
+  // Poll for phase change so GM screen auto-advances during simulation
+  if(!window._assignPoller){
+    window._assignPoller=setInterval(async()=>{
+      if(!document.getElementById('s-assign').classList.contains('active')){
+        clearInterval(window._assignPoller);window._assignPoller=null;return;
+      }
+      const phaseD=await fb('GET','/mafia2/phase');
+      if(phaseD&&phaseD!=='assigning'){
+        clearInterval(window._assignPoller);window._assignPoller=null;
+        await reloadHostState();
+        await reconnectHost(phaseD);
+      }
+    },1500);
+  }
   const players=Object.keys(rolesMap).sort();
   if(!players.length){
     document.getElementById('assign-list').innerHTML=
