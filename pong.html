@@ -285,7 +285,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.24</div>
+  <div class="app-version">v2.25</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -363,10 +363,7 @@
   camera.lookAt(0, 0, 0);
 
   /* Court floor */
-  scene.add(Object.assign(new THREE.Mesh(
-    new THREE.PlaneGeometry(W3 + 4, H3 + 4),
-    new THREE.MeshStandardMaterial({ color: 0x000814, roughness: 1 })
-  ), { position: new THREE.Vector3(0, 0, -0.5) }));
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(W3+4,H3+4), new THREE.MeshStandardMaterial({color:0x000814,roughness:1})); m.position.set(0,0,-0.5); scene.add(m); }
 
   /* Subtle grid on floor */
   const grid = new THREE.GridHelper(22, 22, 0x0a1a3a, 0x0a1a3a);
