@@ -285,7 +285,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.22</div>
+  <div class="app-version">v2.23</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -322,6 +322,12 @@
     [document.getElementById('format-badge'), document.getElementById('format-badge-game')]
       .forEach(b => { if (b) b.textContent = txt; });
   }
+
+  /* Hoist state vars before Three.js so they're safe even if WebGL throws */
+  let heartbeat, waitHeartbeat;
+  let onlineHeartbeat = null, onlineInterval = null;
+  let lbLoading = false, lbLastLoad = 0;
+  let toastT;
 
   /* ════════════════════════════════════════
      THREE.JS SCENE SETUP
@@ -571,7 +577,6 @@
     } catch(e) { console.error('recordWin failed',e); }
   }
 
-  let lbLoading=false, lbLastLoad=0;
   const LB_REFRESH_MS=5000;
 
   async function loadAndRenderLeaderboard(force=false) {
@@ -613,7 +618,6 @@
 
   /* ── Firebase — online presence ── */
   const ONLINE_STALE=75*1000;
-  let onlineHeartbeat=null, onlineInterval=null;
 
   async function setOnline(name) {
     try{await fetch(`${DB}/online/${encodeURIComponent(name)}.json`,{method:'PUT',body:JSON.stringify({ts:Date.now()})});}catch{}
@@ -660,12 +664,10 @@
   function setConn(on){document.getElementById('cdot').className='cdot'+(on?'':' off');document.getElementById('ctext').textContent=on?'Connected':'Disconnected';}
   function setStatus(html){document.getElementById('status').innerHTML=html;}
   function refreshScores(){document.getElementById('sc-left').textContent=scores.left;document.getElementById('sc-right').textContent=scores.right;}
-  let toastT;
   function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
 
   const PEER_CFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun2.l.google.com:19302'}]}};
 
-  let heartbeat, waitHeartbeat;
   function startHeartbeat(){stopWaitHeartbeat();clearInterval(heartbeat);heartbeat=setInterval(()=>{send({type:'ping'});if(myRole)writePresence(myRole);},10000);}
   function stopHeartbeat(){clearInterval(heartbeat);}
   function startWaitHeartbeat(){clearInterval(waitHeartbeat);waitHeartbeat=setInterval(()=>{if(myRole)writePresence(myRole);},10000);}
@@ -889,14 +891,11 @@
   updateFormatBadge();
   document.getElementById('room-display').textContent=`Room ${roomNum}`;
   document.getElementById('room-hint').textContent=`Ask your friend to pick Room ${roomNum}!`;
-  clearStalePresence();
-  startOnlinePresence(myName);
-  startOnlinePoll();
-  enterPickelbolRoom();
-
+  /* Spinner — runs before enterPickelbolRoom so it works even if Peer/WebGL throws */
   (function() {
     let rafId = null, angle = 0, lastTs = null;
     const el = document.querySelector('.spinner');
+    if (!el) return;
     function tick(ts) {
       if (lastTs !== null) angle = (angle + (ts - lastTs) * 0.306) % 360;
       lastTs = ts;
@@ -907,8 +906,13 @@
     function stopSpinner()  { if (rafId)  { cancelAnimationFrame(rafId); rafId = null; } }
     const origShow = window.show;
     window.show = function(id) { origShow(id); if (id === 's-wait') startSpinner(); else stopSpinner(); };
-    startSpinner(); // s-wait is active on load
+    startSpinner();
   })();
+
+  clearStalePresence();
+  startOnlinePresence(myName);
+  startOnlinePoll();
+  try { enterPickelbolRoom(); } catch(e) { console.warn('[Pong] enterPickelbolRoom failed:', e); }
 </script>
 </body>
 </html>
