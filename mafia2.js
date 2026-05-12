@@ -56,8 +56,12 @@ function init(){
   const stored=localStorage.getItem('filoName');
   if(stored){
     myName=stored;
-    myAvatar=localStorage.getItem('filoAvatar')||'';
-    if(!myAvatar){showAvatarSelect();return;}
+    myAvatar=localStorage.getItem('filoAvatar')||'🕵️';
+    if(!localStorage.getItem('filoAvatar')) localStorage.setItem('filoAvatar',myAvatar);
+    const autoJoin=new URLSearchParams(location.search).get('autoJoin');
+    if(autoJoin==='host'){joinAsGameMaster();return;}
+    if(autoJoin==='player'){joinAsPlayer();return;}
+    if(!localStorage.getItem('filoAvatar')){showAvatarSelect();return;}
     checkActiveGame();
   }else{
     window.location.replace('index.html');

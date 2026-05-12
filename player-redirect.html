@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Joining...</title></head>
+<body>
+<script>
+  const p = new URLSearchParams(location.search);
+  const name = p.get('name');
+  const avatar = p.get('avatar') || '🕵️';
+  const role = p.get('role') || 'player'; // 'player' or 'host'
+  if (name) {
+    localStorage.setItem('filoName', name);
+    localStorage.setItem('filoAvatar', avatar);
+  }
+  location.href = 'mafia2.html' + (role === 'host' ? '?host&autoJoin=host' : '?autoJoin=player');
+</script>
+</body>
+</html>
