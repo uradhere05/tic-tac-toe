@@ -1,11 +1,11 @@
 'use strict';
 const DB='https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
 const NAMES=['Kuya AD','Matt','Gianne','Austin','Charm','Kee','Kriselle','Monique','Tiff','Shantelle'];
-const AVATARS=['🧑','👱','🧔','👩','👨','🧑‍🦱','🧑‍🦰','🧑‍🦳','🧑‍🦲','👧'];
+const AVATARS=['🕵️','🤵','👩‍⚕️','👨‍💼','👩‍💼','🧑‍🌾','👩‍🍳','🧑‍🔧','👮','👨‍🍳'];
 const COLORS=['#e74c3c','#3498db','#2ecc71','#9b59b6','#f39c12','#1abc9c','#e67e22','#e91e63','#00bcd4','#8bc34a'];
 const CMAP=Object.fromEntries(NAMES.map((n,i)=>[n,COLORS[i]]));
 const AMAP=Object.fromEntries(NAMES.map((n,i)=>[n,AVATARS[i]]));
-const THEMED_AVATARS=['🕵️','🥷','🤵','🧑‍⚕️','👮','🦹','🧙','🤠','🎭','🦸','🧛','🥸'];
+const THEMED_AVATARS=['🕵️','🤵','👮','🧑‍⚕️','👩‍⚕️','👨‍💼','👩‍💼','🧑‍🌾','👨‍🍳','👩‍🍳','🧑‍🔧','👨‍🎤'];
 const ROLE_CFG={
   murderer:    {icon:'🔪',desc:'Each night, choose someone to eliminate.'},
   doctor:      {icon:'💊',desc:'Each night, choose someone to protect from the murderer.'},
