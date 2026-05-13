@@ -53,6 +53,14 @@ function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementByI
    ENTRY
 ════════════════════════════════ */
 function init(){
+  const params=new URLSearchParams(location.search);
+  const simName=params.get('simName');
+  if(simName){
+    myName=simName;
+    myAvatar=params.get('simAvatar')||'🕵️';
+    if(params.get('autoJoin')==='host'){joinAsGameMaster();return;}
+    joinAsPlayer();return;
+  }
   const stored=localStorage.getItem('filoName');
   if(stored){
     myName=stored;
