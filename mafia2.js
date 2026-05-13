@@ -454,11 +454,12 @@ function enterHostNight(){
 }
 
 async function pollNightActions(){
-  const [killD,saveD,inspD,aliveD,suspectD]=await Promise.all([
+  const [killD,saveD,inspD,aliveD,suspectD,phaseD]=await Promise.all([
     fb('GET','/mafia2/night/kill'),fb('GET','/mafia2/night/save'),
     fb('GET','/mafia2/night/inspect'),fb('GET','/mafia2/alive'),
-    fb('GET','/mafia2/night/suspect'),
+    fb('GET','/mafia2/night/suspect'),fb('GET','/mafia2/phase'),
   ]);
+  if(phaseD&&phaseD!=='night'){stopIvs();await reconnectHost(phaseD);return;}
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
   const murd=Object.keys(rolesMap).find(n=>rolesMap[n]==='murderer');
   const doct=Object.keys(rolesMap).find(n=>rolesMap[n]==='doctor');
@@ -566,7 +567,8 @@ async function hostOpenVote(){
 }
 
 async function pollVotes(){
-  const votes=await fb('GET','/mafia2/day/votes');
+  const [votes,phaseD]=await Promise.all([fb('GET','/mafia2/day/votes'),fb('GET','/mafia2/phase')]);
+  if(phaseD&&phaseD!=='day'&&phaseD!=='vote'){stopIvs();await reconnectHost(phaseD);return;}
   const alivePlayers=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
 
   // Locked-in chips
