@@ -52,6 +52,40 @@ function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementByI
 /* ════════════════════════════════
    ENTRY
 ════════════════════════════════ */
+/* ════════════════════════════════
+   PHASE STREAM — SSE push from Firebase
+   Works in background tabs; no timer needed.
+════════════════════════════════ */
+let _phaseStream=null;
+function startPhaseStream(){
+  if(_phaseStream){try{_phaseStream.close();}catch{}}_phaseStream=null;
+  try{
+    _phaseStream=new EventSource(`${DB}/mafia2/phase.json?accept=text/event-stream`);
+    const handle=async(e)=>{
+      try{
+        const phaseD=JSON.parse(e.data)?.data;
+        if(!phaseD||typeof phaseD!=='string'||!myName) return;
+        if(phaseD==='ended'){
+          const winner=await fb('GET','/mafia2/winner');
+          if(!winner) return;
+          stopIvs();
+          const hostD=await fb('GET','/mafia2/host');
+          if(hostD===myName){isHost=true;await reloadHostState();show('s-host');hShow('h-end');await buildHostEnd(winner);}
+          else{show('s-player');await showPlayerEnd(winner);}
+        } else if(phaseD==='reset'){
+          stopIvs();
+          myRole=null;myAction=null;myVote=null;mySuspect=null;myEliminated=false;knownPhase='';
+          toast('Host ended the game — returning to lobby…',3000);
+          setTimeout(enterLobby,1500);
+        }
+      }catch{}
+    };
+    _phaseStream.addEventListener('put',handle);
+    _phaseStream.addEventListener('patch',handle);
+    _phaseStream.onerror=()=>setTimeout(startPhaseStream,5000);
+  }catch{}
+}
+
 function init(){
   const params=new URLSearchParams(location.search);
   const simName=params.get('simName');
@@ -61,6 +95,7 @@ function init(){
   if(simName){
     myName=simName;
     myAvatar=simAvatar||'🕵️';
+    startPhaseStream();
     if(autoJoin==='host'){joinAsGameMaster();return;}
     joinAsPlayer();return;
   }
@@ -69,6 +104,7 @@ function init(){
     myName=stored;
     myAvatar=localStorage.getItem('filoAvatar')||'🕵️';
     if(!localStorage.getItem('filoAvatar')) localStorage.setItem('filoAvatar',myAvatar);
+    startPhaseStream();
     if(autoJoin==='host'){joinAsGameMaster();return;}
     if(autoJoin==='player'){joinAsPlayer();return;}
     if(!myAvatar){showAvatarSelect();return;}
