@@ -65,6 +65,7 @@ function startPhaseStream(){
       try{
         const phaseD=JSON.parse(e.data)?.data;
         if(!phaseD||typeof phaseD!=='string'||!myName) return;
+        const lobbyActive=()=>!!document.getElementById('s-lobby')?.classList.contains('active');
         if(phaseD==='ended'){
           const winner=await fb('GET','/mafia2/winner');
           if(!winner) return;
@@ -77,6 +78,24 @@ function startPhaseStream(){
           myRole=null;myAction=null;myVote=null;mySuspect=null;myEliminated=false;knownPhase='';
           toast('Host ended the game — returning to lobby…',3000);
           setTimeout(enterLobby,1500);
+        } else if(lobbyActive()){
+          // Rescue windows stuck in lobby when a game is already in progress
+          if(phaseD==='assigning'){
+            const hostD=await fb('GET','/mafia2/host');
+            if(hostD===myName){
+              const fl=await fb('GET','/mafia2/lobby')||{};
+              const _now=Date.now();
+              Object.values(fl).filter(p=>p&&p.name&&p.name!==myName&&(_now-p.ts)<300000)
+                .forEach(p=>{if(!(p.name in rolesMap))rolesMap[p.name]='';});
+              show('s-assign');renderAssignScreen();
+            } else {
+              show('s-player');renderWaiting();startPlayerPolling();
+            }
+          } else if(phaseD==='night'||phaseD==='day'||phaseD==='vote'){
+            const hostD2=await fb('GET','/mafia2/host');
+            if(hostD2===myName){isHost=true;await reloadHostState();await reconnectHost(phaseD);}
+            else{show('s-player');startPlayerPolling();}
+          }
         }
       }catch{}
     };
@@ -190,7 +209,10 @@ async function enterLobby(){
   amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';myEliminated=false;
   show('s-lobby');
   await writeLobbyPresence();
-  startLobbyPolling();
+  // Guard: SSE may have already rescued us off s-lobby during the async write
+  if(document.getElementById('s-lobby').classList.contains('active')){
+    startLobbyPolling();
+  }
 }
 
 async function writeLobbyPresence(){
