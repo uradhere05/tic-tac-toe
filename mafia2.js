@@ -1,11 +1,11 @@
 'use strict';
 const DB='https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
 const NAMES=['Kuya AD','Matt','Gianne','Austin','Charm','Kee','Kriselle','Monique','Tiff','Shantelle'];
-const AVATARS=['🕵️','🤵','👩‍⚕️','👨‍💼','👩‍💼','🧑‍🌾','👩‍🍳','🧑‍🔧','👮','👨‍🍳'];
+const AVATARS=['🧑','👱','🧔','👩','👨','🧑‍🦱','🧑‍🦰','🧑‍🦳','🧑‍🦲','👧'];
 const COLORS=['#e74c3c','#3498db','#2ecc71','#9b59b6','#f39c12','#1abc9c','#e67e22','#e91e63','#00bcd4','#8bc34a'];
 const CMAP=Object.fromEntries(NAMES.map((n,i)=>[n,COLORS[i]]));
 const AMAP=Object.fromEntries(NAMES.map((n,i)=>[n,AVATARS[i]]));
-const THEMED_AVATARS=['🕵️','🤵','👮','🧑‍⚕️','👩‍⚕️','👨‍💼','👩‍💼','🧑‍🌾','👨‍🍳','👩‍🍳','🧑‍🔧','👨‍🎤'];
+const THEMED_AVATARS=['🕵️','🥷','🤵','🧑‍⚕️','👮','🦹','🧙','🤠','🎭','🦸','🧛','🥸'];
 const ROLE_CFG={
   murderer:    {icon:'🔪',desc:'Each night, choose someone to eliminate.'},
   doctor:      {icon:'💊',desc:'Each night, choose someone to protect from the murderer.'},
@@ -18,7 +18,7 @@ const MIN_READY=5;
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
-let isEnded=false,myEliminated=false,_lastAutoAnn='',_assignPoller=null,_presenceIv=null;
+let isEnded=false,myEliminated=false,_lastAutoAnn='';
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -52,82 +52,11 @@ function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementByI
 /* ════════════════════════════════
    ENTRY
 ════════════════════════════════ */
-/* ════════════════════════════════
-   PHASE STREAM — SSE push from Firebase
-   Works in background tabs; no timer needed.
-════════════════════════════════ */
-let _phaseStream=null;
-function startPhaseStream(){
-  if(_phaseStream){try{_phaseStream.close();}catch{}}_phaseStream=null;
-  try{
-    _phaseStream=new EventSource(`${DB}/mafia2/phase.json?accept=text/event-stream`);
-    const handle=async(e)=>{
-      try{
-        const phaseD=JSON.parse(e.data)?.data;
-        if(!phaseD||typeof phaseD!=='string'||!myName) return;
-        const lobbyActive=()=>!!document.getElementById('s-lobby')?.classList.contains('active');
-        if(phaseD==='ended'){
-          const winner=await fb('GET','/mafia2/winner');
-          if(!winner) return;
-          stopIvs();
-          const hostD=await fb('GET','/mafia2/host');
-          if(hostD===myName){isHost=true;await reloadHostState();show('s-host');hShow('h-end');await buildHostEnd(winner);}
-          else{show('s-player');await showPlayerEnd(winner);}
-        } else if(phaseD==='reset'){
-          stopIvs();
-          myRole=null;myAction=null;myVote=null;mySuspect=null;myEliminated=false;knownPhase='';
-          toast('Host ended the game — returning to lobby…',3000);
-          setTimeout(enterLobby,1500);
-        } else if(lobbyActive()){
-          // Rescue windows stuck in lobby when a game is already in progress
-          if(phaseD==='assigning'){
-            const hostD=await fb('GET','/mafia2/host');
-            if(hostD===myName){
-              const fl=await fb('GET','/mafia2/lobby')||{};
-              const _now=Date.now();
-              Object.values(fl).filter(p=>p&&p.name&&p.name!==myName&&(_now-p.ts)<300000)
-                .forEach(p=>{if(!(p.name in rolesMap))rolesMap[p.name]='';});
-              show('s-assign');renderAssignScreen();
-            } else {
-              show('s-player');renderWaiting();startPlayerPolling();
-            }
-          } else if(phaseD==='night'||phaseD==='day'||phaseD==='vote'){
-            const hostD2=await fb('GET','/mafia2/host');
-            if(hostD2===myName){isHost=true;await reloadHostState();await reconnectHost(phaseD);}
-            else{show('s-player');startPlayerPolling();}
-          }
-        }
-      }catch{}
-    };
-    _phaseStream.addEventListener('put',handle);
-    _phaseStream.addEventListener('patch',handle);
-    _phaseStream.onerror=()=>setTimeout(startPhaseStream,5000);
-  }catch{}
-}
-
 function init(){
-  const params=new URLSearchParams(location.search);
-  const simName=params.get('simName');
-  const simAvatar=params.get('simAvatar');
-  const autoJoin=params.get('autoJoin');
-  // sim mode: name/avatar from URL so multiple tabs can coexist on same origin
-  if(simName){
-    myName=simName;
-    myAvatar=simAvatar||'🕵️';
-    startPhaseStream();
-    startPresenceKeeper();
-    if(autoJoin==='host'){joinAsGameMaster();return;}
-    joinAsPlayer();return;
-  }
   const stored=localStorage.getItem('filoName');
   if(stored){
     myName=stored;
-    myAvatar=localStorage.getItem('filoAvatar')||'🕵️';
-    if(!localStorage.getItem('filoAvatar')) localStorage.setItem('filoAvatar',myAvatar);
-    startPhaseStream();
-    startPresenceKeeper();
-    if(autoJoin==='host'){joinAsGameMaster();return;}
-    if(autoJoin==='player'){joinAsPlayer();return;}
+    myAvatar=localStorage.getItem('filoAvatar')||'';
     if(!myAvatar){showAvatarSelect();return;}
     checkActiveGame();
   }else{
@@ -138,7 +67,7 @@ function init(){
 async function checkActiveGame(){
   try{
     const [phaseD,hostD]=await Promise.all([fb('GET','/mafia2/phase'),fb('GET','/mafia2/host')]);
-    if(phaseD&&phaseD!=='ended'&&phaseD!=='reset'){
+    if(phaseD&&phaseD!=='ended'){
       const iAmHost=hostD===myName;
       const myRoleInGame=iAmHost?true:await fb('GET',`/mafia2/roles/${encN(myName)}`);
       if(myRoleInGame){
@@ -149,7 +78,7 @@ async function checkActiveGame(){
           if(iAmHost){
             const fl=await fb('GET','/mafia2/lobby')||{};
             rolesMap={};
-            const _fnow=Date.now();Object.values(fl).filter(p=>p&&p.name&&p.name!==myName&&_fnow-p.ts<300000).forEach(p=>rolesMap[p.name]='');
+            Object.values(fl).filter(p=>p&&p.name&&p.ready&&p.name!==myName).forEach(p=>rolesMap[p.name]='');
             show('s-assign');renderAssignScreen();
           }else{show('s-player');renderWaiting();startPlayerPolling();}
         }else{
@@ -166,9 +95,7 @@ async function checkActiveGame(){
       }
     }
   }catch{}
-  // No active game — go to lobby directly if we already know our name (simName or stored).
-  // enterRoleSelect() is only needed when the user must choose host vs player manually.
-  enterLobby();
+  enterRoleSelect();
 }
 
 function showAvatarSelect(){
@@ -224,19 +151,11 @@ async function writeLobbyPresence(){
   ]);
 }
 
-// Presence keeper runs independently of ivs[] so stopIvs() never kills it.
-// Writes every 30s — survives Chrome background-tab timer throttling (min ~60s actual).
-// Call once after myName is set; never call again.
-function startPresenceKeeper(){
-  if(_presenceIv) return;
-  _presenceIv=setInterval(()=>{if(myName)writeLobbyPresence().catch(()=>{});},30000);
-}
-
 function startLobbyPolling(){
-  if(!document.getElementById('s-lobby').classList.contains('active')) return;
   stopIvs();
   lobbyTick();
   ivs.push(setInterval(lobbyTick,2000));
+  ivs.push(setInterval(writeLobbyPresence,20000));
 }
 
 async function lobbyTick(){
@@ -249,16 +168,6 @@ async function lobbyTick(){
     fb('GET','/mafia2/phase'),
   ]);
 
-  // Route away if game ended while window was in lobby
-  if(phaseD==='ended'){
-    const winner=await fb('GET','/mafia2/winner');
-    if(winner){
-      stopIvs();
-      if(hostD===myName){isHost=true;await reloadHostState();show('s-host');hShow('h-end');buildHostEnd(winner);}
-      else{show('s-player');showPlayerEnd(winner);}
-    }
-    return;
-  }
   // Route away if game has moved past lobby
   if(phaseD&&phaseD!=='ended'){
     const iAmHost=hostD===myName;
@@ -280,10 +189,9 @@ async function lobbyTick(){
       if(iAmHost){
         // Rebuild player list from lobby in case rolesMap was lost on reload
         const freshLobby=await fb('GET','/mafia2/lobby')||{};
-        const _lnow=Date.now();
         rolesMap={};
         Object.values(freshLobby)
-          .filter(p=>p&&p.name&&p.name!==myName&&_lnow-p.ts<300000)
+          .filter(p=>p&&p.name&&p.ready&&p.name!==myName)
           .forEach(p=>rolesMap[p.name]='');
         show('s-assign');renderAssignScreen();
       } else {show('s-player');renderWaiting();startPlayerPolling();}
@@ -297,7 +205,7 @@ async function lobbyTick(){
   // Build online set
   const now=Date.now();
   const online=onlineD?Object.entries(onlineD)
-    .filter(([,v])=>v&&(now-v.ts<300000))
+    .filter(([,v])=>v&&(now-v.ts<75000))
     .map(([k])=>decN(k)):[];
 
   // Build lobby player list — exclude players not seen online within 75s
@@ -353,12 +261,11 @@ async function lobbyTick(){
   rBtn.textContent=amReady?'⬜ Cancel Ready':'✅ Ready Up';
   rBtn.className='btn w100'+(amReady?' btn-secondary':' btn-primary');
 
-  // Proceed button: host only, when all non-host players are ready (minimum MIN_READY)
-  const nonHostPlayers=players.filter(p=>p.name!==hostName);
-  const canProceed=isHost&&nonHostPlayers.length>=MIN_READY&&nonHostPlayers.every(p=>p.ready);
+  // Proceed button: host only, when ALL lobby players are ready (minimum MIN_READY)
+  const canProceed=isHost&&players.length>=MIN_READY&&readyCount===players.length;
   const proceedBtn=document.getElementById('lb-proceed-btn');
   proceedBtn.style.display=canProceed?'':'none';
-  if(canProceed) proceedBtn.textContent=`▶ Assign Roles (${nonHostPlayers.length} ready)`;
+  if(canProceed) proceedBtn.textContent=`▶ Assign Roles (${readyCount} ready)`;
 }
 
 async function claimHost(){
@@ -378,7 +285,7 @@ async function stepDownHost(){
 
 async function toggleReady(){
   amReady=!amReady;
-  await fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts:Date.now(),ready:amReady,avatar:myAvatar});
+  await fb('PUT',`/mafia2/lobby/${encN(myName)}`,{name:myName,ts:Date.now(),ready:amReady});
   if(lobbyPlayers[encN(myName)]) lobbyPlayers[encN(myName)].ready=amReady;
   const rBtn=document.getElementById('lb-ready-btn');
   rBtn.textContent=amReady?'⬜ Cancel Ready':'✅ Ready Up';
@@ -392,7 +299,7 @@ async function proceedToAssign(){
   const _now=Date.now();
   rolesMap={};
   Object.values(freshLobby)
-    .filter(p=>p&&p.name&&p.name!==hostName&&_now-p.ts<300000)
+    .filter(p=>p&&p.name&&p.ready&&p.name!==hostName&&_now-p.ts<75000)
     .forEach(p=>rolesMap[p.name]='');
   await fb('PUT','/mafia2/phase','assigning');
   stopIvs();
@@ -404,30 +311,6 @@ async function proceedToAssign(){
    ROLE ASSIGNMENT
 ════════════════════════════════ */
 function renderAssignScreen(){
-  // Poll for phase change so GM screen auto-advances during simulation
-  if(!_assignPoller){
-    _assignPoller=setInterval(async()=>{
-      if(!document.getElementById('s-assign').classList.contains('active')){
-        clearInterval(_assignPoller);_assignPoller=null;return;
-      }
-      const [phaseD,freshLobby]=await Promise.all([
-        fb('GET','/mafia2/phase'),
-        fb('GET','/mafia2/lobby'),
-      ]);
-      if(phaseD&&phaseD!=='assigning'){
-        clearInterval(_assignPoller);_assignPoller=null;
-        await reloadHostState();await reconnectHost(phaseD);return;
-      }
-      // Refresh player list — picks up late-joining players
-      if(freshLobby){
-        const _now=Date.now();
-        Object.values(freshLobby)
-          .filter(p=>p&&p.name&&p.name!==hostName&&_now-p.ts<300000)
-          .forEach(p=>{if(!(p.name in rolesMap))rolesMap[p.name]='';});
-        renderAssignScreen();
-      }
-    },1500);
-  }
   const players=Object.keys(rolesMap).sort();
   if(!players.length){
     document.getElementById('assign-list').innerHTML=
@@ -542,12 +425,11 @@ function enterHostNight(){
 }
 
 async function pollNightActions(){
-  const [killD,saveD,inspD,aliveD,suspectD,phaseD]=await Promise.all([
+  const [killD,saveD,inspD,aliveD,suspectD]=await Promise.all([
     fb('GET','/mafia2/night/kill'),fb('GET','/mafia2/night/save'),
     fb('GET','/mafia2/night/inspect'),fb('GET','/mafia2/alive'),
-    fb('GET','/mafia2/night/suspect'),fb('GET','/mafia2/phase'),
+    fb('GET','/mafia2/night/suspect'),
   ]);
-  if(phaseD&&phaseD!=='night'){stopIvs();await reconnectHost(phaseD);return;}
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
   const murd=Object.keys(rolesMap).find(n=>rolesMap[n]==='murderer');
   const doct=Object.keys(rolesMap).find(n=>rolesMap[n]==='doctor');
@@ -655,8 +537,7 @@ async function hostOpenVote(){
 }
 
 async function pollVotes(){
-  const [votes,phaseD]=await Promise.all([fb('GET','/mafia2/day/votes'),fb('GET','/mafia2/phase')]);
-  if(phaseD&&phaseD!=='day'&&phaseD!=='vote'){stopIvs();await reconnectHost(phaseD);return;}
+  const votes=await fb('GET','/mafia2/day/votes');
   const alivePlayers=Object.keys(rolesMap).filter(n=>aliveMap[n]!==false);
 
   // Locked-in chips
@@ -753,8 +634,11 @@ async function buildRecapHtml(allRoles,showRoles){
   return html?`<div class="recap-wrap">${html}</div>`:'';
 }
 
-async function buildHostEnd(winner){
-  hShow('h-end');
+async function endGame(winner){
+  if(isEnded)return; isEnded=true;
+  const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
+  await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
+  stopIvs();hShow('h-end');
   document.getElementById('h-ei').textContent=winner==='murderer'?'🔪':'🛡️';
   document.getElementById('h-et').textContent=winner==='murderer'?'MURDERER WINS!':'CIVILIANS WIN!';
   document.getElementById('h-es').textContent=winner==='murderer'?'The murderer was never caught.':'Justice prevails!';
@@ -764,16 +648,8 @@ async function buildHostEnd(winner){
       <span class="ri-name">${n}</span>
       <span class="ri-role">${r}${aliveMap[n]===false?' · dead':' · survived'}</span>
     </div>`).join('');
-  const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
   const recapEl=document.getElementById('h-recap');
   if(recapEl)recapEl.innerHTML=await buildRecapHtml(allRoles,false);
-}
-
-async function endGame(winner){
-  if(isEnded)return; isEnded=true;
-  const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
-  await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
-  stopIvs();show('s-host');await buildHostEnd(winner);
   const winners=winner==='civilians'
     ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer')
     :Object.keys(rolesMap).filter(n=>rolesMap[n]==='murderer');
@@ -845,8 +721,8 @@ async function pollPhase(){
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
   if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
   if(roundD)round=roundD;
-  if(phD==='ended'&&winner){stopIvs();showPlayerEnd(winner);return;}
   if(!phD||phD===knownPhase) return;
+  const prevPhase=knownPhase;
   knownPhase=phD;
   if(phD==='reset'){
     stopIvs();
@@ -1101,7 +977,7 @@ async function showPlayerEnd(winner){
 
 /* ─── Sound ─── */
 let _actx;
-function _ac(){if(!_actx)_actx=new(window.AudioContext||(/** @type {any} */(window)).webkitAudioContext)();return _actx;}
+function _ac(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
 function snd(type){
   try{const ac=_ac();if(type==='click'){const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=440;g.gain.setValueAtTime(0.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.08);o.start();o.stop(ac.currentTime+0.08);}}catch{}
 }
@@ -1118,11 +994,6 @@ document.addEventListener('visibilitychange',()=>{
       else if(phD==='vote'){stopIvs();ivs.push(setInterval(pollVotes,1000));}
     });
   }
-});
-
-// Re-write lobby presence when Safari un-suspends a background tab (pageshow / BFcache restore)
-window.addEventListener('pageshow', (e) => {
-  if(e.persisted && myName) writeLobbyPresence().catch(()=>{});
 });
 
 window.addEventListener('beforeunload', () => {

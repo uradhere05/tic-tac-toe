@@ -82,7 +82,15 @@
     .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
     .code-value { font-size: 2.4rem; font-weight: 900; letter-spacing: 4px; color: #ffd200; }
 
-    .spinner { width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #ffd200; border-radius: 50%; margin: 18px auto 10px; will-change: transform; }
+    .spinner {
+      width: 34px; height: 34px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffd200; border-radius: 50%;
+      margin: 18px auto 10px; transform: translateZ(0);
+      -webkit-animation: spin 0.8s linear infinite;
+      animation: spin 0.8s linear infinite;
+    }
+    @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
+    @keyframes spin          { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
 
     .player-badge {
       display: inline-flex; align-items: center; gap: 8px;
@@ -272,7 +280,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-    <div class="app-version">v2.44</div>
+    <div class="app-version">v2.18</div>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
@@ -324,7 +332,7 @@
   }
 
   function updateCellCursors() {
-    const isMyTurn = currentTurn === myPiece && !gameOver;
+    const isMyTurn = currentTurn === myPiece && !gameOver && !over;
     document.querySelectorAll('.c5-cell:not(.taken)').forEach(c => {
       c.classList.toggle('not-your-turn', !isMyTurn);
     });
@@ -445,8 +453,7 @@
   function requestRematch() {
     scores = { X: 0, O: 0 };
     refreshScores();
-    send({ type: 'rematch' });
-    doRestart();
+    requestRestart();
   }
 
   function doRestart() {
@@ -558,7 +565,6 @@
     clearInterval(onlineHeartbeat);
     onlineHeartbeat = setInterval(() => setOnline(name), 30000);
   }
-  function stopOnlinePoll() { clearInterval(onlineInterval); onlineInterval = null; }
   function startOnlinePoll() {
     loadOnlineUsers();
     clearInterval(onlineInterval);
@@ -684,12 +690,7 @@
     if (msg.type === 'start') {
       opponentName = msg.hostName;
       myPiece = 'O';
-      send({ type: 'player-name', name: myName });
       startGame();
-    }
-    if (msg.type === 'player-name') {
-      opponentName = msg.name;
-      document.getElementById('sr').textContent = opponentName;
     }
     if (msg.type === 'move') {
       placeStone(msg.idx, currentTurn, true);
@@ -836,22 +837,6 @@
   startOnlinePoll();
   loadAndRenderLeaderboard(true);
   enterRoom();
-
-  (function() {
-    let rafId = null, angle = 0, lastTs = null;
-    const el = document.querySelector('.spinner');
-    function tick(ts) {
-      if (lastTs !== null) angle = (angle + (ts - lastTs) * 0.306) % 360;
-      lastTs = ts;
-      el.style.transform = 'rotate(' + angle + 'deg)';
-      rafId = requestAnimationFrame(tick);
-    }
-    function startSpinner() { if (!rafId) { lastTs = null; rafId = requestAnimationFrame(tick); } }
-    function stopSpinner()  { if (rafId)  { cancelAnimationFrame(rafId); rafId = null; } }
-    const origShow = window.show;
-    window.show = function(id) { origShow(id); if (id === 's-wait') startSpinner(); else stopSpinner(); };
-    startSpinner(); // s-wait is active on load
-  })();
 </script>
 </body>
 </html>

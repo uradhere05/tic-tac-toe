@@ -150,7 +150,18 @@
     .code-label { font-size:0.68rem; letter-spacing:3px; text-transform:uppercase; opacity:0.38; margin-bottom:8px; }
     .code-value { font-family:'Orbitron',sans-serif; font-size:2.2rem; font-weight:900; letter-spacing:4px; color:var(--gold); text-shadow:0 0 20px rgba(255,210,0,0.38); }
 
-    .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.18); border-top-color: var(--gold); border-radius: 50%; margin: 22px auto 12px; will-change: transform; }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid rgba(255,255,255,0.18);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      margin: 22px auto 12px;
+      transform: translateZ(0);
+      -webkit-animation: spin 0.85s linear infinite;
+      animation: spin 0.85s linear infinite;
+    }
+    @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
+    @keyframes spin           { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
 
     .lb-section { width:100%; margin-top:22px; background:rgba(8,4,24,0.48); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid rgba(255,255,255,0.07); border-radius:20px; padding:18px 16px; }
     .lb-title { font-size:0.65rem; letter-spacing:3px; text-transform:uppercase; opacity:0.32; text-align:center; margin-bottom:12px; color:#c87fff; }
@@ -285,7 +296,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.44</div>
+  <div class="app-version">v2.18</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -323,12 +334,6 @@
       .forEach(b => { if (b) b.textContent = txt; });
   }
 
-  /* Hoist state vars before Three.js so they're safe even if WebGL throws */
-  let heartbeat, waitHeartbeat;
-  let onlineHeartbeat = null, onlineInterval = null;
-  let lbLoading = false, lbLastLoad = 0;
-  let toastT;
-
   /* ════════════════════════════════════════
      THREE.JS SCENE SETUP
      Replaces the original 2D canvas context.
@@ -363,7 +368,10 @@
   camera.lookAt(0, 0, 0);
 
   /* Court floor */
-  { const m = new THREE.Mesh(new THREE.PlaneGeometry(W3+4,H3+4), new THREE.MeshStandardMaterial({color:0x000814,roughness:1})); m.position.set(0,0,-0.5); scene.add(m); }
+  scene.add(Object.assign(new THREE.Mesh(
+    new THREE.PlaneGeometry(W3 + 4, H3 + 4),
+    new THREE.MeshStandardMaterial({ color: 0x000814, roughness: 1 })
+  ), { position: new THREE.Vector3(0, 0, -0.5) }));
 
   /* Subtle grid on floor */
   const grid = new THREE.GridHelper(22, 22, 0x0a1a3a, 0x0a1a3a);
@@ -574,6 +582,7 @@
     } catch(e) { console.error('recordWin failed',e); }
   }
 
+  let lbLoading=false, lbLastLoad=0;
   const LB_REFRESH_MS=5000;
 
   async function loadAndRenderLeaderboard(force=false) {
@@ -615,6 +624,7 @@
 
   /* ── Firebase — online presence ── */
   const ONLINE_STALE=75*1000;
+  let onlineHeartbeat=null, onlineInterval=null;
 
   async function setOnline(name) {
     try{await fetch(`${DB}/online/${encodeURIComponent(name)}.json`,{method:'PUT',body:JSON.stringify({ts:Date.now()})});}catch{}
@@ -661,10 +671,12 @@
   function setConn(on){document.getElementById('cdot').className='cdot'+(on?'':' off');document.getElementById('ctext').textContent=on?'Connected':'Disconnected';}
   function setStatus(html){document.getElementById('status').innerHTML=html;}
   function refreshScores(){document.getElementById('sc-left').textContent=scores.left;document.getElementById('sc-right').textContent=scores.right;}
+  let toastT;
   function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
 
   const PEER_CFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun2.l.google.com:19302'}]}};
 
+  let heartbeat, waitHeartbeat;
   function startHeartbeat(){stopWaitHeartbeat();clearInterval(heartbeat);heartbeat=setInterval(()=>{send({type:'ping'});if(myRole)writePresence(myRole);},10000);}
   function stopHeartbeat(){clearInterval(heartbeat);}
   function startWaitHeartbeat(){clearInterval(waitHeartbeat);waitHeartbeat=setInterval(()=>{if(myRole)writePresence(myRole);},10000);}
@@ -888,28 +900,10 @@
   updateFormatBadge();
   document.getElementById('room-display').textContent=`Room ${roomNum}`;
   document.getElementById('room-hint').textContent=`Ask your friend to pick Room ${roomNum}!`;
-  /* Spinner — runs before enterPickelbolRoom so it works even if Peer/WebGL throws */
-  (function() {
-    let rafId = null, angle = 0, lastTs = null;
-    const el = document.querySelector('.spinner');
-    if (!el) return;
-    function tick(ts) {
-      if (lastTs !== null) angle = (angle + (ts - lastTs) * 0.306) % 360;
-      lastTs = ts;
-      el.style.transform = 'rotate(' + angle + 'deg)';
-      rafId = requestAnimationFrame(tick);
-    }
-    function startSpinner() { if (!rafId) { lastTs = null; rafId = requestAnimationFrame(tick); } }
-    function stopSpinner()  { if (rafId)  { cancelAnimationFrame(rafId); rafId = null; } }
-    const origShow = window.show;
-    window.show = function(id) { origShow(id); if (id === 's-wait') startSpinner(); else stopSpinner(); };
-    startSpinner();
-  })();
-
   clearStalePresence();
   startOnlinePresence(myName);
   startOnlinePoll();
-  try { enterPickelbolRoom(); } catch(e) { console.warn('[Pong] enterPickelbolRoom failed:', e); }
+  enterPickelbolRoom();
 </script>
 </body>
 </html>

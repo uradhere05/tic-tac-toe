@@ -266,7 +266,9 @@
     .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.38; margin-bottom: 8px; }
     .code-value { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 20px rgba(255,210,0,0.38); }
 
-    .spinner { width:48px; height:48px; border:4px solid rgba(255,255,255,0.18); border-top-color:var(--gold); border-radius:50%; margin:22px auto 12px; will-change:transform; }
+    .spinner { width:48px; height:48px; border:4px solid rgba(255,255,255,0.18); border-top-color:var(--gold); border-radius:50%; margin:22px auto 12px; transform:translateZ(0); -webkit-animation:spin 0.85s linear infinite; animation:spin 0.85s linear infinite; }
+    @-webkit-keyframes spin { to { -webkit-transform:rotate(360deg); transform:rotate(360deg); } }
+    @keyframes spin          { to { -webkit-transform:rotate(360deg); transform:rotate(360deg); } }
 
     .player-badge {
       display: inline-flex; align-items: center; gap: 8px;
@@ -496,7 +498,7 @@
       <div class="poker-sub">Poker</div>
       <div><span class="poker-cs">🔜 Coming Soon</span></div>
     </div>
-    <div class="room-card-mafia" onclick="(function(){var n=window._filoName||localStorage.getItem('filoName');window.location.href='mafia2'+(n?'?simName='+encodeURIComponent(n):'');})()">
+    <div class="room-card-mafia" onclick="window.location.href='mafia2.html'">
       <div class="mafia-num">8</div>
       <div class="mafia-title">🔪 Filo Mafia</div>
       <div class="mafia-rl" id="rp-8">Room Open</div>
@@ -589,7 +591,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.44</div>
+  <div class="app-version">v2.18</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1114,10 +1116,7 @@
   const _bootName = (_nameFromQuery || _prevName || '').trim();
   if (_bootName) {
     myName = _bootName;
-    window._filoName = myName; // expose for onclick handlers (let vars are not on window)
-    // Only persist to localStorage when name comes from storage, not from the URL param.
-    // URL-param sessions are multi-window simulations that must not overwrite each other.
-    if (!_nameFromQuery) localStorage.setItem('filoName', myName);
+    localStorage.setItem('filoName', myName);
     show('s-lobby');
     document.getElementById('lobby-greeting').textContent = 'Hi, ' + myName + '!';
     startOnlinePresence(myName);
@@ -1142,7 +1141,7 @@
 
   /* ── Chat ── */
   function escHtml(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   async function loadChat() {
@@ -1306,25 +1305,6 @@
     attach('.name-card:not(.taken)', 10);
     attach('.room-card:not(.full)', 12);
     attach('.room-card-mafia', 12);
-  })();
-
-  /* JS-driven spinner — immune to WebGL/CSS animation conflicts on iOS */
-  (function() {
-    let rafId = null, angle = 0, lastTs = null;
-    const el = document.querySelector('.spinner');
-    function tick(ts) {
-      if (lastTs !== null) angle = (angle + (ts - lastTs) * 0.306) % 360; // 0.306 deg/ms ≈ 0.85s/rev
-      lastTs = ts;
-      el.style.transform = 'rotate(' + angle + 'deg)';
-      rafId = requestAnimationFrame(tick);
-    }
-    function startSpinner() { if (!rafId) { lastTs = null; rafId = requestAnimationFrame(tick); } }
-    function stopSpinner()  { if (rafId)  { cancelAnimationFrame(rafId); rafId = null; } }
-    const origShow = window.show;
-    window.show = function(id) {
-      origShow(id);
-      if (id === 's-wait') startSpinner(); else stopSpinner();
-    };
   })();
 </script>
 </body>

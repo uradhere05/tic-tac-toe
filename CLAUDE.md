@@ -16,35 +16,16 @@ Commit messages should describe what changed and why, not just what files were t
 
 ## Running the games
 
-A local HTTP server is required — `serve` strips query params on `.html` redirects, so always use extension-less URLs:
-
-```bash
-npx serve .   # starts at http://localhost:3456
-```
-
-Open via URL (not `file://`):
+No build step or server required — open any HTML file directly in a browser:
 
 ```
-http://localhost:3456/             # main lobby / arena
-http://localhost:3456/mafia2?host  # Mafia — GM console (Room 8)
-http://localhost:3456/mafia2       # Mafia — player view
-http://localhost:3456/pong         # Pickelbol (Rooms 5–6)
-http://localhost:3456/connect5     # Streytlima Connect 5 (Rooms 3–4)
-http://localhost:3456/tictactoe    # Solo/AI Tictactoe
+open index.html            # main lobby / arena
+open "mafia2.html?host"    # Mafia Host-Run — GM console (Room 8, host)
+open mafia2.html           # Mafia Host-Run — player view
+open pong.html             # Pickelbol (Rooms 5–6)
+open connect5.html         # Streytlima Connect 5 (Rooms 3–4)
+open tictactoe.html        # Solo/AI Tictactoe
 ```
-
-**Always use extension-less URLs** (`/mafia2` not `/mafia2.html`). `serve` issues a 301 that strips query params from `.html` URLs.
-
-## Simulation / Testing
-
-For multi-browser simulation, use `simName` URL params so each window has its own identity without conflicting over `localStorage`:
-
-```
-http://localhost:3456/mafia2?simName=Matt&simAvatar=🕵️&autoJoin=player
-http://localhost:3456/mafia2?simName=Kuya+AD&simAvatar=👑&autoJoin=host
-```
-
-`player-redirect.html` is a legacy helper that sets `localStorage.filoName` and redirects — only useful for single-player testing.
 
 ## Architecture
 
@@ -129,11 +110,6 @@ Face-to-face version for in-person play. One device is the GM console; each play
 - Player selector uses `<div onclick>` not `<label><input>` — label+input caused double-toggle.
 - Night action screen is role-neutral so observers cannot identify special roles.
 - `beforeunload` deletes `/online/<name>` and `/mafia2/lobby/<name>` on exit.
-- `canProceed` in `lobbyTick()` excludes the GM from the ready count — GM is never "ready", only players are.
-- Avatars are human-character emojis from `THEMED_AVATARS` (e.g. 🕵️ 🤵 👮 👩‍⚕️). Default per-player avatars in `AVATARS[]` also use the same human set.
-- `simName` / `simAvatar` / `autoJoin` URL params bypass localStorage for multi-tab/window simulation.
-- `renderAssignScreen()` starts a `_assignPoller` interval so the GM screen auto-advances to Host Console when phase changes externally (e.g. during simulation).
-- `/mafia2/avatars/<encName>` — avatar map written at game start so all screens can display correct avatars.
 
 ---
 
