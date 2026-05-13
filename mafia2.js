@@ -92,7 +92,7 @@ async function checkActiveGame(){
           if(iAmHost){
             const fl=await fb('GET','/mafia2/lobby')||{};
             rolesMap={};
-            Object.values(fl).filter(p=>p&&p.name&&p.ready&&p.name!==myName).forEach(p=>rolesMap[p.name]='');
+            const _fnow=Date.now();Object.values(fl).filter(p=>p&&p.name&&p.name!==myName&&_fnow-p.ts<75000).forEach(p=>rolesMap[p.name]='');
             show('s-assign');renderAssignScreen();
           }else{show('s-player');renderWaiting();startPlayerPolling();}
         }else{
@@ -203,9 +203,10 @@ async function lobbyTick(){
       if(iAmHost){
         // Rebuild player list from lobby in case rolesMap was lost on reload
         const freshLobby=await fb('GET','/mafia2/lobby')||{};
+        const _lnow=Date.now();
         rolesMap={};
         Object.values(freshLobby)
-          .filter(p=>p&&p.name&&p.ready&&p.name!==myName)
+          .filter(p=>p&&p.name&&p.name!==myName&&_lnow-p.ts<75000)
           .forEach(p=>rolesMap[p.name]='');
         show('s-assign');renderAssignScreen();
       } else {show('s-player');renderWaiting();startPlayerPolling();}
@@ -314,7 +315,7 @@ async function proceedToAssign(){
   const _now=Date.now();
   rolesMap={};
   Object.values(freshLobby)
-    .filter(p=>p&&p.name&&p.ready&&p.name!==hostName&&_now-p.ts<75000)
+    .filter(p=>p&&p.name&&p.name!==hostName&&_now-p.ts<75000)
     .forEach(p=>rolesMap[p.name]='');
   await fb('PUT','/mafia2/phase','assigning');
   stopIvs();
