@@ -166,7 +166,9 @@ async function checkActiveGame(){
       }
     }
   }catch{}
-  enterRoleSelect();
+  // No active game — go to lobby directly if we already know our name (simName or stored).
+  // enterRoleSelect() is only needed when the user must choose host vs player manually.
+  enterLobby();
 }
 
 function showAvatarSelect(){
