@@ -750,6 +750,7 @@ async function pollPhase(){
   if(aliveD)Object.entries(aliveD).forEach(([k,v])=>aliveMap[decN(k)]=v);
   if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
   if(roundD)round=roundD;
+  if(phD==='ended'&&winner){stopIvs();showPlayerEnd(winner);return;}
   if(!phD||phD===knownPhase) return;
   const prevPhase=knownPhase;
   knownPhase=phD;
