@@ -18,7 +18,7 @@ const MIN_READY=5;
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
-let isEnded=false,myEliminated=false,_lastAutoAnn='';
+let isEnded=false,myEliminated=false,_lastAutoAnn='',_assignPoller=null;
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -374,17 +374,17 @@ async function proceedToAssign(){
 ════════════════════════════════ */
 function renderAssignScreen(){
   // Poll for phase change so GM screen auto-advances during simulation
-  if(!window._assignPoller){
-    window._assignPoller=setInterval(async()=>{
+  if(!_assignPoller){
+    _assignPoller=setInterval(async()=>{
       if(!document.getElementById('s-assign').classList.contains('active')){
-        clearInterval(window._assignPoller);window._assignPoller=null;return;
+        clearInterval(_assignPoller);_assignPoller=null;return;
       }
       const [phaseD,freshLobby]=await Promise.all([
         fb('GET','/mafia2/phase'),
         fb('GET','/mafia2/lobby'),
       ]);
       if(phaseD&&phaseD!=='assigning'){
-        clearInterval(window._assignPoller);window._assignPoller=null;
+        clearInterval(_assignPoller);_assignPoller=null;
         await reloadHostState();await reconnectHost(phaseD);return;
       }
       // Refresh player list — picks up late-joining players
@@ -816,7 +816,6 @@ async function pollPhase(){
   if(roundD)round=roundD;
   if(phD==='ended'&&winner){stopIvs();showPlayerEnd(winner);return;}
   if(!phD||phD===knownPhase) return;
-  const prevPhase=knownPhase;
   knownPhase=phD;
   if(phD==='reset'){
     stopIvs();
@@ -1071,7 +1070,7 @@ async function showPlayerEnd(winner){
 
 /* ─── Sound ─── */
 let _actx;
-function _ac(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
+function _ac(){if(!_actx)_actx=new(window.AudioContext||(/** @type {any} */(window)).webkitAudioContext)();return _actx;}
 function snd(type){
   try{const ac=_ac();if(type==='click'){const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=440;g.gain.setValueAtTime(0.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.08);o.start();o.stop(ac.currentTime+0.08);}}catch{}
 }
