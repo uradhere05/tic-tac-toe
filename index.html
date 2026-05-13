@@ -496,7 +496,7 @@
       <div class="poker-sub">Poker</div>
       <div><span class="poker-cs">🔜 Coming Soon</span></div>
     </div>
-    <div class="room-card-mafia" onclick="window.location.href='mafia2.html'">
+    <div class="room-card-mafia" onclick="(function(){var n=window.myName||localStorage.getItem('filoName');window.location.href='mafia2'+(n?'?simName='+encodeURIComponent(n):'');})()">
       <div class="mafia-num">8</div>
       <div class="mafia-title">🔪 Filo Mafia</div>
       <div class="mafia-rl" id="rp-8">Room Open</div>
@@ -589,7 +589,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.41</div>
+  <div class="app-version">v2.42</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1114,7 +1114,9 @@
   const _bootName = (_nameFromQuery || _prevName || '').trim();
   if (_bootName) {
     myName = _bootName;
-    localStorage.setItem('filoName', myName);
+    // Only persist to localStorage when name comes from storage, not from the URL param.
+    // URL-param sessions are multi-window simulations that must not overwrite each other.
+    if (!_nameFromQuery) localStorage.setItem('filoName', myName);
     show('s-lobby');
     document.getElementById('lobby-greeting').textContent = 'Hi, ' + myName + '!';
     startOnlinePresence(myName);
