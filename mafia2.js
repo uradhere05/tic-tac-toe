@@ -182,6 +182,16 @@ async function lobbyTick(){
     fb('GET','/mafia2/phase'),
   ]);
 
+  // Route away if game ended while window was in lobby
+  if(phaseD==='ended'){
+    const winner=await fb('GET','/mafia2/winner');
+    if(winner){
+      stopIvs();
+      if(hostD===myName){isHost=true;await reloadHostState();show('s-host');hShow('h-end');buildHostEnd(winner);}
+      else{show('s-player');showPlayerEnd(winner);}
+    }
+    return;
+  }
   // Route away if game has moved past lobby
   if(phaseD&&phaseD!=='ended'){
     const iAmHost=hostD===myName;
@@ -666,11 +676,8 @@ async function buildRecapHtml(allRoles,showRoles){
   return html?`<div class="recap-wrap">${html}</div>`:'';
 }
 
-async function endGame(winner){
-  if(isEnded)return; isEnded=true;
-  const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
-  await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
-  stopIvs();hShow('h-end');
+async function buildHostEnd(winner){
+  hShow('h-end');
   document.getElementById('h-ei').textContent=winner==='murderer'?'🔪':'🛡️';
   document.getElementById('h-et').textContent=winner==='murderer'?'MURDERER WINS!':'CIVILIANS WIN!';
   document.getElementById('h-es').textContent=winner==='murderer'?'The murderer was never caught.':'Justice prevails!';
@@ -680,8 +687,16 @@ async function endGame(winner){
       <span class="ri-name">${n}</span>
       <span class="ri-role">${r}${aliveMap[n]===false?' · dead':' · survived'}</span>
     </div>`).join('');
+  const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
   const recapEl=document.getElementById('h-recap');
   if(recapEl)recapEl.innerHTML=await buildRecapHtml(allRoles,false);
+}
+
+async function endGame(winner){
+  if(isEnded)return; isEnded=true;
+  const allRoles=Object.fromEntries(Object.keys(rolesMap).map(n=>[encN(n),rolesMap[n]]));
+  await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
+  stopIvs();show('s-host');await buildHostEnd(winner);
   const winners=winner==='civilians'
     ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer')
     :Object.keys(rolesMap).filter(n=>rolesMap[n]==='murderer');
