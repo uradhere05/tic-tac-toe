@@ -665,7 +665,7 @@ async function endGame(winner){
   toast(`${winners.length} win${winners.length!==1?'s':''} recorded on leaderboard!`);
   // Auto-reset Firebase 2 minutes after game ends so the next game can start fresh
   clearTimeout(_resetTimer);
-  _resetTimer=setTimeout(autoResetGame,120000);
+  _resetTimer=setTimeout(autoResetGame,60000);
 }
 
 async function autoResetGame(){
