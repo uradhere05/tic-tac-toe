@@ -1,28 +1,38 @@
 /**
- * Mafia game simulation — 6 players (1 host + 5), full game run.
- * Opens 6 visible Chrome windows and drives every action automatically.
+ * Mafia game simulation — MAX 10 players (1 host + 9), full game run.
+ * Starts from index.html (the arena lobby), clicks Room 8, then plays.
  * Run: node mafia-sim.js
  */
 const { chromium } = require('playwright');
 
-const DB = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
-const BASE = 'file:///Users/adml/ClaudeCodeCursor/mafia2.html';
+const DB    = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+const BASE  = 'file:///Users/adml/ClaudeCodeCursor/mafia2.html';
+const INDEX = 'file:///Users/adml/ClaudeCodeCursor/index.html';
 
 const PLAYERS = [
-  { name: 'Kuya AD', avatar: '🕵️', host: true  },
-  { name: 'Matt',    avatar: '👱', host: false },
-  { name: 'Gianne',  avatar: '👩', host: false },
-  { name: 'Austin',  avatar: '👨', host: false },
-  { name: 'Charm',   avatar: '👧', host: false },
-  { name: 'Kee',     avatar: '🧑', host: false },
+  { name: 'Kuya AD',   avatar: '🕵️', host: true  },
+  { name: 'Matt',      avatar: '👱', host: false },
+  { name: 'Gianne',    avatar: '👩', host: false },
+  { name: 'Austin',    avatar: '👨', host: false },
+  { name: 'Charm',     avatar: '👧', host: false },
+  { name: 'Kee',       avatar: '🧑', host: false },
+  { name: 'Kriselle',  avatar: '🧑‍🦱', host: false },
+  { name: 'Monique',   avatar: '🧑‍🦰', host: false },
+  { name: 'Tiff',      avatar: '🧑‍🦳', host: false },
+  { name: 'Shantelle', avatar: '🧑‍🦲', host: false },
 ];
 
+// 1 murderer, 1 doctor, 1 investigator, 6 civilians
 const ROLES = {
-  'Matt':   'murderer',
-  'Gianne': 'doctor',
-  'Austin': 'investigator',
-  'Charm':  'civilian',
-  'Kee':    'civilian',
+  'Matt':      'murderer',
+  'Gianne':    'doctor',
+  'Austin':    'investigator',
+  'Charm':     'civilian',
+  'Kee':       'civilian',
+  'Kriselle':  'civilian',
+  'Monique':   'civilian',
+  'Tiff':      'civilian',
+  'Shantelle': 'civilian',
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -69,31 +79,84 @@ async function run() {
     const page = await ctx.newPage();
     pages.push(page);
 
-    const col = i % 3;
-    const row = Math.floor(i / 3);
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+
+    // Inject localStorage before any page script runs
+    await page.addInitScript(({ name, avatar }) => {
+      localStorage.setItem('filoName', name);
+      localStorage.setItem('filoAvatar', avatar);
+    }, { name: p.name, avatar: p.avatar });
+
+    // Navigate to index.html — name already in localStorage, skips name screen
+    await page.goto(INDEX);
     await page.evaluate(({ x, y }) => window.moveTo(x, y), {
       x: col * 500 + 20,
       y: row * 740 + 40,
     });
 
-    const url = p.host
-      ? `${BASE}?simName=${encodeURIComponent(p.name)}&simAvatar=${encodeURIComponent(p.avatar)}&autoJoin=host`
-      : `${BASE}?simName=${encodeURIComponent(p.name)}&simAvatar=${encodeURIComponent(p.avatar)}`;
-
-    await page.goto(url);
-    console.log(`  ✓ Window ${i + 1}: ${p.name}${p.host ? ' (HOST/GM)' : ''}`);
-    await sleep(400);
+    console.log(`  ✓ Window ${i + 1}: ${p.name}${p.host ? ' (HOST/GM)' : ''} — index.html`);
+    await sleep(500);
   }
 
   const hostPage = pages[0];
   const playerPages = pages.slice(1);
 
-  // ── Players ready up ──────────────────────────────────────────────
-  console.log('\n⏳ Waiting for lobby to settle...');
-  await sleep(2500);
+  // ── All players click Room 8 (Mafia) from the index lobby ────────
+  console.log('\n⏳ Waiting for index lobby to load...');
+  await sleep(3000);
 
-  console.log('\n✅ Players + Host clicking Ready Up...');
-  // All 6 must be ready — host too (proceed button requires readyCount === players.length)
+  console.log('\n🚪 All players clicking Room 8 — Filo Mafia...');
+  for (let i = 0; i < pages.length; i++) {
+    const pg = pages[i];
+    const name = PLAYERS[i].name;
+    try {
+      // If index.html shows avatar picker first, skip it
+      const hasAvatarScreen = await pg.$('#s-name-pick, .name-card, .av-grid').catch(() => null);
+      if (hasAvatarScreen) {
+        await pg.evaluate(() => {
+          localStorage.setItem('filoAvatar', '🕵️');
+          location.reload();
+        });
+        await sleep(1500);
+      }
+      // Click the Mafia room card (.room-card-mafia)
+      await pg.waitForSelector('.room-card-mafia', { timeout: 8000 });
+      await pg.click('.room-card-mafia');
+      console.log(`  ✓ ${name} clicked Room 8 (Filo Mafia)`);
+      await sleep(500);
+    } catch (e) {
+      console.log(`  ⚠ ${name}: ${e.message}`);
+    }
+  }
+
+  console.log('\n⏳ Waiting for mafia2.html to load...');
+  await sleep(3500);
+
+  // ── Role-select screen: host → GM, players → Player ─────────────
+  console.log('\n🎮 Selecting roles from role-select screen...');
+  for (let i = 0; i < pages.length; i++) {
+    const pg = pages[i];
+    const p  = PLAYERS[i];
+    try {
+      await pg.waitForSelector('#s-role-select.active', { timeout: 10000 });
+      if (p.host) {
+        await clickBtn(pg, 'button[onclick="joinAsGameMaster()"]', `${p.name} → Game Master`);
+      } else {
+        await clickBtn(pg, 'button[onclick="joinAsPlayer()"]', `${p.name} → Player`);
+      }
+      await sleep(400);
+    } catch (e) {
+      console.log(`  ⚠ ${p.name} role-select: ${e.message.split('\n')[0]}`);
+    }
+  }
+  await sleep(2000);
+
+  // ── Players ready up ──────────────────────────────────────────────
+  console.log('\n⏳ Waiting for mafia lobby to settle...');
+  await sleep(1500);
+
+  console.log('\n✅ All players clicking Ready Up...');
   for (let i = 0; i < pages.length; i++) {
     const pg = pages[i];
     const name = PLAYERS[i].name;
@@ -143,13 +206,17 @@ async function run() {
   await sleep(3500);
 
   await Promise.all([
-    fb('PUT', '/mafia2/night/kill',            'Charm'),
-    fb('PUT', '/mafia2/night/save',            'Austin'),
-    fb('PUT', '/mafia2/night/inspect',         'Matt'),
-    fb('PUT', '/mafia2/night/suspect/Charm',   'Matt'),
-    fb('PUT', '/mafia2/night/suspect/Kee',     'Matt'),
+    fb('PUT', '/mafia2/night/kill',                 'Charm'),
+    fb('PUT', '/mafia2/night/save',                 'Austin'),
+    fb('PUT', '/mafia2/night/inspect',              'Matt'),
+    fb('PUT', '/mafia2/night/suspect/Charm',        'Matt'),
+    fb('PUT', '/mafia2/night/suspect/Kee',          'Matt'),
+    fb('PUT', '/mafia2/night/suspect/Kriselle',     'Matt'),
+    fb('PUT', '/mafia2/night/suspect/Monique',      'Matt'),
+    fb('PUT', '/mafia2/night/suspect/Tiff',         'Matt'),
+    fb('PUT', '/mafia2/night/suspect/Shantelle',    'Matt'),
   ]);
-  console.log('  ✓ All night actions submitted (kill→Charm, save→Austin, inspect→Matt)');
+  console.log('  ✓ All night actions submitted (kill→Charm, save→Austin, inspect→Matt, 6 civilian suspects)');
 
   await sleep(2000);
 
@@ -174,13 +241,12 @@ async function run() {
   await sleep(1500);
 
   // ── Players vote Matt ─────────────────────────────────────────────
-  console.log('\n🗳️ All players voting Matt (murderer)...');
+  console.log('\n🗳️ All 9 players voting Matt (murderer)...');
+  const voters = ['Matt','Gianne','Austin','Charm','Kee','Kriselle','Monique','Tiff','Shantelle'];
   await Promise.all(
-    ['Matt', 'Gianne', 'Austin', 'Charm', 'Kee'].map(name =>
-      fb('PUT', `/mafia2/day/votes/${name.replace(/ /g, '_')}`, 'Matt')
-    )
+    voters.map(name => fb('PUT', `/mafia2/day/votes/${name.replace(/ /g, '_')}`, 'Matt'))
   );
-  console.log('  ✓ 5 votes for Matt submitted');
+  console.log(`  ✓ ${voters.length} votes for Matt submitted`);
 
   await sleep(2000);
 
