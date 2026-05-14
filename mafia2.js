@@ -829,7 +829,7 @@ async function showNightUI(){
       <div class="phase-card night" style="padding:20px 16px;margin-bottom:12px">
         <div class="rr-icon">🌙</div>
         <div class="phase-title" style="font-size:1rem">Night Action</div>
-        <div class="phase-desc">Who do you think will die tonight?</div>
+        <div class="phase-desc">Who do you think is the killer?</div>
       </div>
       <div class="action-grid">${alive.filter(n=>n!==myName).map(n=>`
         <div class="ag-card" data-n="${escHtml(n)}" onclick="submitSuspect(this.dataset.n)">

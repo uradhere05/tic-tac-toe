@@ -39,7 +39,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
   border:1px solid rgba(139,0,0,0.35); border-radius:12px; padding:14px 10px;
   text-align:center; cursor:pointer; transition:all 0.15s;
   touch-action:manipulation; user-select:none; }
-.name-card:hover { border-color:rgba(200,50,50,0.8); transform:translateY(-2px); }
+.name-card:hover { border-color:rgba(200,50,50,0.8); }
 .name-card:active { transform:scale(0.94); }
 .nc-num { font-size:0.55rem; letter-spacing:3px; opacity:0.4; color:#cc4444; text-transform:uppercase; }
 .nc-name { font-size:0.9rem; font-weight:700; margin-top:4px; }
@@ -161,14 +161,12 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .ag-av { font-size:1.5rem; }
 .ag-name { font-size:0.62rem; font-weight:700; margin-top:3px; }
 .rr-card { width:100%; max-width:360px; border-radius:20px; padding:42px 28px; text-align:center;
-  animation:revealIn .6s cubic-bezier(.34,1.56,.64,1) both; }
-.rr-card.murderer     { border:2px solid rgba(200,0,0,0.7);    background:rgba(40,5,5,0.95);   box-shadow:0 0 50px rgba(200,0,0,0.4); }
-.rr-card.doctor       { border:2px solid rgba(0,200,100,0.6);  background:rgba(0,30,15,0.95);  box-shadow:0 0 50px rgba(0,200,100,0.3); }
-.rr-card.investigator { border:2px solid rgba(50,150,255,0.6); background:rgba(0,15,40,0.95);  box-shadow:0 0 50px rgba(50,150,255,0.3); }
+  }
+.rr-card.murderer     { border:2px solid rgba(200,0,0,0.7);    background:rgba(40,5,5,0.95); }
+.rr-card.doctor       { border:2px solid rgba(0,200,100,0.6);  background:rgba(0,30,15,0.95); }
+.rr-card.investigator { border:2px solid rgba(50,150,255,0.6); background:rgba(0,15,40,0.95); }
 .rr-card.civilian     { border:2px solid rgba(150,150,200,0.4);background:rgba(10,5,25,0.95); }
-@keyframes revealIn { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:scale(1)} }
-.rr-icon { font-size:4.5rem; margin-bottom:12px; animation:iconFloat 2s ease-in-out infinite; }
-@keyframes iconFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.rr-icon { font-size:4.5rem; margin-bottom:12px; }
 .rr-role { font-size:1.7rem; font-weight:900; letter-spacing:4px; text-transform:uppercase; margin-bottom:10px; }
 .rr-role.murderer     { color:#cc2200; text-shadow:0 0 20px rgba(200,0,0,0.8); }
 .rr-role.doctor       { color:#4caf50; }
@@ -176,7 +174,7 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
 .rr-role.civilian     { color:#aaa; }
 .rr-desc { font-size:0.8rem; opacity:0.65; line-height:1.5; margin-bottom:16px; }
 .rr-cd { font-size:0.7rem; letter-spacing:2px; opacity:0.4; }
-.end-icon  { font-size:4.8rem; margin-bottom:12px; animation:iconFloat 2s ease-in-out infinite; }
+.end-icon  { font-size:4.8rem; margin-bottom:12px; }
 .end-title { font-size:1.9rem; font-weight:900; letter-spacing:4px; text-transform:uppercase; margin-bottom:6px; text-align:center; }
 .end-sub   { font-size:0.85rem; opacity:0.6; margin-bottom:18px; text-align:center; }
 
