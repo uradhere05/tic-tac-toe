@@ -18,7 +18,7 @@ const MIN_READY=5;
 let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
-let isEnded=false,myEliminated=false,_lastAutoAnn='';
+let isEnded=false,myEliminated=false,_lastAutoAnn='',_resetTimer=null;
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -663,10 +663,26 @@ async function endGame(winner){
     :Object.keys(rolesMap).filter(n=>rolesMap[n]==='murderer');
   await Promise.all(winners.map(n=>recordWin(n)));
   toast(`${winners.length} win${winners.length!==1?'s':''} recorded on leaderboard!`);
+  // Auto-reset Firebase 2 minutes after game ends so the next game can start fresh
+  clearTimeout(_resetTimer);
+  _resetTimer=setTimeout(autoResetGame,120000);
+}
+
+async function autoResetGame(){
+  _resetTimer=null;
+  await fb('PUT','/mafia2/phase','reset');
+  setTimeout(async()=>{await fb('DELETE','/mafia2');},3000);
+  rolesMap={};aliveMap={};round=1;knownPhase='';isEnded=false;
+  myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;
+  lobbyPlayers={};myEliminated=false;
+  await fb('PUT','/mafia2/host',myName);
+  isHost=true;hostName=myName;
+  enterLobby();
 }
 
 async function endGameEarly(){
   if(!confirm('End the game and send all players back to lobby?')) return;
+  clearTimeout(_resetTimer);_resetTimer=null;
   await fb('PUT','/mafia2/phase','reset');
   setTimeout(()=>fb('DELETE','/mafia2'),3000);
   isHost=false;hostName='';rolesMap={};aliveMap={};round=1;
@@ -676,9 +692,14 @@ async function endGameEarly(){
 }
 
 async function hostReset(){
-  await fb('DELETE','/mafia2');
-  rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
-  myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;lobbyPlayers={};
+  clearTimeout(_resetTimer);_resetTimer=null;
+  await fb('PUT','/mafia2/phase','reset');
+  setTimeout(async()=>{await fb('DELETE','/mafia2');},2000);
+  rolesMap={};aliveMap={};round=1;knownPhase='';isEnded=false;
+  myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;
+  lobbyPlayers={};myEliminated=false;
+  await fb('PUT','/mafia2/host',myName);
+  isHost=true;hostName=myName;
   enterLobby();
 }
 
@@ -981,6 +1002,18 @@ async function showPlayerEnd(winner){
     <div class="end-sub">${myWin?'You won! 🎉':'Better luck next time…'}</div>
     ${recap}
     <button class="btn btn-secondary" onclick="location.href='index.html'" style="margin-top:14px">↩ Back to Arena</button>`;
+  // Poll for game reset so players auto-redirect when host starts a new game
+  stopIvs();
+  ivs.push(setInterval(async()=>{
+    const phD=await fb('GET','/mafia2/phase');
+    if(phD==='reset'||!phD){
+      stopIvs();
+      toast('New game starting — returning to lobby…',2500);
+      myRole=null;myAction=null;myVote=null;mySuspect=null;
+      myEliminated=false;knownPhase='';
+      setTimeout(enterLobby,1500);
+    }
+  },4000));
 }
 
 /* ─── Sound ─── */
