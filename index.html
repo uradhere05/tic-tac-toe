@@ -591,7 +591,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.27</div>
+  <div class="app-version">v2.28</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -603,7 +603,7 @@
   const WINS_NEED = 2;
   const DB        = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
   const STALE_MS  = 30 * 1000;
-  const SCORE_SYNC_KEY = 'filo-score-sync';
+  // SCORE_SYNC_KEY removed — broadcastScoreSync() was dead code (never called)
 
   /* ── State ── */
   let myName = '', opponentName = '';
@@ -615,6 +615,9 @@
   let wantsRestart = false;
   let presenceInterval = null;
   let nameRoomMap = {};
+  let dropCountdownIv = null;
+  let _reconnectTries = 0;
+  const MAX_RECONNECT = 8;
 
   const cells = document.querySelectorAll('.cell');
 
@@ -726,7 +729,6 @@
     } catch { listEls.forEach(el => el.innerHTML = '<div class="lb-empty">Could not load leaderboard</div>'); }
   }
 
-  function broadcastScoreSync() { try { localStorage.setItem(SCORE_SYNC_KEY, String(Date.now())); } catch {} }
 
   const ONLINE_STALE = 75 * 1000;
   let onlineHeartbeat = null;
@@ -922,9 +924,11 @@
     peer = new Peer(PREFIX + n, PEER_CFG);
     peer.on('open', () => {
       myPiece = 'X'; currentRoom = n; myRole = 'host';
+      _reconnectTries = 0;
       writePresence(n, 'host');
-      peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+      peer.on('disconnected', () => { if (++_reconnectTries <= MAX_RECONNECT) { try { peer.reconnect(); } catch(_){} } });
       peer.on('connection', c => {
+        if (conn && conn.open) { c.close(); return; } // reject 3rd-party connections
         conn = c; wireConn();
         conn.on('open', () => {
           conn.send({ type: 'start', piece: 'O', hostName: myName });
@@ -941,18 +945,26 @@
   function joinRoomN(n) {
     peer = new Peer(PEER_CFG);
     myPiece = 'O'; currentRoom = n; myRole = 'guest';
+    let cancelled = false;
+    _reconnectTries = 0;
     let giveUp = setTimeout(() => {
+      cancelled = true;
       destroyPeer(); currentRoom = null; myRole = null;
       lobbyErr('Room ' + n + ' has no host yet — try another room.');
       show('s-lobby'); startPresencePoll();
     }, 10000);
-    peer.on('disconnected', () => { try { peer.reconnect(); } catch(_){} });
+    peer.on('disconnected', () => { if (!cancelled && ++_reconnectTries <= MAX_RECONNECT) { try { peer.reconnect(); } catch(_){} } });
     peer.on('open', () => {
+      if (cancelled) return;
       conn = peer.connect(PREFIX + n, { reliable: true, serialization: 'json' });
       wireConn();
-      conn.on('open', () => { clearTimeout(giveUp); writePresence(n, 'guest'); startHeartbeat(); });
+      conn.on('open', () => {
+        if (cancelled) return;
+        clearTimeout(giveUp); writePresence(n, 'guest'); startHeartbeat();
+      });
     });
     peer.on('error', () => {
+      cancelled = true;
       clearTimeout(giveUp); destroyPeer(); currentRoom = null; myRole = null;
       lobbyErr('Could not join Room ' + n + ' — try again.');
       show('s-lobby'); startPresencePoll();
@@ -969,7 +981,8 @@
     else if (msg.type === 'move')        { applyMove(msg.i); }
     else if (msg.type === 'restart-req') { onRestartReq(); }
     else if (msg.type === 'restart-ok')  { doRestart(); }
-    else if (msg.type === 'rematch')     { doRematch(); }
+    else if (msg.type === 'rematch-req') { onRematchReq(); }
+    else if (msg.type === 'rematch-ok')  { doRematch(); }
   }
 
   function startGame() {
@@ -993,14 +1006,18 @@
     show('s-champ');
   }
 
-  function requestRematch() { send({ type: 'rematch' }); doRematch(); }
-  function doRematch() { wantsRestart = false; scores = {X:0,O:0,D:0}; refreshScores(); show('s-game'); resetBoard(); }
-
-  function goHome() {
-    if (currentRoom && myRole) { clearPresence(currentRoom, myRole); currentRoom = null; myRole = null; }
-    destroyPeer(); opponentName = ''; scores = {X:0,O:0,D:0}; refreshScores(); lobbyErr('');
-    show('s-lobby'); startPresencePoll(); loadAndRenderLeaderboard();
+  let wantsRematch = false;
+  function requestRematch() {
+    if (wantsRematch) { doRematch(); send({ type: 'rematch-ok' }); return; }
+    wantsRematch = true; send({ type: 'rematch-req' }); toast('Waiting for opponent to rematch…');
   }
+  function onRematchReq() {
+    if (wantsRematch) { doRematch(); send({ type: 'rematch-ok' }); }
+    else { wantsRematch = true; toast('Opponent wants a rematch — tap 🔄 Rematch!'); }
+  }
+  function doRematch() { wantsRematch = false; wantsRestart = false; scores = {X:0,O:0,D:0}; refreshScores(); show('s-game'); resetBoard(); }
+
+  function goHome() { leaveGame(); }
 
   function tap(i) {
     if (over) return;
@@ -1083,12 +1100,14 @@
   }
 
   function leaveGame() {
+    clearInterval(dropCountdownIv); dropCountdownIv = null;
     if (currentRoom && myRole) { clearPresence(currentRoom, myRole); currentRoom = null; myRole = null; }
-    destroyPeer(); opponentName = ''; scores = {X:0,O:0,D:0}; refreshScores(); lobbyErr('');
+    destroyPeer(); opponentName = ''; wantsRematch = false; scores = {X:0,O:0,D:0}; refreshScores(); lobbyErr('');
     show('s-lobby'); startPresencePoll(); loadAndRenderLeaderboard();
   }
 
   function cancelGame() {
+    clearInterval(dropCountdownIv); dropCountdownIv = null;
     if (currentRoom && myRole) { clearPresence(currentRoom, myRole); currentRoom = null; myRole = null; }
     destroyPeer(); show('s-lobby'); startPresencePoll();
   }
@@ -1096,13 +1115,14 @@
   function onDrop() {
     stopHeartbeat(); setConn(false); over = true;
     if (currentRoom && myRole) { clearPresence(currentRoom, myRole); currentRoom = null; myRole = null; }
+    clearInterval(dropCountdownIv);
     let secs = 5;
     const tick = () => {
       setStatus(`<span class="dt">Opponent disconnected — returning in ${secs}s</span>`);
-      if (secs-- <= 0) { clearInterval(iv); leaveGame(); }
+      if (secs-- <= 0) { clearInterval(dropCountdownIv); dropCountdownIv = null; leaveGame(); }
     };
     tick();
-    const iv = setInterval(tick, 1000);
+    dropCountdownIv = setInterval(tick, 1000);
   }
 
   /* ── Boot ── */
@@ -1137,7 +1157,6 @@
     }
   });
 
-  window.addEventListener('storage', e => { if (e.key === SCORE_SYNC_KEY) loadAndRenderLeaderboard(); });
 
   /* ── Chat ── */
   function escHtml(s) {
@@ -1154,9 +1173,10 @@
       el.innerHTML = msgs.map(m => {
         const mine = m.name === myName;
         const d = new Date(m.ts);
-        const h12 = d.getHours()%12||12;
-        const mm = String(d.getMinutes()).padStart(2,'0');
-        const ampm = d.getHours()<12?'AM':'PM';
+        const valid = !isNaN(d.getTime());
+        const h12 = valid ? (d.getHours()%12||12) : 12;
+        const mm = valid ? String(d.getMinutes()).padStart(2,'0') : '00';
+        const ampm = valid ? (d.getHours()<12?'AM':'PM') : '';
         return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}<span class="cm-time">${h12}:${mm} ${ampm}</span></div>`;
       }).join('');
       el.scrollTop = el.scrollHeight;
@@ -1165,7 +1185,7 @@
 
   async function sendChat() {
     const inp = document.getElementById('chat-input');
-    const text = (inp?.value||'').trim();
+    const text = (inp?.value||'').trim().slice(0, 300);
     if (!text||!myName) { if (!myName) toast('Pick your name first!'); return; }
     inp.value = '';
     const ts = Date.now();
@@ -1175,9 +1195,12 @@
   }
 
   function pruneChatOnce() {
-    fetch(`${DB}/chat.json`).then(r=>r.json()).then(data => {
+    fetch(`${DB}/chat.json`).then(r=>r.json()).then(async data => {
       const cutoff = Date.now()-86400000;
-      Object.entries(data||{}).forEach(([k,v]) => { if (v&&v.ts<cutoff) fetch(`${DB}/chat/${k}.json`,{method:'DELETE'}); });
+      const stale = Object.entries(data||{}).filter(([,v])=>v&&v.ts<cutoff).map(([k])=>k);
+      for (let i = 0; i < stale.length; i += 10) {
+        await Promise.all(stale.slice(i, i+10).map(k => fetch(`${DB}/chat/${k}.json`,{method:'DELETE'})));
+      }
     }).catch(()=>{});
   }
 
