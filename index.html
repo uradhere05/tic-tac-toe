@@ -498,7 +498,7 @@
       <div class="poker-sub">Poker</div>
       <div><span class="poker-cs">🔜 Coming Soon</span></div>
     </div>
-    <div class="room-card-mafia" onclick="window.location.href='mafia2.html'">
+    <div class="room-card room-card-mafia" onclick="window.location.href='mafia2.html'">
       <div class="mafia-num">8</div>
       <div class="mafia-title">🔪 Filo Mafia</div>
       <div class="mafia-rl" id="rp-8">Room Open</div>
@@ -606,7 +606,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v2.47</div>
+  <div class="app-version">v2.48</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -774,7 +774,8 @@
     try {
       const [roomsData] = await Promise.all([
         fetch(`${DB}/rooms.json`).then(r => r.json()).catch(() => ({})),
-        loadOnlineUsers()
+        loadOnlineUsers(),
+        renderMafiaRoom(),
       ]);
       renderRooms(roomsData || {});
     } catch {}
@@ -828,6 +829,10 @@
   async function clearMyRoomPresence() {
     if (!myName) return;
     try {
+      const _encN = n => n.replace(/\s/g, '_');
+      // Clear Mafia lobby presence (uses underscore-encoded key, same as mafia2.js)
+      fetch(`${DB}/mafia2/lobby/${_encN(myName)}.json`, { method: 'DELETE' });
+      // Clear TicTacToe room presences (rooms 1–6)
       const data = await fetch(`${DB}/rooms.json`).then(r => r.json()) || {};
       for (let n = 1; n <= 6; n++) {
         const room = data[`room-${n}`] || {};
@@ -855,7 +860,11 @@
   function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; stopChatPoll(); stopOnlinePoll(); }
 
   async function loadRoomPresence() {
-    try { const data = await fetch(`${DB}/rooms.json`).then(r => r.json()) || {}; renderRooms(data); } catch { renderRooms({}); }
+    try {
+      const data = await fetch(`${DB}/rooms.json`).then(r => r.json()) || {};
+      renderRooms(data);
+      renderMafiaRoom();
+    } catch { renderRooms({}); }
   }
 
   function renderRooms(data) {
@@ -893,6 +902,33 @@
         el.textContent = `Room ${n}`; el.className = 'rl';
         card && card.classList.remove('full'); card && card.classList.remove('waiting');
       }
+    }
+  }
+
+  async function renderMafiaRoom() {
+    const el = document.getElementById('rp-8');
+    if (!el) return;
+    try {
+      const [phase, lobbyD] = await Promise.all([
+        fetch(`${DB}/mafia2/phase.json`).then(r => r.json()).catch(() => null),
+        fetch(`${DB}/mafia2/lobby.json`).then(r => r.json()).catch(() => null),
+      ]);
+      const now = Date.now();
+      const count = lobbyD
+        ? Object.values(lobbyD).filter(p => p && p.name && (now - p.ts < 75000)).length
+        : 0;
+      const activePhase = phase && phase !== 'ended' && phase !== 'reset';
+      if (activePhase && phase !== 'assigning') {
+        el.innerHTML = '<span class="rp-playing">Game in progress 🔪</span>';
+      } else if (count > 0) {
+        el.innerHTML = `<span class="rp-waiting">${count} in lobby…</span>`;
+      } else {
+        el.textContent = 'Room Open';
+        el.className = 'mafia-rl';
+      }
+    } catch {
+      el.textContent = 'Room Open';
+      el.className = 'mafia-rl';
     }
   }
 
@@ -1146,13 +1182,14 @@
 
   /* ── Boot ── */
   const _prevName = localStorage.getItem('filoName');
-  if (_prevName) setOffline(_prevName);
-
   const _startScreen = new URLSearchParams(window.location.search).get('screen');
   const _VALID_NAMES = new Set(['Kuya AD','Matt','Gianne','Austin','Charm','Kee','Kriselle','Monique','Tiff','Shantelle']);
   const _rawQuery = (new URLSearchParams(window.location.search).get('name') || '').trim();
   const _nameFromQuery = _VALID_NAMES.has(_rawQuery) ? _rawQuery : null;
   const _bootName = (_nameFromQuery || _prevName || '').trim();
+  // Only clear old presence when switching to a DIFFERENT name — avoids a DELETE
+  // racing the imminent PUT in startOnlinePresence when the name is unchanged.
+  if (_prevName && _prevName !== _bootName) setOffline(_prevName);
   if (_bootName) {
     myName = _bootName;
     localStorage.setItem('filoName', myName);
@@ -1346,7 +1383,6 @@
     }
     attach('.name-card:not(.taken)', 10);
     attach('.room-card:not(.full)', 12);
-    attach('.room-card-mafia', 12);
   })();
 </script>
 </body>

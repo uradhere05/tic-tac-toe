@@ -107,6 +107,26 @@ async function waitFb(path, expected, timeout = 12000) {
   return false;
 }
 
+// Opens a fresh index.html observer page and reads rp-8 text after polling settles
+async function rp8Text(browser) {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 600 } });
+  const page = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(page);
+  const { windowId } = await cdp.send('Browser.getWindowForTarget');
+  // Place observer off-screen to the right (doesn't interfere with the 5 main windows)
+  await cdp.send('Browser.setWindowBounds', {
+    windowId,
+    bounds: { left: SCR_W, top: 0, width: 360, height: 600, windowState: 'normal' },
+  });
+  await page.goto(`${INDEX}?name=Monique`);
+  await sleep(7000); // wait for 2 poll cycles (loadRoomPresence runs every 2 s)
+  const text = await page.evaluate(() =>
+    document.getElementById('rp-8')?.innerText?.trim() ?? ''
+  ).catch(() => '');
+  await ctx.close();
+  return text;
+}
+
 /* ════════════════════════════════════════════════════════
    SIMULATION
 ════════════════════════════════════════════════════════ */
@@ -199,6 +219,19 @@ async function run() {
   const readyN = lobbySnap ? Object.values(lobbySnap).filter(p => p?.ready).length : 0;
   assert(readyN >= 4, `4 players ready in Firebase (got ${readyN})`);
 
+  /* 6b. Observer: rp-8 should now show lobby count (Bug 1 + 4 fix verification) */
+  console.log('\n🔍 Observer check — rp-8 lobby status from index.html…');
+  const lobbyStatus = await rp8Text(browser);
+  assert(lobbyStatus.toLowerCase().includes('in lobby'), `rp-8 shows lobby count: "${lobbyStatus}"`);
+
+  /* 6c. Observer: verify online presence isn't wiped on boot (Bug 2 fix verification) */
+  const onlineSnap = await fb('/online');
+  const onlineNames = onlineSnap
+    ? Object.entries(onlineSnap).filter(([,v]) => v && Date.now() - v.ts < 75000).map(([k]) => decodeURIComponent(k))
+    : [];
+  assert(PLAYERS.every(p => onlineNames.includes(p.name)),
+    `All 4 players still online in Firebase after lobby join (no race wipe)`);
+
   /* 7. GM proceeds to role assignment (calls proceedToAssign directly — bypasses MIN_READY UI gate) */
   console.log('\n🎲 GM proceeding to role assignment…');
   await gmPage.evaluate(async () => {
@@ -230,6 +263,11 @@ async function run() {
   console.log('\n▶ GM starting the game…');
   await gmPage.evaluate(() => hostStartGame()).catch(() => {});
   assert(await waitFb('/mafia2/phase', 'night', 8000), 'Phase → "night"');
+
+  /* 9b. Observer: rp-8 should show "Game in progress" (Bug 1 fix verification) */
+  console.log('\n🔍 Observer check — rp-8 game-in-progress status from index.html…');
+  const gameStatus = await rp8Text(browser);
+  assert(gameStatus.toLowerCase().includes('game in progress'), `rp-8 shows game active: "${gameStatus}"`);
 
   /* ═══════════════════════════════════════════════════
      ROUND 1 — Matt kills Charm · Austin voted out → MURDERER WINS
@@ -293,6 +331,18 @@ async function run() {
     }).catch(() => false))
   )).filter(Boolean).length;
   assert(pEndCount >= 3, `${pEndCount}/4 player windows show game-over result`);
+
+  /* Bug 3 verification: clearMyRoomPresence (index.html) clears /mafia2/lobby entry */
+  console.log('\n🔍 Bug 3 check — index.html boot clears Mafia lobby presence…');
+  // Matt's lobby entry still exists (game ended but no one deleted it).
+  // Loading index.html as Matt triggers clearMyRoomPresence() in the boot sequence.
+  const bug3ctx = await browser.newContext({ viewport: { width: 360, height: 400 } });
+  const bug3page = await bug3ctx.newPage();
+  await bug3page.goto(`${INDEX}?name=Matt`);
+  await sleep(3000); // wait for clearMyRoomPresence async DELETE to settle
+  const mattLobby = await fb('/mafia2/lobby/Matt'); // encN('Matt') = 'Matt'
+  assert(mattLobby === null, 'index.html boot deleted /mafia2/lobby/Matt via clearMyRoomPresence');
+  await bug3ctx.close();
 
   /* ── Final summary ── */
   console.log('\n╔══════════════════════════════════════════════════════╗');
