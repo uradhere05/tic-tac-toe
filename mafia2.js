@@ -123,7 +123,9 @@ async function checkActiveGame(){
       const [winner,allRolesD]=await Promise.all([fb('GET','/mafia2/winner'),fb('GET','/mafia2/allRoles')]);
       if(!winner){enterRoleSelect();return;}
       if(allRolesD){const e=Object.entries(allRolesD).find(([k])=>decN(k)===myName);if(e)myRole=e[1];}
-      show('s-player');showPlayerEnd(winner);return;
+      if(hostD===myName){isHost=true;await reloadHostState();show('s-host');hShow('h-end');await buildHostEnd(winner);}
+      else{show('s-player');showPlayerEnd(winner);}
+      return;
     }
     const iAmHost=hostD===myName;
     const inGame=iAmHost||!!(await fb('GET',`/mafia2/roles/${encN(myName)}`));
@@ -448,6 +450,9 @@ async function reconnectHost(phaseD){
     document.getElementById('h-vote-sec').style.display='';
     document.getElementById('h-open-vote-btn').style.display='none';
     stopIvs();ivs.push(setInterval(pollVotes,1000));
+  } else if(phaseD==='ended'){
+    const w=await fb('GET','/mafia2/winner');
+    if(w){hShow('h-end');await buildHostEnd(w);}
   }
 }
 
@@ -665,7 +670,10 @@ async function hostResolveVote(){
       fb('PUT',`/mafia2/eliminatedByVote/${encN(elim)}`,true),
     ]);
   } else {
-    await fb('PUT','/mafia2/announcement','Tied vote — no one eliminated.');
+    await Promise.all([
+      fb('PUT','/mafia2/announcement','Tied vote — no one eliminated.'),
+      fb('PUT',`/mafia2/history/r${round}/eliminated`,null),
+    ]);
     toast('Tied — no elimination');
   }
   stopIvs();
@@ -1102,6 +1110,7 @@ document.addEventListener('visibilitychange',()=>{
   const active=id=>document.getElementById(id)?.classList.contains('active');
   if(active('s-lobby'))startLobbyPolling();
   else if(active('s-player'))startPlayerPolling();
+  else if(isHost&&active('s-assign'))renderAssignScreen();
   else if(isHost&&active('s-host')){
     fb('GET','/mafia2/phase').then(phD=>{
       if(phD==='night'){stopIvs();ivs.push(setInterval(pollNightActions,1500));}
@@ -1116,6 +1125,7 @@ window.addEventListener('pageshow',e=>{
   const active=id=>document.getElementById(id)?.classList.contains('active');
   if(active('s-lobby'))startLobbyPolling();
   else if(active('s-player'))startPlayerPolling();
+  else if(isHost&&active('s-assign'))renderAssignScreen();
 });
 
 window.addEventListener('beforeunload', () => {
