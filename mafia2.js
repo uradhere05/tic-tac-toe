@@ -672,7 +672,7 @@ async function hostResolveVote(){
   } else {
     await Promise.all([
       fb('PUT','/mafia2/announcement','Tied vote — no one eliminated.'),
-      fb('PUT',`/mafia2/history/r${round}/eliminated`,null),
+      fb('PUT',`/mafia2/history/r${round}/eliminated`,'tied'),
     ]);
     toast('Tied — no elimination');
   }
@@ -703,7 +703,9 @@ async function buildRecapHtml(allRoles,showRoles){
       const h=history[k]||{};const n=k.slice(1);
       let row=`<div class="recap-row"><span class="recap-rn">Rd ${n}</span>`;
       row+=h.killed?`<span class="recap-kill">💀 ${h.killed}</span>`:`<span class="recap-safe">🛡️ No kill</span>`;
-      if(h.eliminated)row+=`<span class="recap-elim">🗳️ ${h.eliminated}</span>`;
+      if(h.eliminated)row+=h.eliminated==='tied'
+        ?`<span class="recap-elim" style="opacity:.55">🤝 Tied vote</span>`
+        :`<span class="recap-elim">🗳️ ${h.eliminated}</span>`;
       return row+'</div>';
     }).join('');
   }
