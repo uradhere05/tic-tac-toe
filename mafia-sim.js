@@ -1,18 +1,15 @@
 /**
- * Mafia Game Simulation — 10 players, 10 visible Chrome windows.
+ * Mafia Game Simulation — 5 windows (1 GM + 4 players).
  *
- * Window layout (5 col × 2 row):
+ * Window layout (5 col × 1 row — full-height, whole page visible):
  *   [Kuya AD GM]  [Matt]  [Gianne]  [Austin]  [Charm]
- *   [Kee]  [Kriselle]  [Monique]  [Tiff]  [Shantelle]
  *
- * Roles: Matt=murderer · Gianne=doctor · Austin=investigator
- *        Charm/Kee/Kriselle/Monique/Tiff/Shantelle=civilian (6)
+ * Roles: Matt=murderer · Gianne=doctor · Austin=investigator · Charm=civilian
  *
- * Game flows from index.html → Room 8 → mafia2.html (4 rounds):
- *   R1 night: Matt kills Charm  · Gianne saves Kriselle · Shantelle voted out
- *   R2 night: Matt kills Tiff   · Gianne saves Monique  · Kriselle voted out
- *   R3 night: Matt kills Kee    · Gianne saves Austin   · Austin voted out
- *   R4 night: Matt kills Gianne · Gianne saves Monique  → civs ≤ 1 → MURDERER WINS 🔪
+ * Game flows from index.html → Room 8 → mafia2.html (1 round):
+ *   R1 night : Matt kills Charm · Gianne saves Austin · Austin inspects Matt
+ *   R1 day   : Matt→Austin · Gianne→Austin · Austin→defer → Austin voted out
+ *   → Alive: Matt + Gianne → civCount = 1 ≤ 1 → MURDERER WINS 🔪
  *
  * Run: node mafia-sim.js
  */
@@ -25,7 +22,7 @@ const MAFIA  = 'http://localhost:8080/mafia2.html';
 const DB     = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
 const sleep  = ms => new Promise(r => setTimeout(r, ms));
 
-/* ── Screen layout: 5 col × 2 row, each window fills its cell ── */
+/* ── Screen layout: 5 col × 1 row — full height so whole page is visible ── */
 function getScreenSize() {
   try {
     const out = execSync("osascript -e 'tell application \"Finder\" to get bounds of window of desktop'").toString().trim();
@@ -34,13 +31,10 @@ function getScreenSize() {
   } catch { return { w: 1440, h: 900 }; }
 }
 const { w: SCR_W, h: SCR_H } = getScreenSize();
-const COLS = 5, ROWS = 2;
-const WIN_W  = Math.floor(SCR_W / COLS);
-const WIN_H  = Math.floor(SCR_H / ROWS);
-const POSITIONS = Array.from({ length: COLS * ROWS }, (_, i) => [
-  (i % COLS) * WIN_W,
-  Math.floor(i / COLS) * WIN_H,
-]);
+const COLS = 5, ROWS = 1;
+const WIN_W = Math.floor(SCR_W / COLS);
+const WIN_H = SCR_H; // full screen height — whole page visible
+const POSITIONS = Array.from({ length: COLS }, (_, i) => [i * WIN_W, 0]);
 
 const fb = (path, method = 'GET', body) => fetch(
   `${DB}${path}.json`,
@@ -58,23 +52,17 @@ function assert(ok, label, detail = '') {
 /* ── Cast ── */
 const GM = { name: 'Kuya AD', avatar: '🕵️' };
 const PLAYERS = [
-  { name: 'Matt',     avatar: '🤵',   role: 'murderer'     },
-  { name: 'Gianne',   avatar: '👩‍⚕️', role: 'doctor'       },
-  { name: 'Austin',   avatar: '👨‍💼', role: 'investigator' },
-  { name: 'Charm',    avatar: '👩‍💼', role: 'civilian'     },
-  { name: 'Kee',      avatar: '🧑‍🌾', role: 'civilian'     },
-  { name: 'Kriselle', avatar: '👩‍🍳', role: 'civilian'     },
-  { name: 'Monique',  avatar: '🧑‍🔧', role: 'civilian'     },
-  { name: 'Tiff',     avatar: '👮',   role: 'civilian'     },
-  { name: 'Shantelle',avatar: '👨‍🍳', role: 'civilian'     },
+  { name: 'Matt',   avatar: '🤵',   role: 'murderer'     },
+  { name: 'Gianne', avatar: '👩‍⚕️', role: 'doctor'       },
+  { name: 'Austin', avatar: '👨‍💼', role: 'investigator' },
+  { name: 'Charm',  avatar: '👩‍💼', role: 'civilian'     },
 ];
 
 /* ── Helpers ── */
 async function openWindow(browser, name, x, y) {
-  // viewport:null lets the actual window size drive the viewport
-  const ctx  = await browser.newContext({ viewport: null });
+  const ctx  = await browser.newContext({ viewport: null }); // match actual window size
   const page = await ctx.newPage();
-  // CDP: set exact window bounds before navigating (reliable cross-platform)
+  // CDP: reliably set exact window bounds — full-height cell
   const cdp = await ctx.newCDPSession(page);
   const { windowId } = await cdp.send('Browser.getWindowForTarget');
   await cdp.send('Browser.setWindowBounds', {
@@ -123,10 +111,9 @@ async function waitFb(path, expected, timeout = 12000) {
    SIMULATION
 ════════════════════════════════════════════════════════ */
 async function run() {
-  console.log('\n🎭 Mafia Game Simulation — 10 Players · 10 Chrome Windows');
-  console.log('   Starting from index.html  |  Murderer wins in 4 rounds\n');
-  console.log('   Roles: Matt=🔪  Gianne=💊  Austin=🔍');
-  console.log('          Charm/Kee/Kriselle/Monique/Tiff/Shantelle=👤\n');
+  console.log('\n🎭 Mafia Game Simulation — 5 Windows · Full-Height · Whole Page Visible');
+  console.log('   Layout: 5 columns × 1 row  |  Murderer wins in 1 round\n');
+  console.log('   Roles: Matt=🔪  Gianne=💊  Austin=🔍  Charm=👤\n');
 
   /* 0. Clear previous game data */
   console.log('🗑️  Clearing /mafia2 Firebase data…');
@@ -135,7 +122,7 @@ async function run() {
   assert(await fb('/mafia2/phase') === null, 'Firebase /mafia2 cleared');
 
   /* 1. Launch browser */
-  console.log(`🖥️  Screen ${SCR_W}×${SCR_H} → ${COLS}×${ROWS} grid · each window ${WIN_W}×${WIN_H} (fullscreen cells via CDP)\n`);
+  console.log(`🖥️  Screen ${SCR_W}×${SCR_H} → ${COLS}×${ROWS} grid · each window ${WIN_W}×${WIN_H} (full height)\n`);
 
   const browser = await chromium.launch({
     headless: false,
@@ -149,39 +136,35 @@ async function run() {
     ],
   });
 
-  /* 2. Open 10 windows — all start at index.html */
-  console.log('\n── Opening 10 windows from index.html ──────────────\n');
+  /* 2. Open 5 windows — all start at index.html */
+  console.log('\n── Opening 5 windows from index.html ───────────────\n');
   const gmPage = await openWindow(browser, GM.name, POSITIONS[0][0], POSITIONS[0][1]);
-  console.log(`  ✓ [GM] ${GM.name}`);
+  console.log(`  ✓ [GM] ${GM.name}  (window 0 — full height)`);
   await sleep(400);
 
   const playerPages = [];
   for (let i = 0; i < PLAYERS.length; i++) {
     const [x, y] = POSITIONS[i + 1];
     playerPages.push(await openWindow(browser, PLAYERS[i].name, x, y));
-    console.log(`  ✓ [P${i+1}] ${PLAYERS[i].name}  (${PLAYERS[i].role})`);
+    console.log(`  ✓ [P${i+1}] ${PLAYERS[i].name.padEnd(8)}  (${PLAYERS[i].role})`);
     await sleep(280);
   }
 
-  // Helper: page by player name
   const byName = name => playerPages[PLAYERS.findIndex(p => p.name === name)];
 
-  /* 3. Wait for all 10 to reach the Arena lobby (index.html s-lobby) */
-  console.log('\n⏳ Waiting for all 10 windows to reach Arena lobby…');
+  /* 3. Wait for all 5 to reach Arena lobby */
+  console.log('\n⏳ Waiting for all 5 windows to reach Arena lobby…');
   const allArena = await waitScreen([gmPage, ...playerPages], 's-lobby', 20000);
-  assert(allArena, 'All 10 windows on Arena lobby (index.html)');
+  assert(allArena, 'All 5 windows on Arena lobby (index.html)');
   if (!allArena) { await browser.close(); return; }
-  console.log('  ✓ All players in Arena — now navigating to Room 8');
+  console.log('  ✓ All windows in Arena — navigating to Room 8');
 
   /* 4. Navigate to Mafia (Room 8) */
   console.log('\n🚪 Navigating to Room 8 (Mafia)…');
-  // GM: index.html has no "Be the GM" button; navigate directly with autoJoin=host
-  // (localStorage already has filoName=Kuya AD from step 3)
   await gmPage.goto(`${MAFIA}?autoJoin=host`);
   console.log(`  ✓ [GM] Kuya AD → mafia2.html?autoJoin=host`);
   await sleep(350);
 
-  // Players: click the Room 8 card on index.html → lands on s-role-select
   for (let i = 0; i < playerPages.length; i++) {
     await playerPages[i].click('.room-card-mafia').catch(() =>
       playerPages[i].evaluate(() => { window.location.href = 'mafia2.html'; })
@@ -190,8 +173,6 @@ async function run() {
     await sleep(250);
   }
 
-  // After navigation, players are on s-role-select ("Join as Player / Be the GM").
-  // Wait for s-role-select then auto-click "Join as Player" for each player.
   console.log('\n⏳ Waiting for players to reach s-role-select, then joining…');
   await waitScreen(playerPages, 's-role-select', 18000);
   for (let i = 0; i < playerPages.length; i++) {
@@ -200,10 +181,10 @@ async function run() {
     await sleep(200);
   }
 
-  /* 5. Wait for all 10 to reach Mafia lobby (mafia2.html s-lobby) */
-  console.log('\n⏳ Waiting for all 10 windows to reach Mafia lobby…');
+  /* 5. Wait for all 5 to reach Mafia lobby */
+  console.log('\n⏳ Waiting for all 5 windows to reach Mafia lobby…');
   const allMafia = await waitScreen([gmPage, ...playerPages], 's-lobby', 25000);
-  assert(allMafia, 'All 10 windows in Mafia lobby');
+  assert(allMafia, 'All 5 windows in Mafia lobby');
   if (!allMafia) { await browser.close(); return; }
 
   /* 6. Players ready up */
@@ -213,12 +194,12 @@ async function run() {
     console.log(`  ✓ ${PLAYERS[i].name} → Ready`);
     await sleep(420);
   }
-  await sleep(2500);
+  await sleep(2000);
   const lobbySnap = await fb('/mafia2/lobby');
   const readyN = lobbySnap ? Object.values(lobbySnap).filter(p => p?.ready).length : 0;
-  assert(readyN >= 9, `9 players ready in Firebase (got ${readyN})`);
+  assert(readyN >= 4, `4 players ready in Firebase (got ${readyN})`);
 
-  /* 7. GM proceeds to role assignment */
+  /* 7. GM proceeds to role assignment (calls proceedToAssign directly — bypasses MIN_READY UI gate) */
   console.log('\n🎲 GM proceeding to role assignment…');
   await gmPage.evaluate(async () => {
     if (!hostName) hostName = await fb('GET', '/mafia2/host') ?? myName;
@@ -229,21 +210,21 @@ async function run() {
     await gmPage.evaluate(() => document.getElementById('s-assign')?.classList.contains('active')).catch(() => false),
     'GM on s-assign screen'
   );
-  assert(await waitScreen(playerPages, 's-player', 12000), 'All 9 players on Stand By');
+  assert(await waitScreen(playerPages, 's-player', 12000), 'All 4 players on Stand By');
 
   /* 8. Assign roles */
   console.log('\n🎭 GM assigning roles…');
   for (const { name, role } of PLAYERS) {
     await gmPage.evaluate(({ n, r }) => assignRole(n, r), { n: name, r: role }).catch(() => {});
-    console.log(`  ✓ ${name.padEnd(10)} → ${role}`);
+    console.log(`  ✓ ${name.padEnd(8)} → ${role}`);
     await sleep(150);
   }
   await sleep(500);
   const rolesOk = await gmPage.evaluate(() => {
     const k = Object.keys(rolesMap);
-    return k.length >= 9 && k.every(n => rolesMap[n]);
+    return k.length >= 4 && k.every(n => rolesMap[n]);
   }).catch(() => false);
-  assert(rolesOk, 'All 9 roles assigned on GM page');
+  assert(rolesOk, 'All 4 roles assigned on GM page');
 
   /* 9. Start game */
   console.log('\n▶ GM starting the game…');
@@ -251,147 +232,47 @@ async function run() {
   assert(await waitFb('/mafia2/phase', 'night', 8000), 'Phase → "night"');
 
   /* ═══════════════════════════════════════════════════
-     ROUND 1 — Matt kills Charm · Shantelle voted out
+     ROUND 1 — Matt kills Charm · Austin voted out → MURDERER WINS
   ═══════════════════════════════════════════════════ */
   console.log('\n━━━ ROUND 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🌙 Night: Matt→Charm · Gianne saves Kriselle · Austin inspects Kee');
+  console.log('🌙 Night: Matt→Charm · Gianne saves Austin · Austin inspects Matt');
 
-  // Wait for all players to receive their role (includes 5s role-reveal countdown)
+  // Wait for roles (includes 5s role-reveal countdown on round 1)
   const r1Roles = await Promise.all(PLAYERS.map((_, i) => waitRole(playerPages[i], 16000)));
   r1Roles.forEach((r, i) => assert(r === PLAYERS[i].role, `${PLAYERS[i].name} role = "${r}"`));
   await sleep(6000); // role reveal countdown
 
   await byName('Matt').evaluate(() => submitAction('Charm')).catch(() => {});
-  await byName('Gianne').evaluate(() => submitAction('Kriselle')).catch(() => {});
-  await byName('Austin').evaluate(() => submitAction('Kee')).catch(() => {});
-  for (const { name, role } of PLAYERS)
-    if (role === 'civilian')
-      await byName(name).evaluate(() => submitSuspect('Shantelle')).catch(() => {});
+  await byName('Gianne').evaluate(() => submitAction('Austin')).catch(() => {});
+  await byName('Austin').evaluate(() => submitAction('Matt')).catch(() => {});
+  await byName('Charm').evaluate(() => submitSuspect('Matt')).catch(() => {}); // Charm predicts Matt dies
   await sleep(2200);
 
-  assert((await fb('/mafia2/night/kill')) === 'Charm',    'R1 kill = Charm');
-  assert((await fb('/mafia2/night/save')) === 'Kriselle', 'R1 save = Kriselle');
+  assert((await fb('/mafia2/night/kill')) === 'Charm',  'R1 kill = Charm');
+  assert((await fb('/mafia2/night/save')) === 'Austin', 'R1 save = Austin');
 
   await gmPage.evaluate(() => resolveNight()).catch(() => {});
   assert(await waitFb('/mafia2/phase', 'day', 8000), 'R1 Phase → "day"');
   assert(await fb('/mafia2/alive/Charm') === false, 'Charm eliminated overnight');
   await sleep(1500);
 
-  console.log('🗳️  Vote: all alive → Shantelle');
+  // Alive: Matt, Gianne, Austin (Charm dead)
+  console.log('🗳️  Vote: Matt→Austin · Gianne→Austin · Austin→defer');
   await gmPage.evaluate(() => hostOpenVote()).catch(() => {});
   assert(await waitFb('/mafia2/phase', 'vote', 6000), 'R1 Phase → "vote"');
   await sleep(1200);
 
-  // Alive: Matt Gianne Austin Kee Kriselle Monique Tiff Shantelle (Charm dead)
-  for (const { name } of PLAYERS)
-    if (name !== 'Charm')
-      await byName(name).evaluate(() => submitVote('Shantelle')).catch(() => {});
+  await byName('Matt').evaluate(() => submitVote('Austin')).catch(() => {});
+  await byName('Gianne').evaluate(() => submitVote('Austin')).catch(() => {});
+  await byName('Austin').evaluate(() => submitVote('defer')).catch(() => {});
   await sleep(1800);
 
   await gmPage.evaluate(() => hostResolveVote()).catch(() => {});
-  await sleep(1500);
-  assert(await fb('/mafia2/alive/Shantelle') === false, 'Shantelle voted out');
-  assert(await waitFb('/mafia2/phase', 'night', 8000), 'R1 → R2 night');
-
-  /* ═══════════════════════════════════════════════════
-     ROUND 2 — Matt kills Tiff · Kriselle voted out
-  ═══════════════════════════════════════════════════ */
-  console.log('\n━━━ ROUND 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🌙 Night: Matt→Tiff · Gianne saves Monique · Austin inspects Matt');
   await sleep(2000);
-
-  await byName('Matt').evaluate(() => submitAction('Tiff')).catch(() => {});
-  await byName('Gianne').evaluate(() => submitAction('Monique')).catch(() => {});   // lastSave was Kriselle → Monique OK
-  await byName('Austin').evaluate(() => submitAction('Matt')).catch(() => {});
-  // Living civilians (Charm/Shantelle dead): Kee Kriselle Monique Tiff
-  for (const name of ['Kee', 'Kriselle', 'Monique', 'Tiff'])
-    await byName(name).evaluate(() => submitSuspect('Kriselle')).catch(() => {});
-  await sleep(2200);
-
-  assert((await fb('/mafia2/night/kill')) === 'Tiff',    'R2 kill = Tiff');
-  assert((await fb('/mafia2/night/save')) === 'Monique', 'R2 save = Monique');
-
-  await gmPage.evaluate(() => resolveNight()).catch(() => {});
-  assert(await waitFb('/mafia2/phase', 'day', 8000), 'R2 Phase → "day"');
-  assert(await fb('/mafia2/alive/Tiff') === false, 'Tiff eliminated overnight');
-  await sleep(1500);
-
-  console.log('🗳️  Vote: all alive → Kriselle');
-  await gmPage.evaluate(() => hostOpenVote()).catch(() => {});
-  assert(await waitFb('/mafia2/phase', 'vote', 6000), 'R2 Phase → "vote"');
-  await sleep(1200);
-
-  // Alive: Matt Gianne Austin Kee Kriselle Monique (Charm/Tiff/Shantelle dead)
-  for (const { name } of PLAYERS)
-    if (!['Charm', 'Tiff', 'Shantelle'].includes(name))
-      await byName(name).evaluate(() => submitVote('Kriselle')).catch(() => {});
-  await sleep(1800);
-
-  await gmPage.evaluate(() => hostResolveVote()).catch(() => {});
-  await sleep(1500);
-  assert(await fb('/mafia2/alive/Kriselle') === false, 'Kriselle voted out');
-  assert(await waitFb('/mafia2/phase', 'night', 8000), 'R2 → R3 night');
-
-  /* ═══════════════════════════════════════════════════
-     ROUND 3 — Matt kills Kee · Austin voted out
-  ═══════════════════════════════════════════════════ */
-  console.log('\n━━━ ROUND 3 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🌙 Night: Matt→Kee · Gianne saves Austin · Austin inspects Monique');
-  await sleep(2000);
-
-  await byName('Matt').evaluate(() => submitAction('Kee')).catch(() => {});
-  await byName('Gianne').evaluate(() => submitAction('Austin')).catch(() => {}); // lastSave was Monique → Austin OK
-  await byName('Austin').evaluate(() => submitAction('Monique')).catch(() => {});
-  // Living civilians: Kee Monique (Kriselle voted out, Charm/Tiff/Shantelle dead)
-  await byName('Kee').evaluate(() => submitSuspect('Austin')).catch(() => {});
-  await byName('Monique').evaluate(() => submitSuspect('Austin')).catch(() => {});
-  await sleep(2200);
-
-  assert((await fb('/mafia2/night/kill')) === 'Kee',    'R3 kill = Kee');
-  assert((await fb('/mafia2/night/save')) === 'Austin', 'R3 save = Austin');
-
-  await gmPage.evaluate(() => resolveNight()).catch(() => {});
-  assert(await waitFb('/mafia2/phase', 'day', 8000), 'R3 Phase → "day"');
-  assert(await fb('/mafia2/alive/Kee') === false, 'Kee eliminated overnight');
-  await sleep(1500);
-
-  console.log('🗳️  Vote: all alive → Austin');
-  await gmPage.evaluate(() => hostOpenVote()).catch(() => {});
-  assert(await waitFb('/mafia2/phase', 'vote', 6000), 'R3 Phase → "vote"');
-  await sleep(1200);
-
-  // Alive: Matt Gianne Austin Monique (Kee/Kriselle/Charm/Tiff/Shantelle dead)
-  for (const { name } of PLAYERS)
-    if (!['Charm', 'Tiff', 'Shantelle', 'Kriselle', 'Kee'].includes(name))
-      await byName(name).evaluate(() => submitVote('Austin')).catch(() => {});
-  await sleep(1800);
-
-  await gmPage.evaluate(() => hostResolveVote()).catch(() => {});
-  await sleep(1500);
   assert(await fb('/mafia2/alive/Austin') === false, 'Austin voted out');
-  assert(await waitFb('/mafia2/phase', 'night', 8000), 'R3 → R4 night');
 
-  /* ═══════════════════════════════════════════════════
-     ROUND 4 — Matt kills Gianne (doctor) → MURDERER WINS
-  ═══════════════════════════════════════════════════ */
-  console.log('\n━━━ ROUND 4 — MURDERER WINS 🔪 ━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🌙 Night: Matt→Gianne · Gianne saves Monique');
-  await sleep(2000);
-
-  // Alive: Matt Gianne Monique (civCount = 2 before kill)
-  await byName('Matt').evaluate(() => submitAction('Gianne')).catch(() => {});
-  await byName('Gianne').evaluate(() => submitAction('Monique')).catch(() => {}); // lastSave was Austin → Monique OK
-  await byName('Monique').evaluate(() => submitSuspect('Gianne')).catch(() => {});
-  await sleep(2200);
-
-  assert((await fb('/mafia2/night/kill')) === 'Gianne',  'R4 kill = Gianne (doctor)');
-  assert((await fb('/mafia2/night/save')) === 'Monique', 'R4 save = Monique');
-
-  console.log('\n⚰️  GM resolves night — Gianne (doctor) dies → civs alive = 1 → MURDERER WINS');
-  await gmPage.evaluate(() => resolveNight()).catch(() => {});
-  await sleep(3000);
-
-  assert(await fb('/mafia2/alive/Gianne') === false, 'Gianne eliminated — doctor gone');
+  // Alive after vote: Matt + Gianne → civCount = 1 ≤ 1 → MURDERER WINS (no round 2)
+  console.log('\n⚰️  Austin out → alive: Matt + Gianne → civCount = 1 → MURDERER WINS 🔪');
   const winner = await fb('/mafia2/winner');
   assert(winner === 'murderer', `Game winner = "${winner}"`, 'expected murderer');
 
@@ -411,23 +292,21 @@ async function run() {
              c.includes('Better luck') || c.includes('You won');
     }).catch(() => false))
   )).filter(Boolean).length;
-  assert(pEndCount >= 7, `${pEndCount}/9 player windows show game-over result`);
+  assert(pEndCount >= 3, `${pEndCount}/4 player windows show game-over result`);
 
   /* ── Final summary ── */
   console.log('\n╔══════════════════════════════════════════════════════╗');
-  console.log('  📋 Game Summary — Matt 🔪 WINS');
-  console.log('  R1: Matt kills Charm    · Shantelle voted out');
-  console.log('  R2: Matt kills Tiff     · Kriselle voted out');
-  console.log('  R3: Matt kills Kee      · Austin voted out');
-  console.log('  R4: Matt kills Gianne (doctor!) → only Monique left');
-  console.log('  ⟹ Alive non-murderers = 1 → MURDERER WINS! 🔪');
+  console.log('  📋 Game Summary — Matt 🔪 WINS in 1 Round');
+  console.log('  R1 night : Matt kills Charm · Gianne saves Austin · Austin inspects Matt');
+  console.log('  R1 day   : Matt + Gianne vote Austin out (Austin defers)');
+  console.log('  → Alive: Matt + Gianne · civCount = 1 → MURDERER WINS! 🔪');
   console.log('╚══════════════════════════════════════════════════════╝');
 
   console.log(`\n${'═'.repeat(56)}`);
   console.log(`Results: ${passed} passed, ${failed} failed  (${passed + failed} total)`);
   console.log(failed === 0 ? '🎉 ALL TESTS PASSED' : `⚠️  ${failed} test(s) failed`);
-  console.log('\nWindows stay open 12 s for inspection…');
-  await sleep(12000);
+  console.log('\nWindows stay open 15 s for inspection…');
+  await sleep(15000);
   await browser.close();
 }
 
