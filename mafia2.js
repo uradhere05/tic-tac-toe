@@ -77,6 +77,12 @@ function startPhaseStream(){
           myRole=null;myAction=null;myVote=null;mySuspect=null;myEliminated=false;knownPhase='';
           toast('Host ended the game — returning to lobby…',3000);
           setTimeout(enterLobby,1500);
+        } else {
+          // Mid-game phase change (night/day/vote/assigning) pushed via SSE.
+          // When the tab is backgrounded polling stops, so drive pollPhase() from
+          // the SSE event so backgrounded players stay in sync.
+          const hostD=await fb('GET','/mafia2/host');
+          if(hostD!==myName) pollPhase();
         }
       }catch{}
     };
@@ -361,7 +367,7 @@ async function proceedToAssign(){
   const _now=Date.now();
   rolesMap={};
   Object.values(freshLobby)
-    .filter(p=>p&&p.name&&p.name!==hostName&&_now-p.ts<75000)
+    .filter(p=>p&&p.name&&p.name!==hostName&&p.ready&&_now-p.ts<75000)
     .forEach(p=>rolesMap[p.name]='');
   await fb('PUT','/mafia2/phase','assigning');
   stopIvs();
@@ -754,7 +760,7 @@ async function endGame(winner){
   await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
   stopIvs();show('s-host');await buildHostEnd(winner);
   const winners=winner==='civilians'
-    ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer')
+    ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer'&&aliveMap[n]!==false)
     :Object.keys(rolesMap).filter(n=>rolesMap[n]==='murderer');
   await Promise.all(winners.map(n=>recordWin(n)));
   toast(`${winners.length} win${winners.length!==1?'s':''} recorded on leaderboard!`);
