@@ -45,7 +45,7 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 let _tt;
 function toast(m,d=2600){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),d);}
-function stopIvs(){ivs.forEach(clearInterval);ivs=[];}
+function stopIvs(){ivs.forEach(clearInterval);ivs=[];if(window._assignPoller){clearInterval(window._assignPoller);window._assignPoller=null;}}
 function getAvatar(name){return avatarsMap[name]||AMAP[name]||'👤';}
 function hShow(id){['h-night','h-day','h-end'].forEach(s=>document.getElementById(s).style.display=s===id?'':'none');}
 
@@ -113,7 +113,6 @@ function init(){
     startPhaseStream();
     if(autoJoin==='host'){joinAsGameMaster();return;}
     if(autoJoin==='player'){joinAsPlayer();return;}
-    if(!myAvatar){showAvatarSelect();return;}
     checkActiveGame();
   }else{
     window.location.replace('index.html');
@@ -328,12 +327,13 @@ async function lobbyTick(){
   rBtn.textContent=amReady?'⬜ Cancel Ready':'✅ Ready Up';
   rBtn.className='btn w100'+(amReady?' btn-secondary':' btn-primary');
 
-  // Proceed button: host only, when all non-host players are ready (minimum MIN_READY)
+  // Proceed button: host only, when at least MIN_READY non-host players are ready
   const nonHostPlayers=players.filter(p=>p.name!==hostName);
-  const canProceed=isHost&&nonHostPlayers.length>=MIN_READY&&nonHostPlayers.every(p=>p.ready);
+  const readyNonHost=nonHostPlayers.filter(p=>p.ready);
+  const canProceed=isHost&&readyNonHost.length>=MIN_READY;
   const proceedBtn=document.getElementById('lb-proceed-btn');
   proceedBtn.style.display=canProceed?'':'none';
-  if(canProceed) proceedBtn.textContent=`▶ Assign Roles (${nonHostPlayers.length} ready)`;
+  if(canProceed) proceedBtn.textContent=`▶ Assign Roles (${readyNonHost.length} ready)`;
 }
 
 async function claimHost(){
@@ -760,7 +760,7 @@ async function endGame(winner){
   await Promise.all([fb('PUT','/mafia2/winner',winner),fb('PUT','/mafia2/allRoles',allRoles),fb('PUT','/mafia2/phase','ended')]);
   stopIvs();show('s-host');await buildHostEnd(winner);
   const winners=winner==='civilians'
-    ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer'&&aliveMap[n]!==false)
+    ?Object.keys(rolesMap).filter(n=>rolesMap[n]!=='murderer')
     :Object.keys(rolesMap).filter(n=>rolesMap[n]==='murderer');
   await Promise.all(winners.map(n=>recordWin(n)));
   toast(`${winners.length} win${winners.length!==1?'s':''} recorded on leaderboard!`);
@@ -772,23 +772,48 @@ async function endGameEarly(){
   isHost=false;hostName='';rolesMap={};aliveMap={};round=1;
   knownPhase='';isEnded=false;myRole=null;myAction=null;myVote=null;
   mySuspect=null;amReady=false;lobbyPlayers={};myEliminated=false;
-  // Wait for the delete AFTER entering lobby so fresh lobby presence isn't wiped
-  setTimeout(()=>fb('DELETE','/mafia2'),4000);
   enterLobby();
+  // Delete game data only — preserve /mafia2/lobby so fresh presence isn't wiped
+  setTimeout(()=>Promise.all([
+    fb('DELETE','/mafia2/roles'),fb('DELETE','/mafia2/alive'),
+    fb('DELETE','/mafia2/night'),fb('DELETE','/mafia2/day'),
+    fb('DELETE','/mafia2/winner'),fb('DELETE','/mafia2/announcement'),
+    fb('DELETE','/mafia2/lastSave'),fb('DELETE','/mafia2/history'),
+    fb('DELETE','/mafia2/allRoles'),fb('DELETE','/mafia2/round'),
+    fb('DELETE','/mafia2/host'),fb('DELETE','/mafia2/avatars'),
+    fb('DELETE','/mafia2/eliminatedByVote'),fb('DELETE','/mafia2/phase'),
+  ]),4000);
 }
 
 async function hostReset(){
   // Signal reset so polling players navigate away before data is deleted
   await fb('PUT','/mafia2/phase','reset');
-  setTimeout(()=>fb('DELETE','/mafia2'),3000);
   rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
   myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;lobbyPlayers={};
   enterLobby();
+  // Delete game data only — preserve /mafia2/lobby so fresh presence isn't wiped
+  setTimeout(()=>Promise.all([
+    fb('DELETE','/mafia2/roles'),fb('DELETE','/mafia2/alive'),
+    fb('DELETE','/mafia2/night'),fb('DELETE','/mafia2/day'),
+    fb('DELETE','/mafia2/winner'),fb('DELETE','/mafia2/announcement'),
+    fb('DELETE','/mafia2/lastSave'),fb('DELETE','/mafia2/history'),
+    fb('DELETE','/mafia2/allRoles'),fb('DELETE','/mafia2/round'),
+    fb('DELETE','/mafia2/host'),fb('DELETE','/mafia2/avatars'),
+    fb('DELETE','/mafia2/eliminatedByVote'),fb('DELETE','/mafia2/phase'),
+  ]),3000);
 }
 
 async function resetStaleGame(){
   if(!isHost){const h=await fb('GET','/mafia2/host');if(h&&h!==myName){toast('Only the host can reset the game.');return;}}
-  await fb('DELETE','/mafia2');
+  await Promise.all([
+    fb('DELETE','/mafia2/roles'),fb('DELETE','/mafia2/alive'),
+    fb('DELETE','/mafia2/night'),fb('DELETE','/mafia2/day'),
+    fb('DELETE','/mafia2/winner'),fb('DELETE','/mafia2/announcement'),
+    fb('DELETE','/mafia2/lastSave'),fb('DELETE','/mafia2/history'),
+    fb('DELETE','/mafia2/allRoles'),fb('DELETE','/mafia2/round'),
+    fb('DELETE','/mafia2/host'),fb('DELETE','/mafia2/avatars'),
+    fb('DELETE','/mafia2/eliminatedByVote'),fb('DELETE','/mafia2/phase'),
+  ]);
   rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
   myRole=null;myAction=null;myVote=null;amReady=false;lobbyPlayers={};
   toast('Game data cleared — lobby is open');
