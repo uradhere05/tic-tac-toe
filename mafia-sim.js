@@ -37,9 +37,6 @@ const { w: SCR_W, h: SCR_H } = getScreenSize();
 const COLS = 5, ROWS = 2;
 const WIN_W  = Math.floor(SCR_W / COLS);
 const WIN_H  = Math.floor(SCR_H / ROWS);
-const CHROME_H = 88; // browser chrome height (title bar + address bar)
-const VP_W   = WIN_W;
-const VP_H   = Math.max(320, WIN_H - CHROME_H);
 const POSITIONS = Array.from({ length: COLS * ROWS }, (_, i) => [
   (i % COLS) * WIN_W,
   Math.floor(i / COLS) * WIN_H,
@@ -74,10 +71,17 @@ const PLAYERS = [
 
 /* ── Helpers ── */
 async function openWindow(browser, name, x, y) {
-  const ctx  = await browser.newContext({ viewport: { width: VP_W, height: VP_H } });
+  // viewport:null lets the actual window size drive the viewport
+  const ctx  = await browser.newContext({ viewport: null });
   const page = await ctx.newPage();
+  // CDP: set exact window bounds before navigating (reliable cross-platform)
+  const cdp = await ctx.newCDPSession(page);
+  const { windowId } = await cdp.send('Browser.getWindowForTarget');
+  await cdp.send('Browser.setWindowBounds', {
+    windowId,
+    bounds: { left: x, top: y, width: WIN_W, height: WIN_H, windowState: 'normal' },
+  });
   await page.goto(`${INDEX}?name=${encodeURIComponent(name)}`);
-  await page.evaluate((px, py) => window.moveTo(px, py), x, y).catch(() => {});
   return page;
 }
 
@@ -131,16 +135,17 @@ async function run() {
   assert(await fb('/mafia2/phase') === null, 'Firebase /mafia2 cleared');
 
   /* 1. Launch browser */
-  console.log(`🖥️  Screen ${SCR_W}×${SCR_H} → ${COLS}×${ROWS} grid · each window ${WIN_W}×${WIN_H} (viewport ${VP_W}×${VP_H})\n`);
+  console.log(`🖥️  Screen ${SCR_W}×${SCR_H} → ${COLS}×${ROWS} grid · each window ${WIN_W}×${WIN_H} (fullscreen cells via CDP)\n`);
 
   const browser = await chromium.launch({
     headless: false,
     channel:  'chrome',
     args: [
-      `--window-size=${WIN_W},${WIN_H}`,
       '--disable-background-timer-throttling',
       '--disable-renderer-backgrounding',
       '--disable-backgrounding-occluded-windows',
+      '--disable-infobars',
+      '--no-default-browser-check',
     ],
   });
 
