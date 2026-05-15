@@ -259,7 +259,7 @@ async function lobbyTick(){
     } else {
       if(iAmHost){isHost=true;await reconnectHost(phaseD);}
       else{show('s-player');startPlayerPolling();}
-    }1
+    }
     return;
   }
 
@@ -528,7 +528,7 @@ async function pollNightActions(){
     html+=`<div class="act-item ${saveD?'submitted':'pending'}">💊 <b>${escHtml(doct)}</b>: ${saveD?`Save → <b>${escHtml(saveD)}</b>`:'Choosing…'}</div>`;
   if(inv&&aliveMap[inv]!==false){
     let txt='Choosing…';
-    if(inspD){const r=await fb('GET',`/mafia2/roles/${encN(inspD)}`);txt=`Inspect → <b>${escHtml(inspD)}</b> = ${r==='murderer'?'⚠️ MURDERER':'✅ Innocent'}`;}
+    if(inspD){const r=await fb('GET',`/mafia2/roles/${encN(inspD)}`);txt=`Inspect → <b>${escHtml(inspD)}</b> = ${r==='murderer'?'⚠️ MURDERER':'✅ Not the murderer'}`;}
     html+=`<div class="act-item ${inspD?'submitted':'pending'}">🔍 <b>${escHtml(inv)}</b>: ${txt}</div>`;
   }
   if(!html)html='<div style="opacity:.4;font-size:.83rem">No special roles alive — resolve now.</div>';
@@ -590,13 +590,23 @@ async function resolveNight(){
   const ann=document.getElementById('h-ann').value.trim()||
     (killed?`${killed} was found dead.`:'No one was eliminated tonight.');
   if(killed){await fb('PATCH','/mafia2/alive',{[encN(killed)]:false});aliveMap[killed]=false;}
+  // Check win BEFORE writing phase='day' — prevents a flash of the day screen
+  // when the kill ends the game (e.g. only 1 civilian left after the murder).
+  const w=checkWin();
+  if(w){
+    await Promise.all([
+      fb('PUT','/mafia2/announcement',ann),
+      fb('PUT',`/mafia2/history/r${round}`,{killed:killed||null,saved:saveD||null}),
+      saveD?fb('PUT','/mafia2/lastSave',saveD):fb('DELETE','/mafia2/lastSave'),
+    ]);
+    await endGame(w);return;
+  }
   await Promise.all([
     fb('PUT','/mafia2/announcement',ann),
     fb('PUT',`/mafia2/history/r${round}`,{killed:killed||null,saved:saveD||null}),
     saveD?fb('PUT','/mafia2/lastSave',saveD):fb('DELETE','/mafia2/lastSave'),
     fb('PUT','/mafia2/phase','day'),
   ]);
-  const w=checkWin();if(w){await endGame(w);return;}
   stopIvs();hShow('h-day');
   document.getElementById('h-rd').textContent=round;
   renderAliveList();
@@ -753,15 +763,18 @@ async function endGame(winner){
 async function endGameEarly(){
   if(!confirm('End the game and send all players back to lobby?')) return;
   await fb('PUT','/mafia2/phase','reset');
-  setTimeout(()=>fb('DELETE','/mafia2'),3000);
   isHost=false;hostName='';rolesMap={};aliveMap={};round=1;
   knownPhase='';isEnded=false;myRole=null;myAction=null;myVote=null;
   mySuspect=null;amReady=false;lobbyPlayers={};myEliminated=false;
+  // Wait for the delete AFTER entering lobby so fresh lobby presence isn't wiped
+  setTimeout(()=>fb('DELETE','/mafia2'),4000);
   enterLobby();
 }
 
 async function hostReset(){
-  await fb('DELETE','/mafia2');
+  // Signal reset so polling players navigate away before data is deleted
+  await fb('PUT','/mafia2/phase','reset');
+  setTimeout(()=>fb('DELETE','/mafia2'),3000);
   rolesMap={};aliveMap={};round=1;knownPhase='';hostName='';isHost=false;isEnded=false;
   myRole=null;myAction=null;myVote=null;mySuspect=null;amReady=false;lobbyPlayers={};
   enterLobby();
@@ -802,7 +815,7 @@ function renderWaiting(){
     <div class="phase-card">
       <div class="phase-icon">🎭</div>
       <div class="phase-title">Stand By</div>
-      <div class="phase-desc">Host is assigning roles…<br>Hang tight, <strong>${myName}</strong>.</div>
+      <div class="phase-desc">Host is assigning roles…<br>Hang tight, <strong>${escHtml(myName)}</strong>.</div>
     </div>`;
 }
 
@@ -882,7 +895,8 @@ function showRoleReveal(){
       <div class="rr-cd" id="rr-cd">Starting in 5…</div>
     </div>`;
   let s=5;const cd=document.getElementById('rr-cd');
-  const t=setInterval(()=>{cd.textContent=`Starting in ${--s}…`;if(s<=0){clearInterval(t);showNightUI();}},1000);
+  const t=setInterval(()=>{cd.textContent=`Starting in ${--s}…`;if(s<=0){ivs=ivs.filter(i=>i!==t);clearInterval(t);showNightUI();}},1000);
+  ivs.push(t);
 }
 
 async function showNightUI(){
@@ -927,7 +941,7 @@ async function showNightUI(){
   if(myAction){
     if(myRole==='investigator'){
       const r=await fb('GET',`/mafia2/roles/${encN(myAction)}`);
-      const suspicious=r==='murderer'||r==='doctor';
+      const suspicious=r==='murderer';
       document.getElementById('p-content').innerHTML=`
         <div class="phase-card night">
           <div class="phase-icon">${suspicious?'⚠️':'✅'}</div>
@@ -984,8 +998,9 @@ async function submitSuspect(target){
   showNightUI();snd('click');
 }
 
-function changeSuspect(){
+async function changeSuspect(){
   mySuspect=null;
+  await fb('DELETE',`/mafia2/night/suspect/${encN(myName)}`);
   showNightUI();
 }
 
@@ -1049,8 +1064,9 @@ async function submitVote(target){
   showVoteUI();snd('click');
 }
 
-function changeVote(){
+async function changeVote(){
   myVote=null;
+  await fb('DELETE',`/mafia2/day/votes/${encN(myName)}`);
   showVoteUI();
 }
 
