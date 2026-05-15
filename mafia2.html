@@ -16,6 +16,8 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
           max(40px,calc(24px + env(safe-area-inset-bottom)));
   overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .screen.active { display:flex; }
+.app-version { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.28; margin-top: 4px; text-align: center; width: 100%; }
+.credits { width: 100%; text-align: center; margin-top: 8px; position: fixed; bottom: 8px; left: 0; z-index: 0; pointer-events: none; }
 .m-title { font-size:2.1rem; font-weight:900; letter-spacing:5px; text-transform:uppercase;
   background:linear-gradient(135deg,#8B0000,#cc2200,#FFD200);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
@@ -301,6 +303,11 @@ body { background:#08030f; font-family:'Segoe UI',Arial,sans-serif; color:#e8e0f
     border-radius:30px;padding:7px 16px;margin-bottom:16px;
     font-size:0.78rem;font-weight:700;letter-spacing:1px;align-self:center"></div>
   <div id="p-content"></div>
+</div>
+
+<div class="credits">
+  <footer>Created by ADML &mdash; 2026</footer>
+  <div class="app-version">v2.40</div>
 </div>
 
 <script src="mafia2.js"></script>
