@@ -121,6 +121,51 @@ async function joinAsDealer(){
   isHost=true;hostName=myName;
   enterLobby();
 }
+/* ─── Hand Evaluator ─── */
+// score = (handRank<<20)|(r0<<16)|(r1<<12)|(r2<<8)|(r3<<4)|r4
+// handRank: 0=High Card … 8=Straight Flush (higher=better)
+function evalHand5(cards){
+  const rs=cards.map(c=>c.r).sort((a,b)=>b-a);
+  const ss=cards.map(c=>c.s);
+  const isFlush=ss.every(s=>s===ss[0]);
+  let isStraight=false,straightHigh=0;
+  if(rs[0]-rs[4]===4&&new Set(rs).size===5){isStraight=true;straightHigh=rs[0];}
+  // Wheel A-2-3-4-5
+  if(rs[0]===12&&rs[1]===3&&rs[2]===2&&rs[3]===1&&rs[4]===0){isStraight=true;straightHigh=3;}
+
+  const cnt={};
+  rs.forEach(r=>cnt[r]=(cnt[r]||0)+1);
+  const grp=Object.entries(cnt).map(([r,c])=>[+r,c]).sort((a,b)=>b[1]-a[1]||b[0]-a[0]);
+  const f=grp.map(([,c])=>c);
+  const t=grp.map(([r])=>r);
+
+  let type,key;
+  if(isStraight&&isFlush){type=8;key=[straightHigh,0,0,0,0];}
+  else if(f[0]===4)       {type=7;key=[t[0],t[1],0,0,0];}
+  else if(f[0]===3&&f[1]===2){type=6;key=[t[0],t[1],0,0,0];}
+  else if(isFlush)         {type=5;key=rs;}
+  else if(isStraight)      {type=4;key=[straightHigh,0,0,0,0];}
+  else if(f[0]===3)        {type=3;key=[t[0],t[1],t[2],0,0];}
+  else if(f[0]===2&&f[1]===2){type=2;key=[t[0],t[1],t[2],0,0];}
+  else if(f[0]===2)        {type=1;key=[t[0],t[1],t[2],t[3],0];}
+  else                     {type=0;key=rs;}
+
+  return(type<<20)|(key[0]<<16)|(key[1]<<12)|(key[2]<<8)|(key[3]<<4)|(key[4]||0);
+}
+
+function bestOf7(cards7){
+  let best=-1;
+  for(let i=0;i<7;i++) for(let j=i+1;j<7;j++){
+    const five=cards7.filter((_,k)=>k!==i&&k!==j);
+    const s=evalHand5(five);
+    if(s>best)best=s;
+  }
+  return best;
+}
+
+const HAND_NAMES=['High Card','One Pair','Two Pair','Three of a Kind','Straight','Flush','Full House','Four of a Kind','Straight Flush'];
+function handName(score){return HAND_NAMES[score>>20]||'High Card';}
+
 window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
