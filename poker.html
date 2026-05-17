@@ -676,18 +676,8 @@ body {
     </div>
   </div>
 
-  <!-- Action panel -->
-  <div class="action-panel" id="p-action">
-    <div class="action-row">
-      <button class="btn btn-danger btn-sm" onclick="playerFold()">Fold</button>
-      <button class="btn btn-secondary btn-sm" onclick="playerCheck()">Check</button>
-      <button class="btn btn-primary btn-sm" onclick="playerCall()">Call</button>
-    </div>
-    <div class="raise-row">
-      <input class="raise-input" id="raise-amount" type="number" min="0" placeholder="Raise amount…">
-      <button class="btn btn-gold btn-sm" onclick="playerRaise()">Raise</button>
-    </div>
-  </div>
+  <!-- Action panel (populated by renderActionButtons / renderPlayerPhase) -->
+  <div class="action-panel" id="p-action"></div>
 
   <!-- Other players -->
   <div class="section-lbl">Other Players</div>

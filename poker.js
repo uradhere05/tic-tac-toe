@@ -346,11 +346,15 @@ async function hostStartHand(){
   const sbName=n===2?activePlayers[dealerPos]:activePlayers[sbIdx];
   const bbName=n===2?activePlayers[sbIdx]:activePlayers[bbIdx];
 
-  chipsMap[sbName]-=Math.min(SB,chipsMap[sbName]);
-  chipsMap[bbName]-=Math.min(BB,chipsMap[bbName]);
-  betStreetMap[sbName]=Math.min(SB,SB);
-  betStreetMap[bbName]=Math.min(BB,BB);
-  pot=betStreetMap[sbName]+betStreetMap[bbName];
+  const sbPosted=Math.min(SB,chipsMap[sbName]);
+  const bbPosted=Math.min(BB,chipsMap[bbName]);
+  chipsMap[sbName]-=sbPosted;
+  chipsMap[bbName]-=bbPosted;
+  betStreetMap[sbName]=sbPosted;
+  betStreetMap[bbName]=bbPosted;
+  pot=sbPosted+bbPosted;
+  if(chipsMap[sbName]<=0)allInMap[sbName]=true;
+  if(chipsMap[bbName]<=0)allInMap[bbName]=true;
 
   _dealerDeck=shuffle(createDeck());
   const handsObj={};
@@ -433,10 +437,10 @@ function renderDealerConsole(ph){
     else if(folded){statusCls='s-folded';statusTxt='folded';}
     else if(allin){statusCls='s-allin';statusTxt='all-in';}
 
-    prows.innerHTML+=`<div class="pr-row${folded?' pr-folded':''}${isActing?' pr-acting':''}">
+    prows.innerHTML+=`<div class="pr-row${folded?' is-folded':''}${isActing?' pr-acting':''}">
       <span class="pr-av">${getAvatar(name)}</span>
       <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
-      <span class="pr-chips">${fmtChips(chips)}</span>
+      <span class="pr-stack">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
       <span class="pr-cards" id="pr-cards-${encN(name)}"></span>
@@ -518,13 +522,14 @@ async function processAction(playerName,action){
     await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
     betQueue=betQueue.filter(n=>n!==playerName);
   } else if(type==='raise'){
-    const raiseTotal=Math.max(amount,currentBet+BB);
+    const raiseTotal=Math.max(amount,currentBet+betLastRaise);
     const owe=Math.max(0,raiseTotal-(betStreetMap[playerName]||0));
     const toAdd=Math.min(owe,chipsMap[playerName]||0);
     chipsMap[playerName]=(chipsMap[playerName]||0)-toAdd;
     betStreetMap[playerName]=(betStreetMap[playerName]||0)+toAdd;
     pot+=toAdd;
-    betLastRaise=raiseTotal-currentBet;
+    const increment=raiseTotal-currentBet;
+    if(increment>=betLastRaise)betLastRaise=increment;
     currentBet=raiseTotal;
     if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
     await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
@@ -583,40 +588,43 @@ async function newBettingStreet(ph,startIdx){
 }
 
 /* ─── Dealer Phase Controls ─── */
+function firstActiveFromDealer(){
+  const n=playersInHand.length;
+  const left=(dealerPos+1)%n;
+  for(let i=0;i<n;i++){
+    const idx=(left+i)%n;
+    if(!foldedMap[playersInHand[idx]]&&!allInMap[playersInHand[idx]])return idx;
+  }
+  return left;
+}
+
 async function hostDealFlop(){
   if(betOn){toast('Betting not complete');return;}
   communityCards[0]=communityFull[0];
   communityCards[1]=communityFull[1];
   communityCards[2]=communityFull[2];
-  const leftOfDealer=(dealerPos+1)%playersInHand.length;
-  const startIdx=playersInHand.findIndex((_,i)=>i===leftOfDealer&&!foldedMap[playersInHand[i]])||0;
   await fb('PUT','/poker2/community',{
     0:communityCards[0],1:communityCards[1],2:communityCards[2],3:null,4:null});
-  await newBettingStreet('flop',startIdx);
+  await newBettingStreet('flop',firstActiveFromDealer());
   renderDealerConsole('flop');
-  ivs.push(setInterval(pollBettingActions,1500));
 }
 
 async function hostDealTurn(){
   if(betOn){toast('Betting not complete');return;}
   communityCards[3]=communityFull[3];
-  const leftOfDealer=(dealerPos+1)%playersInHand.length;
-  const startIdx=playersInHand.findIndex((_,i)=>i===leftOfDealer&&!foldedMap[playersInHand[i]])||0;
   await fb('PUT','/poker2/community',{
     0:communityCards[0],1:communityCards[1],2:communityCards[2],3:communityCards[3],4:null});
-  await newBettingStreet('turn',startIdx);
+  await newBettingStreet('turn',firstActiveFromDealer());
   renderDealerConsole('turn');
 }
 
 async function hostDealRiver(){
   if(betOn){toast('Betting not complete');return;}
   communityCards[4]=communityFull[4];
-  const leftOfDealer=(dealerPos+1)%playersInHand.length;
-  const startIdx=playersInHand.findIndex((_,i)=>i===leftOfDealer&&!foldedMap[playersInHand[i]])||0;
   await fb('PUT','/poker2/community',{
     0:communityCards[0],1:communityCards[1],2:communityCards[2],
     3:communityCards[3],4:communityCards[4]});
-  await newBettingStreet('river',startIdx);
+  await newBettingStreet('river',firstActiveFromDealer());
   renderDealerConsole('river');
 }
 
@@ -904,6 +912,7 @@ async function renderPlayerPhase(ph,winner){
     return;
   }
   if(ph==='preflop'||ph==='flop'||ph==='turn'||ph==='river'){
+    if(ph==='preflop'&&holeEl&&holeEl.innerHTML){holeEl.innerHTML='';holeCards=[];}
     if(holeEl&&!holeEl.innerHTML){
       const hD=await fb('GET',`/poker2/hands/${encN(myName)}`);
       if(hD&&Array.isArray(hD))holeEl.innerHTML=hD.map(c=>cardHTML(c)).join('');
