@@ -146,7 +146,7 @@ async function run(){
 
   // GM starts session
   console.log('\n▶ Dealer starting session…');
-  await gmPage.evaluate(()=>hostStartSession()).catch(()=>{});
+  await gmPage.evaluate(async()=>{await startGame();await confirmSeats();}).catch(()=>{});
   await sleep(1500);
   assert(await waitScreen([gmPage],'s-dealer',10000),'T1b: GM on dealer console');
   // Note: players stay on s-lobby until hostStartHand() fires phase=preflop

@@ -493,6 +493,35 @@ body {
   display: flex;
   align-items: center;
 }
+
+/* ── Seat Assignment ── */
+.seat-list{width:100%;max-width:420px;margin-bottom:14px;user-select:none;}
+.seat-row{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;border-radius:12px;margin-bottom:6px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12);
+  min-height:58px;touch-action:none;
+  transition:background 0.12s,transform 0.12s;
+}
+.seat-row.dragging{
+  background:rgba(46,204,113,0.15);
+  border-color:rgba(46,204,113,0.5);
+  opacity:0.85;transform:scale(1.02);
+}
+.seat-row.drag-over{
+  border-color:rgba(255,210,0,0.7);
+  background:rgba(255,210,0,0.09);
+}
+.seat-handle{font-size:1.1rem;opacity:0.4;cursor:grab;touch-action:none;padding:2px 6px;}
+.seat-num{
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,210,0,0.12);border:1px solid rgba(255,210,0,0.4);
+  color:#FFD200;font-size:0.7rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.seat-av{font-size:1.3rem;}
+.seat-name{flex:1;font-size:0.88rem;font-weight:600;}
 </style>
 </head>
 <body>
@@ -531,6 +560,20 @@ body {
   <button class="btn btn-gold w100"    id="lb-claim-btn"  onclick="claimDealer()"  style="display:none">🎰 Claim Dealer Seat</button>
   <button class="btn btn-secondary w100" id="lb-ready-btn" onclick="toggleReady()">✅ Ready Up</button>
   <button class="btn btn-primary w100" id="lb-start-btn"  onclick="startGame()"   style="display:none">▶ Start Game →</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2b: SEAT ASSIGNMENT (host only)
+══════════════════════════════════════════ -->
+<div class="screen" id="s-seating">
+  <div class="p-title">🃏 FILO POKER</div>
+  <div class="p-sub">Seat Assignment</div>
+  <div class="host-badge" style="margin-bottom:12px">🎰 Dealer</div>
+
+  <div class="section-lbl">Drag to set seat order</div>
+  <div class="seat-list" id="seat-list"></div>
+
+  <button class="btn btn-gold w100" onclick="confirmSeats()">▶ Start Game</button>
 </div>
 
 <!-- ══════════════════════════════════════════

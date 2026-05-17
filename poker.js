@@ -23,6 +23,7 @@ let playersInHand=[],dealerPos=0;
 let avatarsMap={},lobbyPlayers={};
 let amReady=false,ivs=[],_lobbyRunning=false,_pollRunning=false;
 let _dealerDeck=[];
+let seatOrder=[],_dragFrom=-1,_touchDragIdx=-1;
 
 /* ─── Firebase ─── */
 const encN=n=>n.replace(/ /g,'_');
@@ -242,7 +243,7 @@ function renderLobbyUI(){
   const canStart=isHost&&readyPlayers.length>=MIN_PLAYERS;
   const startBtn=document.getElementById('lb-start-btn');
   startBtn.style.display=canStart?'':'none';
-  if(canStart)startBtn.textContent=`▶ Start Game (${readyPlayers.length} players)`;
+  if(canStart)startBtn.textContent=`▶ Arrange Seats (${readyPlayers.length} players)`;
 }
 
 async function toggleReady(){
@@ -259,19 +260,11 @@ async function claimDealer(){
   lobbyTick();
 }
 
-async function hostStartSession(){
-  const freshLobby=await fb('GET','/poker2/lobby')||{};
-  const now=Date.now();
-  const readyPlayers=Object.values(freshLobby)
-    .filter(p=>p?.name&&p.name!==hostName&&p.ready&&now-p.ts<STALE_MS)
-    .map(p=>p.name);
-  if(readyPlayers.length<MIN_PLAYERS){toast('Need at least 2 ready players');return;}
-
+async function hostStartSession(orderedPlayers){
   const chipsInit={};
-  readyPlayers.forEach(n=>{
+  orderedPlayers.forEach(n=>{
     chipsInit[encN(n)]=STARTING_CHIPS;
     chipsMap[n]=STARTING_CHIPS;
-    if(freshLobby[encN(n)]?.avatar)avatarsMap[n]=freshLobby[encN(n)].avatar;
   });
   await Promise.all([
     fb('PUT','/poker2/chips',chipsInit),
@@ -285,9 +278,11 @@ async function hostStartSession(){
     fb('DELETE','/poker2/bet'),
     fb('PUT','/poker2/pot',0),
     fb('PUT','/poker2/dealerPos',0),
-    fb('PUT','/poker2/avatars',Object.fromEntries(readyPlayers.filter(n=>avatarsMap[n]).map(n=>[encN(n),avatarsMap[n]]))),
+    fb('PUT','/poker2/avatars',Object.fromEntries(
+      orderedPlayers.filter(n=>avatarsMap[n]).map(n=>[encN(n),avatarsMap[n]])
+    )),
   ]);
-  playersInHand=readyPlayers;
+  playersInHand=orderedPlayers;
   dealerPos=-1;
   stopIvs();
   show('s-dealer');
@@ -296,7 +291,7 @@ async function hostStartSession(){
 
 /* ─── Dealer: Game Control ─── */
 async function reloadDealerState(){
-  const[handsD,chipsD,foldedD,allInD,communityD,communityFullD,potD,betD,roundD,playersD,dealerPosD,avsD]=await Promise.all([
+  const[,chipsD,foldedD,allInD,communityD,communityFullD,potD,betD,roundD,playersD,dealerPosD,avsD]=await Promise.all([
     fb('GET','/poker2/hands'),fb('GET','/poker2/chips'),
     fb('GET','/poker2/folded'),fb('GET','/poker2/allIn'),
     fb('GET','/poker2/community'),fb('GET','/poker2/communityFull'),
@@ -690,6 +685,113 @@ async function hostEndSession(){
     fb('DELETE','/poker2/phase'),
   ]),3000);
   enterLobby();
+}
+
+/* ─── HTML button handlers ─── */
+async function startGame(){
+  const freshLobby=await fb('GET','/poker2/lobby')||{};
+  const now=Date.now();
+  const readyPlayers=Object.values(freshLobby)
+    .filter(p=>p?.name&&p.name!==hostName&&p.ready&&now-p.ts<STALE_MS)
+    .map(p=>p.name);
+  if(readyPlayers.length<MIN_PLAYERS){toast('Need at least 2 ready players');return;}
+  readyPlayers.forEach(n=>{if(freshLobby[encN(n)]?.avatar)avatarsMap[n]=freshLobby[encN(n)].avatar;});
+  enterSeating(readyPlayers);
+}
+async function sendAnnouncement(){
+  const text=document.getElementById('d-ann').value.trim();
+  if(!text)return;
+  await fb('PUT','/poker2/announcement',text);
+  toast('Announcement sent');
+}
+function endSession(){hostEndSession();}
+
+/* ─── Seat Arrangement ─── */
+function enterSeating(players){
+  seatOrder=[...players];
+  renderSeatList();
+  show('s-seating');
+}
+
+function renderSeatList(){
+  const list=document.getElementById('seat-list');
+  list.innerHTML=seatOrder.map((name,i)=>`
+    <div class="seat-row" data-idx="${i}"
+         draggable="true"
+         ondragstart="seatDragStart(event,${i})"
+         ondragover="seatDragOver(event,${i})"
+         ondrop="seatDrop(event,${i})"
+         ondragend="seatDragEnd()">
+      <span class="seat-handle">☰</span>
+      <span class="seat-num">${i+1}</span>
+      <span class="seat-av">${getAvatar(name)}</span>
+      <span class="seat-name">${escHtml(name)}</span>
+    </div>`).join('');
+  list.querySelectorAll('.seat-row').forEach((row,i)=>{
+    row.addEventListener('touchstart',e=>touchSeatStart(e,i),{passive:false});
+    row.addEventListener('touchmove', e=>touchSeatMove(e),   {passive:false});
+    row.addEventListener('touchend',  ()=>touchSeatEnd(),    {passive:false});
+  });
+}
+
+function seatDragStart(e,i){
+  _dragFrom=i;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function seatDragOver(e,i){
+  e.preventDefault();
+  if(i===_dragFrom)return;
+  document.querySelectorAll('#seat-list .seat-row').forEach(r=>r.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function seatDrop(e,i){
+  e.preventDefault();
+  if(_dragFrom===-1||i===_dragFrom)return;
+  const moved=seatOrder.splice(_dragFrom,1)[0];
+  seatOrder.splice(i,0,moved);
+  renderSeatList();
+}
+function seatDragEnd(){
+  document.querySelectorAll('#seat-list .seat-row').forEach(r=>r.classList.remove('dragging','drag-over'));
+  _dragFrom=-1;
+}
+
+function touchSeatStart(e,i){
+  e.preventDefault();
+  _touchDragIdx=i;
+  document.querySelectorAll('#seat-list .seat-row')[i].classList.add('dragging');
+}
+function touchSeatMove(e){
+  if(_touchDragIdx===-1)return;
+  e.preventDefault();
+  const y=e.touches[0].clientY;
+  document.querySelectorAll('#seat-list .seat-row').forEach(r=>r.classList.remove('drag-over'));
+  for(const r of document.querySelectorAll('#seat-list .seat-row')){
+    const rect=r.getBoundingClientRect();
+    if(y>=rect.top&&y<=rect.bottom){
+      if(+r.dataset.idx!==_touchDragIdx)r.classList.add('drag-over');
+      break;
+    }
+  }
+}
+function touchSeatEnd(){
+  if(_touchDragIdx===-1)return;
+  const rows=document.querySelectorAll('#seat-list .seat-row');
+  let dropIdx=-1;
+  rows.forEach(r=>{if(r.classList.contains('drag-over'))dropIdx=+r.dataset.idx;});
+  rows.forEach(r=>r.classList.remove('dragging','drag-over'));
+  if(dropIdx!==-1&&dropIdx!==_touchDragIdx){
+    const moved=seatOrder.splice(_touchDragIdx,1)[0];
+    seatOrder.splice(dropIdx,0,moved);
+    renderSeatList();
+  }
+  _touchDragIdx=-1;
+}
+
+async function confirmSeats(){
+  if(seatOrder.length<MIN_PLAYERS){toast('Need at least 2 players');return;}
+  await hostStartSession(seatOrder);
 }
 
 /* ─── Player ─── */
