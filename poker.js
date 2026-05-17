@@ -7,7 +7,7 @@ const AMAP=Object.fromEntries(NAMES.map((n,i)=>[n,AVATARS[i]]));
 const RANKS=['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
 const SUITS=['♠','♥','♦','♣'];
 const RED_SUITS=new Set([1,2]); // ♥=1, ♦=2
-const STARTING_CHIPS=1900; // $19.00 — 5 of each chip (5×$3.80)
+const STARTING_CHIPS=2000; // $20.00
 const SB=10, BB=20;        // small blind=10¢, big blind=20¢
 const MIN_PLAYERS=2;
 const STALE_MS=75000;
