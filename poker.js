@@ -588,6 +588,112 @@ async function newBettingStreet(ph,startIdx){
   ]);
 }
 
+/* ─── Dealer Phase Controls ─── */
+async function hostDealFlop(){
+  if(betOn){toast('Betting not complete');return;}
+  communityCards[0]=communityFull[0];
+  communityCards[1]=communityFull[1];
+  communityCards[2]=communityFull[2];
+  const leftOfDealer=(dealerPos+1)%playersInHand.length;
+  const startIdx=playersInHand.findIndex((_,i)=>i===leftOfDealer&&!foldedMap[playersInHand[i]])||0;
+  await fb('PUT','/poker2/community',{
+    0:communityCards[0],1:communityCards[1],2:communityCards[2],3:null,4:null});
+  await newBettingStreet('flop',startIdx);
+  renderDealerConsole('flop');
+  ivs.push(setInterval(pollBettingActions,1500));
+}
+
+async function hostDealTurn(){
+  if(betOn){toast('Betting not complete');return;}
+  communityCards[3]=communityFull[3];
+  const leftOfDealer=(dealerPos+1)%playersInHand.length;
+  const startIdx=playersInHand.findIndex((_,i)=>i===leftOfDealer&&!foldedMap[playersInHand[i]])||0;
+  await fb('PUT','/poker2/community',{
+    0:communityCards[0],1:communityCards[1],2:communityCards[2],3:communityCards[3],4:null});
+  await newBettingStreet('turn',startIdx);
+  renderDealerConsole('turn');
+}
+
+async function hostDealRiver(){
+  if(betOn){toast('Betting not complete');return;}
+  communityCards[4]=communityFull[4];
+  const leftOfDealer=(dealerPos+1)%playersInHand.length;
+  const startIdx=playersInHand.findIndex((_,i)=>i===leftOfDealer&&!foldedMap[playersInHand[i]])||0;
+  await fb('PUT','/poker2/community',{
+    0:communityCards[0],1:communityCards[1],2:communityCards[2],
+    3:communityCards[3],4:communityCards[4]});
+  await newBettingStreet('river',startIdx);
+  renderDealerConsole('river');
+}
+
+async function hostShowdown(){
+  if(betOn){toast('Betting not complete');return;}
+  const alive=playersInHand.filter(n=>!foldedMap[n]);
+  const board=communityCards.filter(Boolean);
+
+  const handsD=await fb('GET','/poker2/hands')||{};
+  const scores={};
+  const showdownObj={};
+  alive.forEach(n=>{
+    const hole=handsD[encN(n)]||[];
+    showdownObj[encN(n)]=hole;
+    if(hole.length===2&&board.length>=3){
+      scores[n]=bestOf7([...hole,...board]);
+    } else {
+      scores[n]=-1;
+    }
+  });
+
+  const maxScore=Math.max(...Object.values(scores));
+  const winners=alive.filter(n=>scores[n]===maxScore);
+  const share=Math.floor(pot/winners.length);
+  const remainder=pot-share*winners.length;
+
+  winners.forEach((n,i)=>{
+    chipsMap[n]=(chipsMap[n]||0)+share+(i===0?remainder:0);
+  });
+
+  const winnerNames=winners.join(' & ');
+  const handStr=winners.length===1?handName(maxScore):'split pot';
+  const ann=`${winnerNames} wins ${fmtChips(pot)} with ${handStr}!`;
+
+  const chipsUpdate={};
+  winners.forEach(n=>{chipsUpdate[encN(n)]=chipsMap[n];});
+
+  await Promise.all([
+    fb('PUT','/poker2/showdown',showdownObj),
+    fb('PATCH','/poker2/chips',chipsUpdate),
+    fb('PUT','/poker2/winner',winnerNames),
+    fb('PUT','/poker2/announcement',ann),
+    fb('PUT','/poker2/pot',0),
+    fb('PUT','/poker2/phase','showdown'),
+  ]);
+  pot=0;
+  await Promise.all(winners.map(n=>recordWin(n)));
+  toast(`${winnerNames} wins!`);
+  phase='showdown';
+  renderDealerConsole('showdown');
+}
+
+async function hostEndSession(){
+  if(!confirm('End the poker session?'))return;
+  await fb('PUT','/poker2/phase','reset');
+  stopIvs();
+  isHost=false;hostName='';
+  playersInHand=[];chipsMap={};foldedMap={};allInMap={};betStreetMap={};pot=0;round=0;
+  setTimeout(()=>Promise.all([
+    fb('DELETE','/poker2/hands'),fb('DELETE','/poker2/community'),
+    fb('DELETE','/poker2/communityFull'),fb('DELETE','/poker2/folded'),
+    fb('DELETE','/poker2/allIn'),fb('DELETE','/poker2/bet'),
+    fb('DELETE','/poker2/pot'),fb('DELETE','/poker2/winner'),
+    fb('DELETE','/poker2/showdown'),fb('DELETE','/poker2/announcement'),
+    fb('DELETE','/poker2/round'),fb('DELETE','/poker2/players'),
+    fb('DELETE','/poker2/host'),fb('DELETE','/poker2/chips'),
+    fb('DELETE','/poker2/phase'),
+  ]),3000);
+  enterLobby();
+}
+
 window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
