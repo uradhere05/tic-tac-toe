@@ -179,6 +179,16 @@ async function runRoom(browser, room, col) {
   const hWait = await waitScreen(hPage, 's-wait', 12000);
   assert(hWait, `R${n}: host on s-wait (pong.html loaded, PeerJS ID claiming)`);
 
+  /* ── SpinnerFix: spinner must not be squished by flex-shrink ── */
+  const spinInfo = await hPage.evaluate(() => {
+    const s = document.querySelector('.spinner');
+    if (!s) return { ok: false, h: 0, fs: 'missing' };
+    const r = s.getBoundingClientRect();
+    const cs = getComputedStyle(s);
+    return { ok: r.height >= 48 && cs.flexShrink === '0', h: r.height, fs: cs.flexShrink };
+  }).catch(() => ({ ok: false, h: 0, fs: 'err' }));
+  assert(spinInfo.ok, `SpinnerFix/R${n}: spinner not squished (h=${spinInfo.h?.toFixed(1)}px, flex-shrink=${spinInfo.fs})`);
+
   /* 5. Guest clicks Room N after brief delay → unavailable-id → joinPickelbolRoom */
   await sleep(800);
   await Promise.all([
@@ -358,6 +368,7 @@ async function run() {
   console.log('  T6  win injection: scores.left=5 → onPoint() → s-champ both sides');
   console.log('  T7  win recorded in Firebase leaderboard');
   console.log('  T8  rematch: both back to s-game, scores=0, loop running');
+  console.log('  SpinnerFix  spinner not squished (flex-shrink:0, h≥48px)');
   console.log('  T9  Room 5 and 6 independent (separate PeerJS IDs)');
   console.log('╚══════════════════════════════════════════════════════╝');
 
