@@ -296,6 +296,198 @@ async function hostStartSession(){
   renderDealerConsole('lobby');
 }
 
+/* ─── Dealer: Game Control ─── */
+async function reloadDealerState(){
+  const[handsD,chipsD,foldedD,allInD,communityD,communityFullD,potD,betD,roundD,playersD,dealerPosD,avsD]=await Promise.all([
+    fb('GET','/poker2/hands'),fb('GET','/poker2/chips'),
+    fb('GET','/poker2/folded'),fb('GET','/poker2/allIn'),
+    fb('GET','/poker2/community'),fb('GET','/poker2/communityFull'),
+    fb('GET','/poker2/pot'),fb('GET','/poker2/bet'),
+    fb('GET','/poker2/round'),fb('GET','/poker2/players'),
+    fb('GET','/poker2/dealerPos'),fb('GET','/poker2/avatars'),
+  ]);
+  if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
+  if(foldedD)Object.entries(foldedD).forEach(([k,v])=>{foldedMap[decN(k)]=v;});
+  if(allInD)Object.entries(allInD).forEach(([k,v])=>{allInMap[decN(k)]=v;});
+  if(communityD){
+    communityCards=[];
+    for(let i=0;i<5;i++) communityCards[i]=communityD[i]||null;
+  }
+  if(communityFullD){communityFull=communityFullD;}
+  if(potD!=null)pot=potD;
+  if(roundD!=null)round=roundD;
+  if(playersD)playersInHand=playersD;
+  if(dealerPosD!=null)dealerPos=dealerPosD;
+  if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
+  if(betD){
+    currentBet=betD.current||0;
+    betLastRaise=betD.lastRaise||BB;
+    betOn=betD.on||'';
+    betQueue=betD.queue||[];
+    if(betD.street)Object.entries(betD.street).forEach(([k,v])=>{betStreetMap[decN(k)]=v;});
+  }
+  phase=await fb('GET','/poker2/phase')||'';
+}
+
+function reconnectDealer(phaseD){
+  show('s-dealer');
+  renderDealerConsole(phaseD||phase);
+  stopIvs();
+  ivs.push(setInterval(pollBettingActions,1500));
+}
+
+async function hostStartHand(){
+  const activePlayers=playersInHand.filter(n=>chipsMap[n]>0);
+  if(activePlayers.length<2){toast('Need at least 2 players with chips');return;}
+
+  round++;
+  dealerPos=(dealerPos+1)%activePlayers.length;
+  foldedMap={};allInMap={};betStreetMap={};pot=0;currentBet=BB;betLastRaise=BB;
+  communityCards=[null,null,null,null,null];
+  handStartTs=Date.now();
+
+  const n=activePlayers.length;
+  const sbIdx=(dealerPos+1)%n;
+  const bbIdx=(dealerPos+2)%n;
+  const sbName=n===2?activePlayers[dealerPos]:activePlayers[sbIdx];
+  const bbName=n===2?activePlayers[sbIdx]:activePlayers[bbIdx];
+
+  chipsMap[sbName]-=Math.min(SB,chipsMap[sbName]);
+  chipsMap[bbName]-=Math.min(BB,chipsMap[bbName]);
+  betStreetMap[sbName]=Math.min(SB,SB);
+  betStreetMap[bbName]=Math.min(BB,BB);
+  pot=betStreetMap[sbName]+betStreetMap[bbName];
+
+  _dealerDeck=shuffle(createDeck());
+  const handsObj={};
+  const chipsObj={};
+  activePlayers.forEach(p=>{
+    handsObj[encN(p)]=[_dealerDeck.pop(),_dealerDeck.pop()];
+    chipsObj[encN(p)]=chipsMap[p];
+  });
+
+  communityFull=[_dealerDeck.pop(),_dealerDeck.pop(),_dealerDeck.pop(),_dealerDeck.pop(),_dealerDeck.pop()];
+
+  let utg;
+  if(n===2){utg=activePlayers[(dealerPos+1)%n];}
+  else{utg=activePlayers[(dealerPos+3)%n];}
+  betQueue=buildQueue(activePlayers,activePlayers.indexOf(utg));
+  betQueue=betQueue.filter(p=>p!==bbName);
+  betQueue.push(bbName);
+  betOn=betQueue[0]||'';
+
+  await Promise.all([
+    fb('PUT','/poker2/hands',handsObj),
+    fb('PUT','/poker2/communityFull',communityFull),
+    fb('PUT','/poker2/community',{0:null,1:null,2:null,3:null,4:null}),
+    fb('PATCH','/poker2/chips',chipsObj),
+    fb('PUT','/poker2/pot',pot),
+    fb('PUT','/poker2/players',activePlayers),
+    fb('PUT','/poker2/dealerPos',dealerPos),
+    fb('PUT','/poker2/round',round),
+    fb('PUT','/poker2/bet',{
+      current:currentBet,lastRaise:betLastRaise,
+      on:betOn,queue:betQueue,
+      street:Object.fromEntries(Object.entries(betStreetMap).map(([k,v])=>[encN(k),v])),
+    }),
+    fb('DELETE','/poker2/folded'),
+    fb('DELETE','/poker2/allIn'),
+    fb('DELETE','/poker2/announcement'),
+    fb('DELETE','/poker2/winner'),
+    fb('DELETE','/poker2/showdown'),
+  ]);
+  await fb('PUT','/poker2/phase','preflop');
+  phase='preflop';
+  stopIvs();
+  renderDealerConsole('preflop');
+  ivs.push(setInterval(pollBettingActions,1500));
+}
+
+function buildQueue(players,startIdx){
+  const q=[];
+  for(let i=0;i<players.length;i++){
+    const p=players[(startIdx+i)%players.length];
+    if(!foldedMap[p]&&!allInMap[p])q.push(p);
+  }
+  return q;
+}
+
+function renderDealerConsole(ph){
+  phase=ph||phase;
+  document.getElementById('d-phase').textContent=(phase||'lobby').toUpperCase();
+  document.getElementById('d-round').textContent=round;
+  document.getElementById('d-pot').textContent=fmtChips(pot);
+
+  const comm=document.getElementById('d-community');
+  comm.innerHTML='';
+  for(let i=0;i<5;i++){
+    const card=communityCards[i];
+    comm.innerHTML+=card?cardHTML(card):emptyCardHTML();
+  }
+
+  const prows=document.getElementById('d-players');
+  prows.innerHTML='';
+  const activePlayers=playersInHand.length?playersInHand:Object.keys(chipsMap);
+  activePlayers.forEach(async name=>{
+    const folded=foldedMap[name];
+    const allin=allInMap[name];
+    const isActing=betOn===name;
+    const chips=chipsMap[name]??0;
+    const bet=betStreetMap[name]||0;
+    let statusCls='s-waiting',statusTxt='waiting';
+    if(isActing){statusCls='s-acting';statusTxt='acting…';}
+    else if(folded){statusCls='s-folded';statusTxt='folded';}
+    else if(allin){statusCls='s-allin';statusTxt='all-in';}
+
+    prows.innerHTML+=`<div class="pr-row${folded?' pr-folded':''}${isActing?' pr-acting':''}">
+      <span class="pr-av">${getAvatar(name)}</span>
+      <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
+      <span class="pr-chips">${fmtChips(chips)}</span>
+      <span class="pr-bet">${bet?fmtChips(bet):''}</span>
+      <span class="pr-status ${statusCls}">${statusTxt}</span>
+      <span class="pr-cards" id="pr-cards-${encN(name)}"></span>
+    </div>`;
+  });
+
+  if(phase!=='lobby'){
+    fb('GET','/poker2/hands').then(handsD=>{
+      if(!handsD)return;
+      Object.entries(handsD).forEach(([k,cards])=>{
+        const el=document.getElementById(`pr-cards-${k}`);
+        if(el&&Array.isArray(cards)) el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
+      });
+    });
+    fb('GET','/poker2/showdown').then(sd=>{
+      if(!sd)return;
+      Object.entries(sd).forEach(([k,cards])=>{
+        const el=document.getElementById(`pr-cards-${k}`);
+        if(el&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('')+
+          '<br><span style="font-size:.55rem;opacity:.6">'+handName(bestOf7([...cards,...communityCards.filter(Boolean)]))+'</span>';
+      });
+    });
+  }
+
+  const ctrl=document.getElementById('d-controls');
+  ctrl.innerHTML='';
+  const btn=(label,fn,cls='btn-primary')=>`<button class="btn ${cls} btn-sm" onclick="${fn}">${label}</button>`;
+
+  if(phase==='lobby'||phase==='showdown'){
+    ctrl.innerHTML=btn('🃏 Deal New Hand','hostStartHand()','btn-gold');
+  }
+  if(phase==='preflop'&&!betOn){
+    ctrl.innerHTML=btn('🃏 Deal Flop','hostDealFlop()','btn-primary');
+  }
+  if(phase==='flop'&&!betOn){
+    ctrl.innerHTML=btn('🃏 Deal Turn','hostDealTurn()','btn-primary');
+  }
+  if(phase==='turn'&&!betOn){
+    ctrl.innerHTML=btn('🃏 Deal River','hostDealRiver()','btn-primary');
+  }
+  if(phase==='river'&&!betOn){
+    ctrl.innerHTML=btn('⚖️ Showdown','hostShowdown()','btn-gold');
+  }
+}
+
 window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
