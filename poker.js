@@ -7,7 +7,7 @@ const AMAP=Object.fromEntries(NAMES.map((n,i)=>[n,AVATARS[i]]));
 const RANKS=['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
 const SUITS=['♠','♥','♦','♣'];
 const RED_SUITS=new Set([1,2]); // ♥=1, ♦=2
-const STARTING_CHIPS=2000; // $20.00 in cents
+const STARTING_CHIPS=1900; // $19.00 — 5 of each chip (5×$3.80)
 const SB=10, BB=20;        // small blind=10¢, big blind=20¢
 const MIN_PLAYERS=2;
 const STALE_MS=75000;
@@ -73,20 +73,27 @@ function fmtChips(cents){return `$${(cents/100).toFixed(2)}`;}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 const CHIP_DENOMS=[
-  {c:500,cls:'chip-500',lbl:'$5'},
+  {c:200,cls:'chip-200',lbl:'$2'},
   {c:100,cls:'chip-100',lbl:'$1'},
   {c:50, cls:'chip-50', lbl:'50¢'},
-  {c:25, cls:'chip-25', lbl:'25¢'},
+  {c:20, cls:'chip-20', lbl:'20¢'},
   {c:10, cls:'chip-10', lbl:'10¢'},
 ];
+const CHIP_ROUND=CHIP_DENOMS.reduce((s,d)=>s+d.c,0); // 380¢ per balanced round
 function chipsHTML(cents){
   if(!cents||cents<=0)return '<div class="chip-row"></div>';
-  let rem=cents,html='<div class="chip-row">';
-  for(const d of CHIP_DENOMS){
-    const n=Math.floor(rem/d.c);
-    if(!n)continue;
-    rem-=n*d.c;
-    html+=`<div class="chip ${d.cls}"><span class="chip-lbl">${d.lbl}</span>${n>1?`<span class="chip-n">${n}</span>`:''}</div>`;
+  const counts=CHIP_DENOMS.map(()=>0);
+  const base=Math.floor(cents/CHIP_ROUND);
+  let rem=cents-base*CHIP_ROUND;
+  counts.forEach((_,i)=>counts[i]=base);
+  for(let i=0;i<CHIP_DENOMS.length;i++){
+    const n=Math.floor(rem/CHIP_DENOMS[i].c);
+    if(n){counts[i]+=n;rem-=n*CHIP_DENOMS[i].c;}
+  }
+  let html='<div class="chip-row">';
+  for(let i=0;i<CHIP_DENOMS.length;i++){
+    if(!counts[i])continue;
+    html+=`<div class="chip ${CHIP_DENOMS[i].cls}"><span class="chip-lbl">${CHIP_DENOMS[i].lbl}</span>${counts[i]>1?`<span class="chip-n">${counts[i]}</span>`:''}</div>`;
   }
   return html+'</div>';
 }
