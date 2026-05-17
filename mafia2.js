@@ -19,6 +19,7 @@ let isHost=false,myName='',myRole=null,round=1,hostName='';
 let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],knownPhase='';
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
 let isEnded=false,myEliminated=false,_lastAutoAnn='',_lobbyTickRunning=false;
+let _pollPhaseRunning=false,_pollNightRunning=false,_roleRevealTimer=null;
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -191,7 +192,7 @@ async function joinAsGameMaster(){
    LOBBY
 ════════════════════════════════ */
 async function enterLobby(){
-  amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';myEliminated=false;
+  amReady=false;myRole=null;myAction=null;myVote=null;knownPhase='';myEliminated=false;aliveMap={};
   show('s-lobby');
   await writeLobbyPresence();
   startLobbyPolling();
@@ -237,7 +238,7 @@ async function lobbyTick(){
       return;
     }
 
-    if(phaseD&&phaseD!=='ended'){
+    if(phaseD&&phaseD!=='ended'&&phaseD!=='reset'){
       const iAmHost=hostD===myName;
       const inGame=iAmHost||!!(await fb('GET',`/mafia2/roles/${encN(myName)}`));
       if(!inGame&&phaseD!=='assigning'){
@@ -487,6 +488,8 @@ function enterHostNight(){
 }
 
 async function pollNightActions(){
+  if(_pollNightRunning)return; _pollNightRunning=true;
+  try{
   const [killD,saveD,inspD,aliveD,suspectD,phaseD]=await Promise.all([
     fb('GET','/mafia2/night/kill'),fb('GET','/mafia2/night/save'),
     fb('GET','/mafia2/night/inspect'),fb('GET','/mafia2/alive'),
@@ -558,6 +561,7 @@ async function pollNightActions(){
     if(!document.getElementById('h-ann').value)
       document.getElementById('h-ann').value='It was a quiet night. No one was eliminated.';
   }
+  }finally{_pollNightRunning=false;}
 }
 
 let _resolvingNight=false;
@@ -834,6 +838,8 @@ function renderWaiting(){
 }
 
 async function pollPhase(){
+  if(_pollPhaseRunning)return; _pollPhaseRunning=true;
+  try{
   const [phD,roundD,annD,winner,aliveD,avsD]=await Promise.all([
     fb('GET','/mafia2/phase'),fb('GET','/mafia2/round'),fb('GET','/mafia2/announcement'),
     fb('GET','/mafia2/winner'),fb('GET','/mafia2/alive'),fb('GET','/mafia2/avatars'),
@@ -896,9 +902,11 @@ async function pollPhase(){
     showVoteUI();
   }
   else if(phD==='ended'&&winner){stopIvs();showPlayerEnd(winner);}
+  }finally{_pollPhaseRunning=false;}
 }
 
 function showRoleReveal(){
+  if(_roleRevealTimer){clearInterval(_roleRevealTimer);_roleRevealTimer=null;}
   const cfg=ROLE_CFG[myRole]||ROLE_CFG.civilian;
   document.getElementById('p-content').innerHTML=`
     <div class="rr-card ${myRole}">
@@ -908,8 +916,11 @@ function showRoleReveal(){
       <div class="rr-cd" id="rr-cd">Starting in 5…</div>
     </div>`;
   let s=5;const cd=document.getElementById('rr-cd');
-  const t=setInterval(()=>{cd.textContent=`Starting in ${--s}…`;if(s<=0){ivs=ivs.filter(i=>i!==t);clearInterval(t);showNightUI();}},1000);
-  ivs.push(t);
+  // Tracked separately from ivs so stopIvs() (e.g. tab background) can't kill it
+  _roleRevealTimer=setInterval(()=>{
+    cd.textContent=`Starting in ${--s}…`;
+    if(s<=0){clearInterval(_roleRevealTimer);_roleRevealTimer=null;showNightUI();}
+  },1000);
 }
 
 async function showNightUI(){
@@ -1111,7 +1122,13 @@ document.addEventListener('visibilitychange',()=>{
   if(!myName)return;
   const active=id=>document.getElementById(id)?.classList.contains('active');
   if(active('s-lobby'))startLobbyPolling();
-  else if(active('s-player'))startPlayerPolling();
+  else if(active('s-player')){
+    // If the role-reveal countdown was running when the tab hid, the timer is gone
+    // (stopIvs doesn't touch _roleRevealTimer but the countdown was cleared). Skip
+    // straight to the action grid so the player isn't stuck on a frozen card.
+    if(_roleRevealTimer){clearInterval(_roleRevealTimer);_roleRevealTimer=null;showNightUI();}
+    else startPlayerPolling();
+  }
   else if(isHost&&active('s-assign'))renderAssignScreen();
   else if(isHost&&active('s-host')){
     fb('GET','/mafia2/phase').then(phD=>{
