@@ -59,15 +59,13 @@ function shuffle(deck){
   }
   return deck;
 }
+const RANK_CODES=['2','3','4','5','6','7','8','9','0','J','Q','K','A'];
+const SUIT_CODES=['S','H','D','C'];
 function cardHTML(card,small=false){
-  if(!card) return `<div class="card-back${small?' small':''}"></div>`;
-  const red=RED_SUITS.has(card.s)?' red':'';
-  const r=RANKS[card.r], s=SUITS[card.s];
-  return `<div class="card${red}">
-    <div class="card-top">${r}<br>${s}</div>
-    <div class="card-mid">${s}</div>
-    <div class="card-bot">${r}<br>${s}</div>
-  </div>`;
+  const cls=small?'card-img card-img-sm':'card-img';
+  if(!card) return `<img class="${cls}" src="https://deckofcardsapi.com/static/img/back.png" alt="card back">`;
+  const rc=RANK_CODES[card.r],sc=SUIT_CODES[card.s];
+  return `<img class="${cls}" src="https://deckofcardsapi.com/static/img/${rc}${sc}.png" alt="${RANKS[card.r]}${SUITS[card.s]}">`;
 }
 function emptyCardHTML(){return '<div class="card-empty"></div>';}
 function fmtChips(cents){return `$${(cents/100).toFixed(2)}`;}
