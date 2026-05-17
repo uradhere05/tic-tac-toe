@@ -494,6 +494,28 @@ body {
   align-items: center;
 }
 
+/* ── Poker Chips ── */
+.chip-row{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;min-height:14px;}
+.chip{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border:2.5px dashed rgba(255,255,255,0.38);
+  box-shadow:0 2px 6px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.18);
+  position:relative;
+}
+.chip-lbl{font-size:0.44rem;font-weight:900;text-align:center;line-height:1;pointer-events:none;}
+.chip-n{
+  position:absolute;top:-5px;right:-6px;
+  background:#FFD200;color:#1a1000;border-radius:8px;
+  padding:0 3px;font-size:0.48rem;font-weight:900;min-width:14px;text-align:center;
+  line-height:1.6;pointer-events:none;
+}
+.chip-500{background:linear-gradient(135deg,#2a2a2a,#111);color:#FFD200;}
+.chip-100{background:linear-gradient(135deg,#1a6b2e,#0a3018);color:#fff;}
+.chip-50 {background:linear-gradient(135deg,#1a3a8b,#0a1f55);color:#fff;}
+.chip-25 {background:linear-gradient(135deg,#8B0000,#500000);color:#fff;}
+.chip-10 {background:linear-gradient(135deg,#777,#444);color:#fff;}
+
 /* ── Seat Assignment ── */
 .seat-list{width:100%;max-width:420px;margin-bottom:14px;user-select:none;}
 .seat-row{
@@ -665,10 +687,12 @@ body {
     <div class="status-cell">
       <div class="sc-lbl">My Stack</div>
       <div class="sc-val" id="p-mystack">—</div>
+      <div id="p-stack-chips"></div>
     </div>
     <div class="status-cell">
       <div class="sc-lbl">Pot</div>
       <div class="sc-val" id="p-pot">—</div>
+      <div id="p-pot-chips"></div>
     </div>
     <div class="status-cell">
       <div class="sc-lbl">To Call</div>

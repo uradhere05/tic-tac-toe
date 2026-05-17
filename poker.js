@@ -72,6 +72,25 @@ function emptyCardHTML(){return '<div class="card-empty"></div>';}
 function fmtChips(cents){return `$${(cents/100).toFixed(2)}`;}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+const CHIP_DENOMS=[
+  {c:500,cls:'chip-500',lbl:'$5'},
+  {c:100,cls:'chip-100',lbl:'$1'},
+  {c:50, cls:'chip-50', lbl:'50¢'},
+  {c:25, cls:'chip-25', lbl:'25¢'},
+  {c:10, cls:'chip-10', lbl:'10¢'},
+];
+function chipsHTML(cents){
+  if(!cents||cents<=0)return '<div class="chip-row"></div>';
+  let rem=cents,html='<div class="chip-row">';
+  for(const d of CHIP_DENOMS){
+    const n=Math.floor(rem/d.c);
+    if(!n)continue;
+    rem-=n*d.c;
+    html+=`<div class="chip ${d.cls}"><span class="chip-lbl">${d.lbl}</span>${n>1?`<span class="chip-n">${n}</span>`:''}</div>`;
+  }
+  return html+'</div>';
+}
+
 /* ─── UI helpers ─── */
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 let _tt;
@@ -881,6 +900,10 @@ function renderStatusRow(){
   const toCall=Math.max(0,currentBet-myBet);
   document.getElementById('p-mystack').textContent=fmtChips(myChips);
   document.getElementById('p-pot').textContent=fmtChips(pot);
+  const sc=document.getElementById('p-stack-chips');
+  const pc=document.getElementById('p-pot-chips');
+  if(sc)sc.innerHTML=chipsHTML(myChips);
+  if(pc)pc.innerHTML=chipsHTML(pot);
   document.getElementById('p-tocall').textContent=fmtChips(toCall);
 }
 
