@@ -704,7 +704,6 @@ async function hostShowdown(){
 }
 
 async function hostEndSession(){
-  if(!confirm('End the poker session?'))return;
   await fb('PUT','/poker2/phase','reset');
   stopIvs();
   isHost=false;hostName='';
