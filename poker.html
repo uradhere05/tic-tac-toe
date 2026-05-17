@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>FILO Poker — Texas Hold'em</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: linear-gradient(160deg, #0a2010 0%, #0d2e14 40%, #081a0a 100%);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #e8f0e0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+/* ── Screens ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(60px, calc(44px + env(safe-area-inset-top))) 18px
+           max(40px, calc(24px + env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.screen.active { display: flex; }
+
+/* ── Title ── */
+.p-title {
+  font-size: 2.1rem;
+  font-weight: 900;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #1a6b2e, #2ecc71, #FFD200);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 16px rgba(46,204,113,0.5));
+  margin-bottom: 4px;
+  text-align: center;
+}
+.p-sub {
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 13px 24px;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.82rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 44px;
+  touch-action: manipulation;
+  user-select: none;
+  flex-shrink: 0;
+}
+.btn:active { transform: scale(0.95); }
+.btn:focus-visible { outline: 2px solid #2ecc71; outline-offset: 3px; }
+.btn-primary   { background: linear-gradient(90deg, #1a6b2e, #2ecc71); color: #fff; box-shadow: 0 0 14px rgba(46,204,113,0.35); }
+.btn-gold      { background: linear-gradient(90deg, #b8860b, #FFD200); color: #1a1000; }
+.btn-secondary { background: rgba(255,255,255,0.08); color: #e8f0e0; border: 1.5px solid rgba(255,255,255,0.18); }
+.btn-danger    { background: linear-gradient(90deg, #8B0000, #cc2200); color: #fff; box-shadow: 0 0 12px rgba(140,0,0,0.4); }
+.btn-sm        { padding: 8px 16px; font-size: 0.72rem; min-height: 44px; }
+.btn:disabled  { opacity: 0.3; pointer-events: none; }
+.w100 { width: 100%; max-width: 420px; margin-bottom: 10px; }
+
+/* ── Section label ── */
+.section-lbl {
+  font-size: 0.62rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin-bottom: 7px;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ── Playing Cards ── */
+.card {
+  width: 52px;
+  height: 74px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 5px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+  user-select: none;
+}
+.card .rank { line-height: 1; }
+.card .suit { text-align: center; font-size: 1.1rem; line-height: 1; align-self: center; }
+.card .rank-bot { line-height: 1; align-self: flex-end; transform: rotate(180deg); }
+.card.red { color: #c0392b; }
+
+.card-back {
+  width: 52px;
+  height: 74px;
+  background: repeating-linear-gradient(
+    45deg,
+    #1a3a6b 0px,
+    #1a3a6b 6px,
+    #12295a 6px,
+    #12295a 12px
+  );
+  border-radius: 8px;
+  border: 2px solid #2255aa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+
+.card-empty {
+  width: 52px;
+  height: 74px;
+  border-radius: 8px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+
+.cards-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Role-select phase card ── */
+.phase-card {
+  width: 100%;
+  max-width: 400px;
+  background: linear-gradient(160deg, rgba(10,32,16,0.95), rgba(5,18,8,0.98));
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  margin-bottom: 14px;
+  border: 1.5px solid rgba(46,204,113,0.35);
+}
+.phase-icon  { font-size: 3.8rem; margin-bottom: 10px; }
+.phase-title { font-size: 1.3rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; color: #e8f0e0; }
+.phase-desc  { font-size: 0.82rem; opacity: 0.6; line-height: 1.6; }
+
+/* ── Lobby ── */
+.lobby-list { width: 100%; max-width: 420px; margin-bottom: 10px; }
+.lp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.15s;
+  min-height: 52px;
+  user-select: none;
+}
+.lp-row.is-ready { background: rgba(0,100,30,0.22); border-color: rgba(46,204,113,0.5); }
+.lp-av   { font-size: 1.3rem; }
+.lp-name { flex: 1; font-size: 0.88rem; font-weight: 600; }
+.lp-badges { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+.lp-badge  { font-size: 0.58rem; padding: 2px 7px; border-radius: 10px; font-weight: 700; letter-spacing: 1px; }
+.lp-host-b  { background: rgba(255,210,0,0.15); color: #FFD200; border: 1px solid rgba(255,210,0,0.4); }
+.lp-ready-b { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.4); }
+
+.host-bar { width: 100%; max-width: 420px; text-align: center; margin-bottom: 14px; min-height: 28px; }
+.host-badge {
+  background: rgba(255,210,0,0.15);
+  border: 1px solid rgba(255,210,0,0.4);
+  border-radius: 20px;
+  padding: 4px 16px;
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  color: #FFD200;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+/* ── Dealer Console ── */
+.console-hdr {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 14px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+.console-hdr-cell {
+  flex: 1;
+  text-align: center;
+}
+.console-hdr-cell .chc-lbl {
+  font-size: 0.55rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin-bottom: 3px;
+}
+.console-hdr-cell .chc-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #2ecc71;
+}
+.chc-divider { width: 1px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+
+.community-area {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(46,204,113,0.18);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.community-area .ca-lbl {
+  font-size: 0.58rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin-bottom: 10px;
+}
+
+/* ── Dealer player rows ── */
+.player-rows {
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 12px;
+}
+.pr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  min-height: 58px;
+  transition: all 0.15s;
+}
+.pr-row.is-folded { opacity: 0.45; }
+.pr-name { font-size: 0.88rem; font-weight: 700; min-width: 80px; }
+.pr-stack { font-size: 0.78rem; color: #FFD200; min-width: 52px; flex-shrink: 0; }
+.pr-bet   { font-size: 0.75rem; opacity: 0.6; min-width: 42px; flex-shrink: 0; }
+.pr-cards { display: flex; gap: 4px; align-items: center; margin-left: auto; flex-shrink: 0; }
+.pr-cards .card  { width: 36px; height: 50px; font-size: 0.62rem; padding: 2px 3px; border-radius: 6px; }
+.pr-cards .card .suit { font-size: 0.8rem; }
+.pr-cards .card-back { width: 36px; height: 50px; border-radius: 6px; }
+.pr-status {
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: center;
+}
+.s-acting  { background: rgba(46,204,113,0.2);  color: #2ecc71; border: 1px solid rgba(46,204,113,0.5); }
+.s-called  { background: rgba(52,152,219,0.2);  color: #74c0fc; border: 1px solid rgba(52,152,219,0.4); }
+.s-raised  { background: rgba(255,150,0,0.18);  color: #ffaa44; border: 1px solid rgba(255,150,0,0.4); }
+.s-checked { background: rgba(150,200,100,0.15);color: #aed581; border: 1px solid rgba(150,200,100,0.35); }
+.s-folded  { background: rgba(100,100,100,0.15);color: #888;    border: 1px solid rgba(100,100,100,0.3); }
+.s-allin   { background: rgba(255,60,60,0.2);   color: #ff6b6b; border: 1px solid rgba(255,60,60,0.45); }
+.s-waiting { background: rgba(255,255,255,0.06);color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.12); }
+
+/* ── Announcement textarea ── */
+.ann-area {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #e8f0e0;
+  font-size: 16px;
+  resize: vertical;
+  min-height: 58px;
+  outline: none;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+.ann-area:focus { border-color: rgba(46,204,113,0.5); }
+
+/* ── Phase control row ── */
+.ctrl-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 10px;
+}
+.ctrl-row .btn { flex: 1; min-width: 120px; }
+
+/* ── Player view ── */
+.ann-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,210,0,0.4);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: 14px;
+  color: #FFD200;
+  min-height: 52px;
+}
+
+.hole-area {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(46,204,113,0.2);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.hole-area .ha-lbl {
+  font-size: 0.58rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.4;
+}
+
+.status-row {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.status-cell {
+  flex: 1;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.status-cell .sc-lbl {
+  font-size: 0.52rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin-bottom: 3px;
+}
+.status-cell .sc-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #2ecc71;
+}
+
+.action-panel {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+.action-row .btn { flex: 1; }
+
+.raise-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+.raise-input {
+  flex: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 50px;
+  padding: 10px 16px;
+  color: #e8f0e0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  outline: none;
+  min-height: 44px;
+  font-family: inherit;
+}
+.raise-input:focus { border-color: rgba(46,204,113,0.5); }
+.raise-input::placeholder { opacity: 0.4; }
+
+/* ── Other players chip list ── */
+.player-list {
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 10px;
+}
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.07);
+  min-height: 48px;
+}
+.pl-row.pl-acting { border-color: rgba(46,204,113,0.5); background: rgba(0,80,30,0.2); }
+.pl-row.pl-folded { opacity: 0.4; }
+.pl-name  { flex: 1; font-size: 0.85rem; font-weight: 600; }
+.pl-stack { font-size: 0.78rem; color: #FFD200; flex-shrink: 0; }
+.pl-bet   { font-size: 0.72rem; opacity: 0.55; min-width: 42px; text-align: right; flex-shrink: 0; }
+.pl-chip  {
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Community area on player screen ── */
+#p-community-wrap {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(46,204,113,0.15);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+#p-community-wrap .ca-lbl {
+  font-size: 0.58rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin-bottom: 10px;
+}
+
+/* ── Divider ── */
+.divider { width: 100%; max-width: 520px; height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  top: max(16px, calc(8px + env(safe-area-inset-top)));
+  left: 50%;
+  transform: translateX(-50%) translateY(-70px);
+  background: #FFD200;
+  color: #1a1000;
+  padding: 10px 22px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  z-index: 999;
+  transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Back link ── */
+.back-link {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  z-index: 200;
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 8px 16px;
+  min-height: 36px;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: #e8f0e0;
+  cursor: pointer;
+  text-decoration: none;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<a href="index.html" class="back-link">← Home</a>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1: ROLE SELECT
+══════════════════════════════════════════ -->
+<div class="screen" id="s-role-select">
+  <div class="p-title">🃏 FILO POKER</div>
+  <div class="p-sub">Texas Hold'em</div>
+
+  <div class="phase-card">
+    <div class="phase-icon">♠️</div>
+    <div class="phase-title" id="rs-name"></div>
+    <div class="phase-desc">How are you joining tonight?</div>
+  </div>
+
+  <button class="btn btn-primary w100" onclick="joinAsPlayer()">🙋 Join as Player</button>
+  <button class="btn btn-gold w100" onclick="joinAsDealer()">🎰 Be the Dealer</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2: LOBBY
+══════════════════════════════════════════ -->
+<div class="screen" id="s-lobby">
+  <div class="p-title">🃏 FILO POKER</div>
+  <div class="p-sub">Texas Hold'em</div>
+
+  <div class="host-bar" id="lb-host-bar"></div>
+
+  <div class="section-lbl" id="lb-count">Lobby — 0 players</div>
+  <div class="lobby-list" id="lb-players"></div>
+
+  <button class="btn btn-gold w100"    id="lb-claim-btn"  onclick="claimDealer()"  style="display:none">🎰 Claim Dealer Seat</button>
+  <button class="btn btn-secondary w100" id="lb-ready-btn" onclick="toggleReady()">✅ Ready Up</button>
+  <button class="btn btn-primary w100" id="lb-start-btn"  onclick="startGame()"   style="display:none">▶ Start Game →</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3: DEALER CONSOLE
+══════════════════════════════════════════ -->
+<div class="screen" id="s-dealer">
+  <div class="p-title" style="font-size:1.6rem">🎰 DEALER CONSOLE</div>
+  <div class="host-badge" style="margin-bottom:12px">Dealer</div>
+
+  <!-- Console header strip -->
+  <div class="console-hdr">
+    <div class="console-hdr-cell">
+      <div class="chc-lbl">Phase</div>
+      <div class="chc-val" id="d-phase">—</div>
+    </div>
+    <div class="chc-divider"></div>
+    <div class="console-hdr-cell">
+      <div class="chc-lbl">Round</div>
+      <div class="chc-val" id="d-round">1</div>
+    </div>
+    <div class="chc-divider"></div>
+    <div class="console-hdr-cell">
+      <div class="chc-lbl">Pot</div>
+      <div class="chc-val" id="d-pot">0</div>
+    </div>
+  </div>
+
+  <!-- Community cards -->
+  <div class="community-area">
+    <div class="ca-lbl">Community Cards</div>
+    <div class="cards-row" id="d-community">
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+    </div>
+  </div>
+
+  <!-- Player rows -->
+  <div class="section-lbl" style="max-width:520px">Players</div>
+  <div class="player-rows" id="d-players"></div>
+
+  <!-- Announcement -->
+  <div class="section-lbl" style="max-width:520px">Announcement</div>
+  <textarea class="ann-area" id="d-ann" placeholder="Write an announcement to all players…"></textarea>
+  <button class="btn btn-secondary w100" style="max-width:520px;margin-bottom:14px"
+          onclick="sendAnnouncement()">📢 Send Announcement</button>
+
+  <!-- Phase controls -->
+  <div class="section-lbl" style="max-width:520px">Phase Controls</div>
+  <div class="ctrl-row" id="d-controls"></div>
+
+  <div class="divider"></div>
+  <button class="btn btn-danger w100" style="max-width:520px" onclick="endSession()">🚫 End Session</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 4: PLAYER VIEW
+══════════════════════════════════════════ -->
+<div class="screen" id="s-player">
+  <div class="p-title" style="font-size:1.5rem">🃏 FILO POKER</div>
+  <div class="p-sub" style="margin-bottom:10px">Texas Hold'em</div>
+
+  <!-- Community cards -->
+  <div id="p-community-wrap">
+    <div class="ca-lbl">Community Cards</div>
+    <div class="cards-row" id="p-community">
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+      <div class="card-empty"></div>
+    </div>
+  </div>
+
+  <!-- Announcement banner -->
+  <div class="ann-card" id="p-ann" style="display:none"></div>
+
+  <!-- Hole cards -->
+  <div class="hole-area" id="p-hole">
+    <div class="ha-lbl">Your Hole Cards</div>
+    <div class="cards-row">
+      <div class="card-back"></div>
+      <div class="card-back"></div>
+    </div>
+  </div>
+
+  <!-- Status row: stack / pot / to-call -->
+  <div class="status-row">
+    <div class="status-cell">
+      <div class="sc-lbl">My Stack</div>
+      <div class="sc-val" id="p-mystack">—</div>
+    </div>
+    <div class="status-cell">
+      <div class="sc-lbl">Pot</div>
+      <div class="sc-val" id="p-pot">—</div>
+    </div>
+    <div class="status-cell">
+      <div class="sc-lbl">To Call</div>
+      <div class="sc-val" id="p-tocall">—</div>
+    </div>
+  </div>
+
+  <!-- Action panel -->
+  <div class="action-panel" id="p-action">
+    <div class="action-row">
+      <button class="btn btn-danger btn-sm" onclick="playerFold()">Fold</button>
+      <button class="btn btn-secondary btn-sm" onclick="playerCheck()">Check</button>
+      <button class="btn btn-primary btn-sm" onclick="playerCall()">Call</button>
+    </div>
+    <div class="raise-row">
+      <input class="raise-input" id="raise-amount" type="number" min="0" placeholder="Raise amount…">
+      <button class="btn btn-gold btn-sm" onclick="playerRaise()">Raise</button>
+    </div>
+  </div>
+
+  <!-- Other players -->
+  <div class="section-lbl">Other Players</div>
+  <div class="player-list" id="p-others"></div>
+</div>
+
+<script src="poker.js"></script>
+</body>
+</html>
