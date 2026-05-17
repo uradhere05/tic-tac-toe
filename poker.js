@@ -488,6 +488,106 @@ function renderDealerConsole(ph){
   }
 }
 
+/* ─── Betting Engine ─── */
+let _processingAction=false;
+
+async function pollBettingActions(){
+  if(!isHost||!betOn||_processingAction)return;
+  const enc=encN(betOn);
+  const actionD=await fb('GET',`/poker2/bet/action/${enc}`);
+  if(!actionD||!actionD.ts||actionD.ts<handStartTs)return;
+  _processingAction=true;
+  try{await processAction(betOn,actionD);}
+  finally{_processingAction=false;}
+}
+
+async function processAction(playerName,action){
+  const{type,amount}=action;
+  const enc=encN(playerName);
+  await fb('DELETE',`/poker2/bet/action/${enc}`);
+
+  if(type==='fold'){
+    foldedMap[playerName]=true;
+    await fb('PUT',`/poker2/folded/${enc}`,true);
+    betQueue=betQueue.filter(n=>n!==playerName);
+  } else if(type==='check'){
+    betQueue=betQueue.filter(n=>n!==playerName);
+  } else if(type==='call'){
+    const owe=Math.max(0,currentBet-(betStreetMap[playerName]||0));
+    const toCall=Math.min(owe,chipsMap[playerName]||0);
+    chipsMap[playerName]=(chipsMap[playerName]||0)-toCall;
+    betStreetMap[playerName]=(betStreetMap[playerName]||0)+toCall;
+    pot+=toCall;
+    if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
+    await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
+    await fb('PUT','/poker2/pot',pot);
+    await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
+    betQueue=betQueue.filter(n=>n!==playerName);
+  } else if(type==='raise'){
+    const raiseTotal=Math.max(amount,currentBet+BB);
+    const owe=Math.max(0,raiseTotal-(betStreetMap[playerName]||0));
+    const toAdd=Math.min(owe,chipsMap[playerName]||0);
+    chipsMap[playerName]=(chipsMap[playerName]||0)-toAdd;
+    betStreetMap[playerName]=(betStreetMap[playerName]||0)+toAdd;
+    pot+=toAdd;
+    betLastRaise=raiseTotal-currentBet;
+    currentBet=raiseTotal;
+    if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
+    await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
+    await fb('PUT','/poker2/pot',pot);
+    await fb('PUT','/poker2/bet/current',currentBet);
+    await fb('PUT','/poker2/bet/lastRaise',betLastRaise);
+    await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
+    const raiserIdx=playersInHand.indexOf(playerName);
+    betQueue=[];
+    for(let i=1;i<=playersInHand.length;i++){
+      const p=playersInHand[(raiserIdx+i)%playersInHand.length];
+      if(!foldedMap[p]&&!allInMap[p])betQueue.push(p);
+    }
+  }
+
+  const alive=playersInHand.filter(n=>!foldedMap[n]);
+  if(alive.length===1){
+    await autoWin(alive[0]);
+    return;
+  }
+
+  betOn=betQueue[0]||'';
+  await fb('PUT','/poker2/bet/on',betOn||null);
+  await fb('PUT','/poker2/bet/queue',betQueue);
+  renderDealerConsole(phase);
+}
+
+async function autoWin(winner){
+  chipsMap[winner]=(chipsMap[winner]||0)+pot;
+  await Promise.all([
+    fb('PATCH','/poker2/chips',{[encN(winner)]:chipsMap[winner]}),
+    fb('PUT','/poker2/winner',winner),
+    fb('PUT','/poker2/announcement',`${winner} wins $${(pot/100).toFixed(2)}! (everyone folded)`),
+    fb('PUT','/poker2/pot',0),
+    fb('PUT','/poker2/bet/on',null),
+    fb('PUT','/poker2/bet/queue',[]),
+  ]);
+  pot=0;betOn='';betQueue=[];
+  await recordWin(winner);
+  phase='showdown';
+  await fb('PUT','/poker2/phase','showdown');
+  toast(`${winner} wins (everyone folded)!`);
+  renderDealerConsole('showdown');
+}
+
+async function newBettingStreet(ph,startIdx){
+  betStreetMap={};currentBet=0;betLastRaise=BB;
+  betQueue=buildQueue(playersInHand,startIdx);
+  betOn=betQueue[0]||'';
+  await Promise.all([
+    fb('PUT','/poker2/bet',{
+      current:0,lastRaise:BB,on:betOn||null,queue:betQueue,street:{},
+    }),
+    fb('PUT','/poker2/phase',ph),
+  ]);
+}
+
 window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
