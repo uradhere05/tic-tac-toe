@@ -966,8 +966,8 @@ function renderActionButtons(toCall,myChips){
       </div>
       <div class="raise-row">
         <input type="number" class="raise-input" id="raise-amt"
-          min="${minRaise}" max="${(betStreetMap[myName]||0)+myChips}"
-          step="10" value="${minRaise}" placeholder="${fmtChips(minRaise)}">
+          min="${(minRaise/100).toFixed(2)}" max="${((betStreetMap[myName]||0)+myChips)/100}"
+          step="0.10" value="${(minRaise/100).toFixed(2)}" placeholder="${fmtChips(minRaise)}">
         <button class="btn btn-gold btn-sm" onclick="submitRaise()">Raise</button>
       </div>
       <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
@@ -985,7 +985,7 @@ async function submitAction(type,amount){
 
 async function submitRaise(){
   const input=document.getElementById('raise-amt');
-  const raiseTotal=Math.round(+input.value/10)*10;
+  const raiseTotal=Math.round(+input.value*100/10)*10;
   const minRaise=currentBet+betLastRaise;
   const myMaxBet=(betStreetMap[myName]||0)+(chipsMap[myName]||0);
   if(raiseTotal<minRaise){toast(`Min raise is ${fmtChips(minRaise)}`);return;}
