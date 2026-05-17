@@ -809,6 +809,8 @@ function startPlayerPolling(){
   stopIvs();
   const badge=document.getElementById('p-hole');
   if(badge)badge.innerHTML='';
+  const nb=document.getElementById('p-name-badge');
+  if(nb)nb.textContent=`${getAvatar(myName)} ${myName}`;
   ivs.push(setInterval(pollGameState,1500));
   ivs.push(setInterval(writePlayerPresence,20000));
 }
