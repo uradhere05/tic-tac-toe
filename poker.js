@@ -24,6 +24,7 @@ let avatarsMap={},lobbyPlayers={};
 let amReady=false,ivs=[],_lobbyRunning=false,_pollRunning=false;
 let _dealerDeck=[];
 let seatOrder=[],_dragFrom=-1,_touchDragIdx=-1;
+let onlineMap={};
 
 /* ─── Firebase ─── */
 const encN=n=>n.replace(/ /g,'_');
@@ -354,6 +355,25 @@ function reconnectDealer(phaseD){
   renderDealerConsole(phaseD||phase);
   stopIvs();
   ivs.push(setInterval(pollBettingActions,1500));
+  ivs.push(setInterval(pollPresence,6000));
+  pollPresence();
+}
+
+async function pollPresence(){
+  onlineMap=await fb('GET','/online')||{};
+  if(!document.getElementById('s-dealer')?.classList.contains('active'))return;
+  const activePlayers=playersInHand.length?playersInHand:Object.keys(chipsMap);
+  activePlayers.forEach(name=>{
+    const dot=document.getElementById(`pdot-${encN(name)}`);
+    if(dot)dot.className=`pdot ${isOnline(name)?'pdot-on':'pdot-off'}`;
+  });
+}
+
+function isOnline(name){
+  const entry=onlineMap[name]||onlineMap[encodeURIComponent(name)];
+  if(!entry)return false;
+  const ts=typeof entry==='object'?entry.ts:entry;
+  return Date.now()-ts<40000;
 }
 
 async function hostStartHand(){
@@ -464,6 +484,7 @@ function renderDealerConsole(ph){
     else if(allin){statusCls='s-allin';statusTxt='all-in';}
 
     prows.innerHTML+=`<div class="pr-row${folded?' is-folded':''}${isActing?' pr-acting':''}">
+      <span class="pdot ${isOnline(name)?'pdot-on':'pdot-off'}" id="pdot-${encN(name)}"></span>
       <span class="pr-av">${getAvatar(name)}</span>
       <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
       <span class="pr-stack">${fmtChips(chips)}</span>
