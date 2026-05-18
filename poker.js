@@ -81,7 +81,8 @@ async function recordPokerSession(){
     const buyIn=(1+rebuys)*STARTING_CHIPS;
     results[encN(name)]={buyIn,net:chips-buyIn};
   }
-  await fb('PUT',`/poker-hall/${monthKey}/sessions/${sessionId}`,{date:today,gameNum,results});
+  const timeStr=new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:true});
+  await fb('PUT',`/poker-hall/${monthKey}/sessions/${sessionId}`,{date:today,time:timeStr,gameNum,results});
 }
 
 async function loadPokerHall(){
@@ -128,7 +129,7 @@ async function loadPokerHall(){
     const players=Object.entries(s.results||{})
       .map(([k,v])=>{const{buyIn,net}=parseEntry(v);return[decN(k),buyIn,net];})
       .sort((a,b)=>b[2]-a[2]);
-    html+=`<div class="hall-session"><div class="hall-session-hdr">Game #${s.gameNum} · ${dateStr}</div>`;
+    html+=`<div class="hall-session"><div class="hall-session-hdr">Game #${s.gameNum} · ${dateStr}${s.time?' · '+s.time:''}</div>`;
     players.forEach(([name,buyIn,net])=>{
       html+=`<div class="hall-session-row">
         <span class="hall-sr-name">${name}</span>

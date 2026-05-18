@@ -639,7 +639,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.38</div>
+  <div class="app-version">v3.39</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -772,7 +772,7 @@
       const players = Object.entries(s.results || {})
         .map(([k, v]) => { const { buyIn, net } = parseEntry(v); return [k.replace(/_/g,' '), buyIn, net]; })
         .sort((a, b) => b[2] - a[2]);
-      html += `<div class="hall-session-idx"><div class="hall-session-hdr-idx">Game #${s.gameNum} · ${dateStr}</div>`;
+      html += `<div class="hall-session-idx"><div class="hall-session-hdr-idx">Game #${s.gameNum} · ${dateStr}${s.time?' · '+s.time:''}</div>`;
       players.forEach(([name, buyIn, net]) => {
         html += `<div class="hall-session-row-idx">
           <span class="hall-sr-name-idx">${name}</span>
