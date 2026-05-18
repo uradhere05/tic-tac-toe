@@ -925,6 +925,7 @@ function endSession(){
     toast('Cannot end session while a hand is in progress',3000);
     return;
   }
+  if(!confirm('End the session? This will close the game for all players.'))return;
   hostEndSession();
 }
 
