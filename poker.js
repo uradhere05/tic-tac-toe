@@ -25,7 +25,7 @@ let amReady=false,ivs=[],_lobbyRunning=false,_pollRunning=false;
 let _dealerDeck=[];
 let seatOrder=[],_dragFrom=-1,_touchDragIdx=-1;
 let onlineMap={};
-let dealerHandsCache={},shownCards={};
+let dealerHandsCache={},hiddenCards={};
 
 /* ─── Firebase ─── */
 const encN=n=>n.replace(/ /g,'_');
@@ -476,17 +476,17 @@ function isOnline(name){
 }
 
 function togglePlayerCards(enc){
-  shownCards[enc]=!shownCards[enc];
+  hiddenCards[enc]=!hiddenCards[enc];
   const el=document.getElementById(`pr-cards-${enc}`);
   const btn=document.getElementById(`pr-reveal-${enc}`);
   if(!el)return;
-  if(shownCards[enc]){
+  if(hiddenCards[enc]){
+    el.innerHTML=cardHTML(null,true)+cardHTML(null,true);
+    if(btn)btn.textContent='👁';
+  }else{
     const cards=dealerHandsCache[enc];
     if(cards&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
     if(btn)btn.textContent='🙈';
-  }else{
-    el.innerHTML=cardHTML(null,true)+cardHTML(null,true);
-    if(btn)btn.textContent='👁';
   }
 }
 
@@ -497,7 +497,7 @@ async function hostStartHand(){
 
   round++;
   dealerPos=(dealerPos+1)%activePlayers.length;
-  foldedMap={};allInMap={};betStreetMap={};shownCards={};dealerHandsCache={};pot=0;currentBet=BB;betLastRaise=BB;
+  foldedMap={};allInMap={};betStreetMap={};dealerHandsCache={};pot=0;currentBet=BB;betLastRaise=BB;
   communityCards=[null,null,null,null,null];
   handStartTs=Date.now();
 
@@ -608,7 +608,7 @@ function renderDealerConsole(ph){
       <span class="pr-stack">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
-      ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">👁</button>`:''}
+      ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`:''}
       <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?cardHTML(null,true)+cardHTML(null,true):''}</span>
     </div>`;
   });
@@ -618,7 +618,7 @@ function renderDealerConsole(ph){
       if(!handsD)return;
       dealerHandsCache=handsD;
       Object.entries(handsD).forEach(([k,cards])=>{
-        if(!shownCards[k])return;
+        if(hiddenCards[k])return;
         const el=document.getElementById(`pr-cards-${k}`);
         if(el&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
       });
