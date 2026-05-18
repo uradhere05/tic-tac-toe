@@ -9,14 +9,8 @@ const SUITS=['♠','♥','♦','♣'];
 const RED_SUITS=new Set([1,2]); // ♥=1, ♦=2
 const STARTING_CHIPS=2000; // $20.00
 const SB=10, BB=20;        // defaults
-const BLIND_LEVELS=[
-  {sb:10,  bb:20},
-  {sb:20,  bb:40},
-  {sb:50,  bb:100},
-  {sb:100, bb:200},
-  {sb:200, bb:400},
-  {sb:500, bb:1000},
-];
+const BLIND_LEVELS=Array.from({length:6},(_,i)=>({sb:10*(2**i),bb:20*(2**i)}));
+// L1:10/20  L2:20/40  L3:40/80  L4:80/160  L5:160/320  L6:320/640
 const MIN_PLAYERS=2;
 const STALE_MS=75000;
 
