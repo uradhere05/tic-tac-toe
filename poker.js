@@ -25,6 +25,7 @@ let amReady=false,ivs=[],_lobbyRunning=false,_pollRunning=false;
 let _dealerDeck=[];
 let seatOrder=[],_dragFrom=-1,_touchDragIdx=-1;
 let onlineMap={};
+let dealerHandsCache={},shownCards={};
 
 /* ─── Firebase ─── */
 const encN=n=>n.replace(/ /g,'_');
@@ -474,6 +475,21 @@ function isOnline(name){
   return Date.now()-ts<40000;
 }
 
+function togglePlayerCards(enc){
+  shownCards[enc]=!shownCards[enc];
+  const el=document.getElementById(`pr-cards-${enc}`);
+  const btn=document.getElementById(`pr-reveal-${enc}`);
+  if(!el)return;
+  if(shownCards[enc]){
+    const cards=dealerHandsCache[enc];
+    if(cards&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
+    if(btn)btn.textContent='🙈';
+  }else{
+    el.innerHTML=cardHTML(null,true)+cardHTML(null,true);
+    if(btn)btn.textContent='👁';
+  }
+}
+
 async function hostStartHand(){
   const activePlayers=playersInHand.filter(n=>chipsMap[n]>0);
   if(activePlayers.length<2){toast('Need at least 2 players with chips');return;}
@@ -481,7 +497,7 @@ async function hostStartHand(){
 
   round++;
   dealerPos=(dealerPos+1)%activePlayers.length;
-  foldedMap={};allInMap={};betStreetMap={};pot=0;currentBet=BB;betLastRaise=BB;
+  foldedMap={};allInMap={};betStreetMap={};shownCards={};dealerHandsCache={};pot=0;currentBet=BB;betLastRaise=BB;
   communityCards=[null,null,null,null,null];
   handStartTs=Date.now();
 
@@ -584,23 +600,27 @@ function renderDealerConsole(ph){
     else if(folded){statusCls='s-folded';statusTxt='folded';}
     else if(allin){statusCls='s-allin';statusTxt='all-in';}
 
+    const enc=encN(name);
     prows.innerHTML+=`<div class="pr-row${folded?' is-folded':''}${isActing?' pr-acting':''}">
-      <span class="pdot ${isOnline(name)?'pdot-on':'pdot-off'}" id="pdot-${encN(name)}"></span>
+      <span class="pdot ${isOnline(name)?'pdot-on':'pdot-off'}" id="pdot-${enc}"></span>
       <span class="pr-av">${getAvatar(name)}</span>
       <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
       <span class="pr-stack">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
-      <span class="pr-cards" id="pr-cards-${encN(name)}"></span>
+      ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">👁</button>`:''}
+      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?cardHTML(null,true)+cardHTML(null,true):''}</span>
     </div>`;
   });
 
   if(phase!=='lobby'){
     fb('GET','/poker2/hands').then(handsD=>{
       if(!handsD)return;
+      dealerHandsCache=handsD;
       Object.entries(handsD).forEach(([k,cards])=>{
+        if(!shownCards[k])return;
         const el=document.getElementById(`pr-cards-${k}`);
-        if(el&&Array.isArray(cards)) el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
+        if(el&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
       });
     });
     fb('GET','/poker2/showdown').then(sd=>{
@@ -609,6 +629,8 @@ function renderDealerConsole(ph){
         const el=document.getElementById(`pr-cards-${k}`);
         if(el&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('')+
           '<br><span style="font-size:.55rem;opacity:.6">'+handName(bestOf7([...cards,...communityCards.filter(Boolean)]))+'</span>';
+        const btn=document.getElementById(`pr-reveal-${k}`);
+        if(btn)btn.style.display='none';
       });
     });
   }
