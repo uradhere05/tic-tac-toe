@@ -11,7 +11,7 @@ const STARTING_CHIPS=2000; // $20.00
 const SB=10, BB=20;        // defaults
 const BLIND_LEVELS=[
   {sb:10,  bb:20},
-  {sb:25,  bb:50},
+  {sb:20,  bb:40},
   {sb:50,  bb:100},
   {sb:100, bb:200},
   {sb:200, bb:400},
