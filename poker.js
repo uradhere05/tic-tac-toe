@@ -65,7 +65,8 @@ function netCls(cents){return cents>0?'chip-pos':cents<0?'chip-neg':'chip-zero';
 async function recordPokerSession(){
   if(!isHost||!Object.keys(chipsMap).length)return;
   const monthKey=getMonthKey();
-  const today=new Date().toISOString().slice(0,10);
+  const now=new Date();
+  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   // daily game number — resets to 1 each new day
   const dailyCount=await fb('GET',`/poker-hall/${monthKey}/daily/${today}`)||0;
   const gameNum=dailyCount+1;
