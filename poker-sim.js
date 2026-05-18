@@ -281,7 +281,7 @@ async function run() {
     const latest = sessions[0];
     console.log(`  Latest (Game #${latest.gameNum} · ${latest.date}):`);
     Object.entries(latest.results || {})
-      .map(([k, v]) => [k.replace(/_/g, ' '), v])
+      .map(([k, v]) => { const net = typeof v === 'object' ? v.net : v; return [k.replace(/_/g, ' '), net]; })
       .sort((a, b) => b[1] - a[1])
       .forEach(([name, net]) => {
         const sign = net >= 0 ? '+' : '-';
