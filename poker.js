@@ -674,7 +674,7 @@ function renderDealerConsole(ph){
   if(phase==='lobby'||phase==='showdown'){
     ctrl.innerHTML=btn('🃏 Deal New Hand','hostStartHand()','btn-gold');
   }
-  if(phase==='lobby'&&blindLevel<BLIND_LEVELS.length-1){
+  if(blindLevel<BLIND_LEVELS.length-1){
     const next=BLIND_LEVELS[blindLevel+1];
     document.getElementById('d-controls').innerHTML+=btn(`⬆ Raise Blinds → ${fmtChips(next.sb)}/${fmtChips(next.bb)}`,'increaseBlinds()','btn-secondary');
   }
