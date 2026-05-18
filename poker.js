@@ -74,9 +74,12 @@ async function recordPokerSession(){
   const totalCount=await fb('GET',`/poker-hall/${monthKey}/count`)||0;
   const sessionId=totalCount+1;
   await fb('PUT',`/poker-hall/${monthKey}/count`,sessionId);
+  const rebuysData=await fb('GET','/poker2/rebuys')||{};
   const results={};
   for(const[name,chips]of Object.entries(chipsMap)){
-    results[encN(name)]={buyIn:STARTING_CHIPS,net:chips-STARTING_CHIPS};
+    const rebuys=rebuysData[encN(name)]||0;
+    const buyIn=(1+rebuys)*STARTING_CHIPS;
+    results[encN(name)]={buyIn,net:chips-buyIn};
   }
   await fb('PUT',`/poker-hall/${monthKey}/sessions/${sessionId}`,{date:today,gameNum,results});
 }
@@ -394,6 +397,7 @@ async function hostStartSession(orderedPlayers){
     fb('DELETE','/poker2/folded'),
     fb('DELETE','/poker2/allIn'),
     fb('DELETE','/poker2/bet'),
+    fb('DELETE','/poker2/rebuys'),
     fb('PUT','/poker2/pot',0),
     fb('PUT','/poker2/dealerPos',0),
     fb('PUT','/poker2/players',orderedPlayers),
@@ -471,6 +475,7 @@ function isOnline(name){
 async function hostStartHand(){
   const activePlayers=playersInHand.filter(n=>chipsMap[n]>0);
   if(activePlayers.length<2){toast('Need at least 2 players with chips');return;}
+  playersInHand=activePlayers;
 
   round++;
   dealerPos=(dealerPos+1)%activePlayers.length;
@@ -678,7 +683,7 @@ async function processAction(playerName,action){
     await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
     const raiserIdx=playersInHand.indexOf(playerName);
     betQueue=[];
-    for(let i=1;i<=playersInHand.length;i++){
+    for(let i=1;i<playersInHand.length;i++){
       const p=playersInHand[(raiserIdx+i)%playersInHand.length];
       if(!foldedMap[p]&&!allInMap[p])betQueue.push(p);
     }
@@ -830,7 +835,7 @@ async function hostEndSession(){
     fb('DELETE','/poker2/showdown'),fb('DELETE','/poker2/announcement'),
     fb('DELETE','/poker2/round'),fb('DELETE','/poker2/players'),
     fb('DELETE','/poker2/host'),fb('DELETE','/poker2/chips'),
-    fb('DELETE','/poker2/phase'),
+    fb('DELETE','/poker2/rebuys'),fb('DELETE','/poker2/phase'),
   ]),3000);
   enterLobby();
 }
@@ -1145,6 +1150,8 @@ async function requestRebuy(){
   if(ph==='preflop'||ph==='flop'||ph==='turn'||ph==='river'){
     toast("Can't rebuy during a live hand");return;
   }
+  const curRebuys=await fb('GET',`/poker2/rebuys/${encN(myName)}`)||0;
+  await fb('PUT',`/poker2/rebuys/${encN(myName)}`,curRebuys+1);
   chipsMap[myName]=STARTING_CHIPS;
   await fb('PUT',`/poker2/chips/${encN(myName)}`,STARTING_CHIPS);
   toast('Re-bought for $20.00! You\'re back in.');
