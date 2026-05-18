@@ -286,7 +286,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-    <div class="app-version">v3.35</div>
+    <div class="app-version">v3.36</div>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
@@ -534,8 +534,9 @@
       for (const [key, players] of Object.entries(allData || {})) {
         const d = new Date(key);
         if (d >= rs && d <= re && players) {
-          for (const [n, w] of Object.entries(players)) {
+          for (const [n, wins] of Object.entries(players)) {
             const name = decodeURIComponent(n);
+            const w = typeof wins === 'number' ? wins : Object.values(wins || {}).reduce((s,v) => s + (v||0), 0);
             totals[name] = (totals[name] || 0) + w;
           }
         }

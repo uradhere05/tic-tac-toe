@@ -295,7 +295,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.35</div>
+  <div class="app-version">v3.36</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -612,7 +612,8 @@
         if (d>=rs&&d<=re&&players)
           for (const [name,wins] of Object.entries(players)) {
             const n=decodeURIComponent(name);
-            totals[n]=(totals[n]||0)+wins;
+            const w=typeof wins==='number'?wins:Object.values(wins||{}).reduce((s,v)=>s+(v||0),0);
+            totals[n]=(totals[n]||0)+w;
           }
       }
       const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
