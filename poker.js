@@ -84,7 +84,7 @@ async function loadPokerHall(){
   bodies.forEach(el=>el.innerHTML='<div class="hall-empty">Loading…</div>');
   const monthKey=getMonthKey();
   const data=await fb('GET',`/poker-hall/${monthKey}`)||{};
-  const sessions=Object.values(data.sessions||{}).sort((a,b)=>b.gameNum-a.gameNum);
+  const sessions=Object.values(data.sessions||{}).filter(Boolean).sort((a,b)=>b.gameNum-a.gameNum);
   if(!sessions.length){
     bodies.forEach(el=>el.innerHTML='<div class="hall-empty">No sessions this month</div>');
     return;
