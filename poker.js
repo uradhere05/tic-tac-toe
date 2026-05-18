@@ -1183,6 +1183,16 @@ async function requestRebuy(){
   toast('Re-bought for $20.00! You\'re back in.');
 }
 
+function openCardOverlay(){
+  if(!holeCards.length)return;
+  const el=document.getElementById('overlay-cards');
+  if(el)el.innerHTML=holeCards.map(c=>cardHTML(c)).join('');
+  document.getElementById('card-overlay')?.classList.add('active');
+}
+function closeCardOverlay(){
+  document.getElementById('card-overlay')?.classList.remove('active');
+}
+
 window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});

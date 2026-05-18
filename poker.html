@@ -602,11 +602,35 @@ body {
 .chip-pos  { color:#2ecc71; }
 .chip-neg  { color:#e74c3c; }
 .chip-zero { opacity:0.4; }
+
+/* ── Card fullscreen overlay ── */
+#card-overlay {
+  display:none; position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,0.92);
+  flex-direction:column; align-items:center; justify-content:center; gap:28px;
+}
+#card-overlay.active { display:flex; }
+#card-overlay .card-img { height:180px; width:auto; border-radius:10px; box-shadow:0 8px 40px rgba(0,0,0,0.8); }
+#card-overlay .overlay-hint { font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; opacity:0.35; }
+#card-overlay .overlay-back {
+  padding:10px 28px; border:1.5px solid rgba(255,255,255,0.25); border-radius:50px;
+  background:rgba(255,255,255,0.07); color:#e8f0e0; font-size:0.72rem;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer; font-weight:700;
+  touch-action:manipulation;
+}
+.hole-area { cursor:pointer; }
+.hole-area:active { opacity:0.8; }
 </style>
 </head>
 <body>
 <div id="toast"></div>
 <a href="index.html" class="back-link">← Home</a>
+
+<!-- Fullscreen card overlay -->
+<div id="card-overlay" onclick="closeCardOverlay()">
+  <div class="cards-row" id="overlay-cards"></div>
+  <div class="overlay-hint">Tap anywhere to close</div>
+</div>
 
 <!-- ══════════════════════════════════════════
      SCREEN 1: ROLE SELECT
@@ -751,8 +775,8 @@ body {
   <div class="ann-card" id="p-ann" style="display:none"></div>
 
   <!-- Hole cards -->
-  <div class="hole-area">
-    <div class="ha-lbl">Your Hole Cards</div>
+  <div class="hole-area" onclick="openCardOverlay()" title="Tap to view full screen">
+    <div class="ha-lbl">Your Hole Cards · <span style="opacity:.45;font-size:.9em">tap to expand</span></div>
     <div class="cards-row" id="p-hole"></div>
   </div>
 
