@@ -639,7 +639,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.37</div>
+  <div class="app-version">v3.38</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -801,10 +801,10 @@
       const rangeStart = new Date(mon); rangeStart.setDate(mon.getDate() - 1);
       const rangeEnd   = new Date(sun); rangeEnd.setDate(sun.getDate() + 1);
       const GAME_META = {
-        tictactoe: { label: 'TTT',  bg: 'rgba(50,200,170,0.18)', bd: 'rgba(50,200,170,0.4)', tc: '#4ecdc4' },
-        connect5:  { label: 'C5',   bg: 'rgba(140,80,255,0.18)', bd: 'rgba(140,80,255,0.4)', tc: '#b388ff' },
-        pickelbol: { label: 'Pong', bg: 'rgba(60,140,255,0.18)', bd: 'rgba(60,140,255,0.4)', tc: '#82b1ff' },
-        mafia:     { label: 'Mafia',bg: 'rgba(255,70,70,0.15)',  bd: 'rgba(255,70,70,0.35)', tc: '#ff8a80' },
+        tictactoe: { label: 'TicTacToe',  bg: 'rgba(50,200,170,0.18)', bd: 'rgba(50,200,170,0.4)', tc: '#4ecdc4' },
+        connect5:  { label: 'Streytlima', bg: 'rgba(140,80,255,0.18)', bd: 'rgba(140,80,255,0.4)', tc: '#b388ff' },
+        pickelbol: { label: 'Pong',       bg: 'rgba(60,140,255,0.18)', bd: 'rgba(60,140,255,0.4)', tc: '#82b1ff' },
+        mafia:     { label: 'Mafia',      bg: 'rgba(255,70,70,0.15)',  bd: 'rgba(255,70,70,0.35)', tc: '#ff8a80' },
       };
       const totals = {};
       for (const [key, players] of Object.entries(allData || {})) {
@@ -840,7 +840,7 @@
               .flatMap(([game, cnt]) => {
                 const m = GAME_META[game];
                 if (!m) return [];
-                return [`<span class="lb-game-tag" style="background:${m.bg};border-color:${m.bd};color:${m.tc}">${m.label} ×${cnt}</span>`];
+                return [`<span class="lb-game-tag" style="background:${m.bg};border-color:${m.bd};color:${m.tc}">${m.label} ${cnt} ${cnt===1?'win':'wins'}</span>`];
               }).join('');
             return `<div class="lb-row${rc?' '+rc:''}${isMe?' me':''}">
               <span class="lb-rank">${medals[i]||(i+1)+'.'}</span>
