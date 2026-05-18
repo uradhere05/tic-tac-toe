@@ -919,14 +919,29 @@ async function sendAnnouncement(){
   await fb('PUT','/poker2/announcement',text);
   toast('Announcement sent');
 }
+let _cmCallback=null;
+function showConfirm(title,msg,onOk){
+  document.getElementById('cm-title').textContent=title;
+  document.getElementById('cm-msg').textContent=msg;
+  _cmCallback=onOk;
+  document.getElementById('confirm-modal').classList.add('active');
+}
+function cmConfirm(){
+  document.getElementById('confirm-modal').classList.remove('active');
+  if(_cmCallback){_cmCallback();_cmCallback=null;}
+}
+function cmCancel(){
+  document.getElementById('confirm-modal').classList.remove('active');
+  _cmCallback=null;
+}
+
 function endSession(){
   const activePhases=['preflop','flop','turn','river'];
   if(activePhases.includes(phase)){
     toast('Cannot end session while a hand is in progress',3000);
     return;
   }
-  if(!confirm('End the session? This will close the game for all players.'))return;
-  hostEndSession();
+  showConfirm('End Session?','This will close the game for all players.',hostEndSession);
 }
 
 /* ─── Seat Arrangement ─── */

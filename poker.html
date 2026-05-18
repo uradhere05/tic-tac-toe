@@ -603,6 +603,22 @@ body {
 .chip-neg  { color:#e74c3c; }
 .chip-zero { opacity:0.4; }
 
+/* ── Confirm modal ── */
+#confirm-modal {
+  display:none; position:fixed; inset:0; z-index:600;
+  background:rgba(0,0,0,0.82);
+  align-items:center; justify-content:center;
+}
+#confirm-modal.active { display:flex; }
+#confirm-modal .cm-box {
+  background:#0f0a24; border:1.5px solid rgba(255,255,255,0.12);
+  border-radius:18px; padding:28px 24px; max-width:300px; width:90%;
+  text-align:center; box-shadow:0 12px 48px rgba(0,0,0,0.7);
+}
+#confirm-modal .cm-title { font-size:1rem; font-weight:700; margin-bottom:8px; }
+#confirm-modal .cm-msg { font-size:.8rem; opacity:.6; margin-bottom:22px; line-height:1.5; }
+#confirm-modal .cm-btns { display:flex; gap:10px; justify-content:center; }
+
 /* ── Card fullscreen overlay ── */
 #card-overlay {
   display:none; position:fixed; inset:0; z-index:500;
@@ -625,6 +641,18 @@ body {
 <body>
 <div id="toast"></div>
 <a href="index.html" class="back-link">← Home</a>
+
+<!-- Confirm modal -->
+<div id="confirm-modal">
+  <div class="cm-box">
+    <div class="cm-title" id="cm-title"></div>
+    <div class="cm-msg" id="cm-msg"></div>
+    <div class="cm-btns">
+      <button class="btn btn-secondary btn-sm" onclick="cmCancel()">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="cm-ok-btn" onclick="cmConfirm()">End Session</button>
+    </div>
+  </div>
+</div>
 
 <!-- Fullscreen card overlay -->
 <div id="card-overlay" onclick="closeCardOverlay()">
