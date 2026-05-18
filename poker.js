@@ -673,10 +673,10 @@ function renderDealerConsole(ph){
 
   if(phase==='lobby'||phase==='showdown'){
     ctrl.innerHTML=btn('🃏 Deal New Hand','hostStartHand()','btn-gold');
-    if(blindLevel<BLIND_LEVELS.length-1){
-      const next=BLIND_LEVELS[blindLevel+1];
-      ctrl.innerHTML+=btn(`⬆ Raise Blinds → ${fmtChips(next.sb)}/${fmtChips(next.bb)}`,'increaseBlinds()','btn-secondary');
-    }
+  }
+  if(phase==='showdown'&&blindLevel<BLIND_LEVELS.length-1){
+    const next=BLIND_LEVELS[blindLevel+1];
+    document.getElementById('d-controls').innerHTML+=btn(`⬆ Raise Blinds → ${fmtChips(next.sb)}/${fmtChips(next.bb)}`,'increaseBlinds()','btn-secondary');
   }
   if(phase==='preflop'&&!betOn){
     ctrl.innerHTML=btn('🃏 Deal Flop','hostDealFlop()','btn-primary');
