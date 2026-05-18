@@ -544,6 +544,8 @@ async function hostStartHand(){
   stopIvs();
   renderDealerConsole('preflop');
   ivs.push(setInterval(pollBettingActions,1500));
+  ivs.push(setInterval(pollPresence,6000));
+  pollPresence();
 }
 
 function buildQueue(players,startIdx){
