@@ -8,7 +8,15 @@ const RANKS=['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
 const SUITS=['♠','♥','♦','♣'];
 const RED_SUITS=new Set([1,2]); // ♥=1, ♦=2
 const STARTING_CHIPS=2000; // $20.00
-const SB=10, BB=20;        // small blind=10¢, big blind=20¢
+const SB=10, BB=20;        // defaults
+const BLIND_LEVELS=[
+  {sb:10,  bb:20},
+  {sb:25,  bb:50},
+  {sb:50,  bb:100},
+  {sb:100, bb:200},
+  {sb:200, bb:400},
+  {sb:500, bb:1000},
+];
 const MIN_PLAYERS=2;
 const STALE_MS=75000;
 
@@ -26,6 +34,7 @@ let _dealerDeck=[];
 let seatOrder=[],_dragFrom=-1,_touchDragIdx=-1;
 let onlineMap={};
 let dealerHandsCache={},hiddenCards={};
+let blindLevel=0,currentSB=SB,currentBB=BB;
 
 /* ─── Firebase ─── */
 const encN=n=>n.replace(/ /g,'_');
@@ -414,6 +423,7 @@ async function hostStartSession(orderedPlayers){
     fb('DELETE','/poker2/allIn'),
     fb('DELETE','/poker2/bet'),
     fb('DELETE','/poker2/rebuys'),
+    fb('PUT','/poker2/blindLevel',0),
     fb('PUT','/poker2/pot',0),
     fb('PUT','/poker2/dealerPos',0),
     fb('PUT','/poker2/players',orderedPlayers),
@@ -421,6 +431,7 @@ async function hostStartSession(orderedPlayers){
       orderedPlayers.filter(n=>avatarsMap[n]).map(n=>[encN(n),avatarsMap[n]])
     )),
   ]);
+  blindLevel=0;currentSB=SB;currentBB=BB;
   playersInHand=orderedPlayers;
   dealerPos=-1;
   stopIvs();
@@ -454,11 +465,13 @@ async function reloadDealerState(){
   if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
   if(betD){
     currentBet=betD.current||0;
-    betLastRaise=betD.lastRaise||BB;
+    betLastRaise=betD.lastRaise||currentBB;
     betOn=betD.on||'';
     betQueue=betD.queue||[];
     if(betD.street)Object.entries(betD.street).forEach(([k,v])=>{betStreetMap[decN(k)]=v;});
   }
+  const blD=await fb('GET','/poker2/blindLevel');
+  if(blD!=null){blindLevel=blD;currentSB=BLIND_LEVELS[blindLevel].sb;currentBB=BLIND_LEVELS[blindLevel].bb;}
   phase=await fb('GET','/poker2/phase')||'';
 }
 
@@ -503,6 +516,17 @@ function togglePlayerCards(enc){
   }
 }
 
+async function increaseBlinds(){
+  if(blindLevel>=BLIND_LEVELS.length-1){toast('Already at max blinds');return;}
+  blindLevel++;
+  currentSB=BLIND_LEVELS[blindLevel].sb;
+  currentBB=BLIND_LEVELS[blindLevel].bb;
+  await fb('PUT','/poker2/blindLevel',blindLevel);
+  await fb('PUT','/poker2/announcement',`Blinds raised to ${fmtChips(currentSB)}/${fmtChips(currentBB)}`);
+  toast(`Blinds raised to ${fmtChips(currentSB)}/${fmtChips(currentBB)}`);
+  renderDealerConsole(phase);
+}
+
 async function hostStartHand(){
   const activePlayers=playersInHand.filter(n=>chipsMap[n]>0);
   if(activePlayers.length<2){toast('Need at least 2 players with chips');return;}
@@ -510,7 +534,7 @@ async function hostStartHand(){
 
   round++;
   dealerPos=(dealerPos+1)%activePlayers.length;
-  foldedMap={};allInMap={};betStreetMap={};dealerHandsCache={};pot=0;currentBet=BB;betLastRaise=BB;
+  foldedMap={};allInMap={};betStreetMap={};dealerHandsCache={};pot=0;currentBet=currentBB;betLastRaise=currentBB;
   communityCards=[null,null,null,null,null];
   handStartTs=Date.now();
 
@@ -520,8 +544,8 @@ async function hostStartHand(){
   const sbName=n===2?activePlayers[dealerPos]:activePlayers[sbIdx];
   const bbName=n===2?activePlayers[sbIdx]:activePlayers[bbIdx];
 
-  const sbPosted=Math.min(SB,chipsMap[sbName]);
-  const bbPosted=Math.min(BB,chipsMap[bbName]);
+  const sbPosted=Math.min(currentSB,chipsMap[sbName]);
+  const bbPosted=Math.min(currentBB,chipsMap[bbName]);
   chipsMap[sbName]-=sbPosted;
   chipsMap[bbName]-=bbPosted;
   betStreetMap[sbName]=sbPosted;
@@ -591,6 +615,7 @@ function renderDealerConsole(ph){
   document.getElementById('d-phase').textContent=(phase||'lobby').toUpperCase();
   document.getElementById('d-round').textContent=round;
   document.getElementById('d-pot').textContent=fmtChips(pot);
+  document.getElementById('d-blinds').textContent=`${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
 
   const comm=document.getElementById('d-community');
   comm.innerHTML='';
@@ -654,6 +679,10 @@ function renderDealerConsole(ph){
 
   if(phase==='lobby'||phase==='showdown'){
     ctrl.innerHTML=btn('🃏 Deal New Hand','hostStartHand()','btn-gold');
+    if(blindLevel<BLIND_LEVELS.length-1){
+      const next=BLIND_LEVELS[blindLevel+1];
+      ctrl.innerHTML+=btn(`⬆ Raise Blinds → ${fmtChips(next.sb)}/${fmtChips(next.bb)}`,'increaseBlinds()','btn-secondary');
+    }
   }
   if(phase==='preflop'&&!betOn){
     ctrl.innerHTML=btn('🃏 Deal Flop','hostDealFlop()','btn-primary');
@@ -759,7 +788,7 @@ async function autoWin(winner){
 }
 
 async function newBettingStreet(ph,startIdx){
-  betStreetMap={};currentBet=0;betLastRaise=BB;
+  betStreetMap={};currentBet=0;betLastRaise=currentBB;
   betQueue=buildQueue(playersInHand,startIdx);
   betOn=betQueue[0]||'';
   await Promise.all([
@@ -874,7 +903,7 @@ async function hostEndSession(){
     fb('DELETE','/poker2/showdown'),fb('DELETE','/poker2/announcement'),
     fb('DELETE','/poker2/round'),fb('DELETE','/poker2/players'),
     fb('DELETE','/poker2/host'),fb('DELETE','/poker2/chips'),
-    fb('DELETE','/poker2/rebuys'),fb('DELETE','/poker2/phase'),
+    fb('DELETE','/poker2/rebuys'),fb('DELETE','/poker2/blindLevel'),fb('DELETE','/poker2/phase'),
   ]),3000);
   enterLobby();
 }
@@ -1013,13 +1042,15 @@ async function writePlayerPresence(){
 async function pollGameState(){
   if(_pollRunning)return;_pollRunning=true;
   try{
-    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD]=await Promise.all([
+    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD]=await Promise.all([
       fb('GET','/poker2/phase'),fb('GET','/poker2/pot'),
       fb('GET','/poker2/community'),fb('GET','/poker2/announcement'),
       fb('GET','/poker2/chips'),fb('GET','/poker2/bet'),
       fb('GET','/poker2/folded'),fb('GET','/poker2/allIn'),
       fb('GET','/poker2/winner'),fb('GET','/poker2/avatars'),
+      fb('GET','/poker2/blindLevel'),
     ]);
+    if(blD!=null){blindLevel=blD;currentSB=BLIND_LEVELS[blindLevel].sb;currentBB=BLIND_LEVELS[blindLevel].bb;}
     if(phD==='reset'){
       stopIvs();
       toast('Dealer ended the session',3000);
@@ -1069,6 +1100,8 @@ function renderStatusRow(){
   if(sc)sc.innerHTML=chipsHTML(myChips);
   if(pc)pc.innerHTML=chipsHTML(pot);
   document.getElementById('p-tocall').textContent=fmtChips(toCall);
+  const pb=document.getElementById('p-blinds');
+  if(pb)pb.textContent=`${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
 }
 
 function renderOtherPlayers(){
