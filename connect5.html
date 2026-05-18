@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Connect 5 — FILO GANG ARENA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -14,7 +17,7 @@
         radial-gradient(ellipse 90% 50% at 50% -5%, rgba(255,90,0,0.18) 0%, transparent 65%),
         radial-gradient(ellipse 70% 40% at 50% 105%, rgba(120,0,220,0.14) 0%, transparent 65%),
         linear-gradient(160deg, #030008 0%, #08021a 40%, #0d0218 70%, #030008 100%);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       color: #fff; padding: 20px; overflow-x: hidden;
     }
 
@@ -30,6 +33,7 @@
     .credits { width: 100%; text-align: center; margin-top: 8px; }
 
     h1 {
+      font-family: 'Orbitron', sans-serif;
       font-size: 2.2rem; letter-spacing: 5px; text-transform: uppercase;
       background: linear-gradient(90deg, #f7971e, #ffd200);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
@@ -68,7 +72,7 @@
       border-radius: 20px; padding: 22px; text-align: center; margin-bottom: 18px;
     }
     .code-label { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; margin-bottom: 8px; }
-    .code-value { font-size: 2.4rem; font-weight: 900; letter-spacing: 4px; color: #ffd200; }
+    .code-value { font-family: 'Orbitron', sans-serif; font-size: 2.4rem; font-weight: 900; letter-spacing: 4px; color: #ffd200; text-shadow: 0 0 20px rgba(255,210,0,0.38); }
 
     .spinner {
       display: block; width: 52px; height: 52px; flex-shrink: 0;
@@ -274,7 +278,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-    <div class="app-version">v3.48</div>
+    <div class="app-version">v3.49</div>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
   /* ── Constants ── */
