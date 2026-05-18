@@ -563,7 +563,7 @@ async function hostStartHand(){
   else{utg=activePlayers[(dealerPos+3)%n];}
   betQueue=buildQueue(activePlayers,activePlayers.indexOf(utg));
   betQueue=betQueue.filter(p=>p!==bbName);
-  betQueue.push(bbName);
+  if(!allInMap[bbName])betQueue.push(bbName);
   betOn=betQueue[0]||'';
 
   await Promise.all([
@@ -787,7 +787,7 @@ async function newBettingStreet(ph,startIdx){
   betOn=betQueue[0]||'';
   await Promise.all([
     fb('PUT','/poker2/bet',{
-      current:0,lastRaise:BB,on:betOn||null,queue:betQueue,street:{},
+      current:0,lastRaise:currentBB,on:betOn||null,queue:betQueue,street:{},
     }),
     fb('PUT','/poker2/phase',ph),
   ]);
@@ -1154,8 +1154,9 @@ async function renderPlayerPhase(ph,winner){
   if(ph==='showdown'){
     const sdD=await fb('GET',`/poker2/showdown/${encN(myName)}`)||[];
     if(holeEl&&sdD.length)holeEl.innerHTML=sdD.map(c=>cardHTML(c)).join('');
-    const myScore=holeCards.length===2&&communityCards.filter(Boolean).length>=3
-      ?bestOf7([...holeCards,...communityCards.filter(Boolean)]):-1;
+    const showCards=sdD.length===2?sdD:holeCards;
+    const myScore=showCards.length===2&&communityCards.filter(Boolean).length>=3
+      ?bestOf7([...showCards,...communityCards.filter(Boolean)]):-1;
     const isWinner=winner&&winner.includes(myName);
     actionEl.innerHTML=`<div class="phase-card" style="border-color:${isWinner?'rgba(255,210,0,.5)':'rgba(76,175,80,.3)'}">
       <div style="font-size:2.2rem">${isWinner?'🏆':'💸'}</div>
@@ -1256,6 +1257,8 @@ document.addEventListener('visibilitychange',()=>{
   else if(isHost&&active('s-dealer')){
     stopIvs();
     ivs.push(setInterval(pollBettingActions,1500));
+    ivs.push(setInterval(pollPresence,6000));
+    pollPresence();
   }
 });
 
