@@ -919,7 +919,14 @@ async function sendAnnouncement(){
   await fb('PUT','/poker2/announcement',text);
   toast('Announcement sent');
 }
-function endSession(){hostEndSession();}
+function endSession(){
+  const activePhases=['preflop','flop','turn','river'];
+  if(activePhases.includes(phase)){
+    toast('Cannot end session while a hand is in progress',3000);
+    return;
+  }
+  hostEndSession();
+}
 
 /* ─── Seat Arrangement ─── */
 function enterSeating(players){
