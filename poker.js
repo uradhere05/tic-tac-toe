@@ -234,7 +234,19 @@ function enterRoleSelect(){
   show('s-role-select');
 }
 
-async function joinAsPlayer(){enterLobby();}
+async function joinAsPlayer(){
+  const[phaseD,chipsVal]=await Promise.all([
+    fb('GET','/poker2/phase'),
+    fb('GET',`/poker2/chips/${encN(myName)}`),
+  ]);
+  if(phaseD&&phaseD!=='lobby'&&phaseD!=='reset'){
+    if(chipsVal==null){toast('A game is already in progress');return;}
+    show('s-player');startPlayerPolling();return;
+  }
+  const lobbyEntry=await fb('GET',`/poker2/lobby/${encN(myName)}`);
+  if(lobbyEntry?.name===myName){toast('You are already in the lobby');return;}
+  enterLobby();
+}
 
 async function joinAsDealer(){
   const cur=await fb('GET','/poker2/host');
@@ -385,6 +397,7 @@ async function claimDealer(){
 }
 
 async function hostStartSession(orderedPlayers){
+  orderedPlayers=[...new Set(orderedPlayers)];
   const chipsInit={};
   orderedPlayers.forEach(n=>{
     chipsInit[encN(n)]=STARTING_CHIPS;
@@ -870,9 +883,9 @@ async function hostEndSession(){
 async function startGame(){
   const freshLobby=await fb('GET','/poker2/lobby')||{};
   const now=Date.now();
-  const readyPlayers=Object.values(freshLobby)
+  const readyPlayers=[...new Set(Object.values(freshLobby)
     .filter(p=>p?.name&&p.name!==hostName&&p.ready&&now-p.ts<STALE_MS)
-    .map(p=>p.name);
+    .map(p=>p.name))];
   if(readyPlayers.length<MIN_PLAYERS){toast('Need at least 2 ready players');return;}
   readyPlayers.forEach(n=>{if(freshLobby[encN(n)]?.avatar)avatarsMap[n]=freshLobby[encN(n)].avatar;});
   enterSeating(readyPlayers);
