@@ -549,6 +549,53 @@ body {
 }
 .seat-av{font-size:1.3rem;}
 .seat-name{flex:1;font-size:0.88rem;font-weight:600;}
+
+/* ── Hall of Chips ── */
+.hall-panel {
+  width:100%; max-width:520px;
+  margin-top:18px;
+  background:rgba(0,0,0,0.38);
+  border:1px solid rgba(255,210,0,0.22);
+  border-radius:16px;
+  overflow:hidden;
+}
+.hall-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px;
+  background:rgba(255,210,0,0.06);
+  border-bottom:1px solid rgba(255,210,0,0.14);
+}
+.hall-title { font-size:0.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#FFD200; }
+.hall-month-lbl { font-size:0.6rem; opacity:0.5; letter-spacing:1px; text-transform:uppercase; }
+.hall-body {
+  padding:12px 14px; max-height:380px;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.hall-empty { font-size:0.72rem; opacity:0.3; text-align:center; padding:18px 0; }
+.hall-sub-hdr {
+  font-size:0.56rem; letter-spacing:2px; text-transform:uppercase;
+  opacity:0.35; margin:12px 0 6px;
+}
+.hall-sub-hdr:first-child { margin-top:0; }
+.hall-total-row {
+  display:flex; align-items:center; gap:8px;
+  padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.hall-tr-rank { font-size:0.62rem; opacity:0.3; min-width:14px; }
+.hall-tr-name { flex:1; font-size:0.8rem; }
+.hall-tr-amt  { font-size:0.84rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.hall-session {
+  margin-bottom:8px;
+  background:rgba(255,255,255,0.022);
+  border-radius:8px; padding:8px 10px;
+}
+.hall-session-hdr { font-size:0.62rem; font-weight:700; letter-spacing:1px; opacity:0.5; margin-bottom:5px; }
+.hall-session-row { display:flex; justify-content:space-between; align-items:center; padding:2px 0; }
+.hall-sr-name { font-size:0.75rem; }
+.hall-sr-amt  { font-size:0.77rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.chip-pos  { color:#2ecc71; }
+.chip-neg  { color:#e74c3c; }
+.chip-zero { opacity:0.4; }
 </style>
 </head>
 <body>
@@ -587,6 +634,14 @@ body {
   <button class="btn btn-gold w100"    id="lb-claim-btn"  onclick="claimDealer()"  style="display:none">🎰 Claim Dealer Seat</button>
   <button class="btn btn-secondary w100" id="lb-ready-btn" onclick="toggleReady()">✅ Ready Up</button>
   <button class="btn btn-primary w100" id="lb-start-btn"  onclick="startGame()"   style="display:none">▶ Start Game →</button>
+
+  <div class="hall-panel" style="max-width:420px">
+    <div class="hall-hdr">
+      <span class="hall-title">♠ Hall of Chips</span>
+      <span class="hall-month-lbl">—</span>
+    </div>
+    <div class="hall-body"><div class="hall-empty">Loading…</div></div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -656,6 +711,14 @@ body {
 
   <div class="divider"></div>
   <button class="btn btn-danger w100" style="max-width:520px" onclick="endSession()">🚫 End Session</button>
+
+  <div class="hall-panel">
+    <div class="hall-hdr">
+      <span class="hall-title">♠ Hall of Chips</span>
+      <span class="hall-month-lbl">—</span>
+    </div>
+    <div class="hall-body"><div class="hall-empty">Loading…</div></div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════

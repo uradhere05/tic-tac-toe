@@ -48,6 +48,79 @@ async function recordWin(name){
     await fetch(url,{method:'PUT',body:JSON.stringify(cur+1)});}catch{}
 }
 
+function getMonthKey(){
+  const now=new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+function getMonthLabel(){
+  return new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+}
+function fmtNet(cents){
+  if(cents===0)return '$0.00';
+  const sign=cents>0?'+':'-';
+  return `${sign}$${(Math.abs(cents)/100).toFixed(2)}`;
+}
+function netCls(cents){return cents>0?'chip-pos':cents<0?'chip-neg':'chip-zero';}
+
+async function recordPokerSession(){
+  if(!isHost||!Object.keys(chipsMap).length)return;
+  const monthKey=getMonthKey();
+  const today=new Date().toISOString().slice(0,10);
+  const curCount=await fb('GET',`/poker-hall/${monthKey}/count`)||0;
+  const gameNum=curCount+1;
+  await fb('PUT',`/poker-hall/${monthKey}/count`,gameNum);
+  const results={};
+  for(const[name,chips]of Object.entries(chipsMap)){
+    results[encN(name)]=chips-STARTING_CHIPS;
+  }
+  await fb('PUT',`/poker-hall/${monthKey}/sessions/${gameNum}`,{date:today,gameNum,results});
+}
+
+async function loadPokerHall(){
+  const bodies=document.querySelectorAll('.hall-body');
+  const monthLbls=document.querySelectorAll('.hall-month-lbl');
+  if(!bodies.length)return;
+  monthLbls.forEach(el=>el.textContent=getMonthLabel());
+  bodies.forEach(el=>el.innerHTML='<div class="hall-empty">Loading…</div>');
+  const monthKey=getMonthKey();
+  const data=await fb('GET',`/poker-hall/${monthKey}`)||{};
+  const sessions=Object.values(data.sessions||{}).sort((a,b)=>b.gameNum-a.gameNum);
+  if(!sessions.length){
+    bodies.forEach(el=>el.innerHTML='<div class="hall-empty">No sessions this month</div>');
+    return;
+  }
+  const totals={};
+  for(const s of sessions){
+    for(const[enc,net]of Object.entries(s.results||{})){
+      const n=decN(enc);totals[n]=(totals[n]||0)+net;
+    }
+  }
+  const sortedTotals=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  let html='<div class="hall-sub-hdr">Monthly Totals</div>';
+  sortedTotals.forEach(([name,net],i)=>{
+    html+=`<div class="hall-total-row">
+      <span class="hall-tr-rank">${i+1}</span>
+      <span class="hall-tr-name">${name}</span>
+      <span class="hall-tr-amt ${netCls(net)}">${fmtNet(net)}</span>
+    </div>`;
+  });
+  html+='<div class="hall-sub-hdr" style="margin-top:14px">Session History</div>';
+  for(const s of sessions){
+    const d=new Date(s.date+'T12:00:00');
+    const dateStr=d.toLocaleDateString('en-AU',{month:'short',day:'numeric'});
+    const players=Object.entries(s.results||{}).map(([k,v])=>[decN(k),v]).sort((a,b)=>b[1]-a[1]);
+    html+=`<div class="hall-session"><div class="hall-session-hdr">Game #${s.gameNum} · ${dateStr}</div>`;
+    players.forEach(([name,net])=>{
+      html+=`<div class="hall-session-row">
+        <span class="hall-sr-name">${name}</span>
+        <span class="hall-sr-amt ${netCls(net)}">${fmtNet(net)}</span>
+      </div>`;
+    });
+    html+='</div>';
+  }
+  bodies.forEach(el=>el.innerHTML=html);
+}
+
 /* ─── Card utilities ─── */
 function createDeck(){
   const d=[];
@@ -198,6 +271,7 @@ async function enterLobby(){
   show('s-lobby');
   await writeLobbyPresence();
   startLobbyPolling();
+  loadPokerHall();
 }
 
 async function writeLobbyPresence(){
@@ -315,6 +389,7 @@ async function hostStartSession(orderedPlayers){
   stopIvs();
   show('s-dealer');
   renderDealerConsole('lobby');
+  loadPokerHall();
 }
 
 /* ─── Dealer: Game Control ─── */
@@ -725,6 +800,7 @@ async function hostShowdown(){
 }
 
 async function hostEndSession(){
+  await recordPokerSession();
   await fb('PUT','/poker2/phase','reset');
   stopIvs();
   isHost=false;hostName='';
