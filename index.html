@@ -351,6 +351,8 @@
     .lb-row.silver .lb-wins { color: #c8d8e8; }
     .lb-row.bronze .lb-wins { color: #e8935a; }
     .lb-empty { font-size: 0.75rem; opacity: 0.26; text-align: center; letter-spacing: 1px; padding: 14px 0; }
+    .lb-games { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lb-game-tag { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.4px; padding: 1px 7px; border-radius: 20px; border: 1px solid; opacity: 0.85; }
 
     /* ── Online now ── */
     .online-section { width: 100%; margin-top: 16px; background: rgba(8,4,24,0.48); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 16px; }
@@ -610,7 +612,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.24</div>
+  <div class="app-version">v3.25</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -673,8 +675,8 @@
     return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
   }
 
-  async function recordWin(name) {
-    const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
+  async function recordWin(name, game) {
+    const url = `${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}/${game}.json`;
     try {
       const cur = await fetch(url).then(r => r.json()).catch(() => 0) || 0;
       await fetch(url, { method: 'PUT', body: JSON.stringify(cur + 1) });
@@ -705,29 +707,52 @@
       const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999);
       const rangeStart = new Date(mon); rangeStart.setDate(mon.getDate() - 1);
       const rangeEnd   = new Date(sun); rangeEnd.setDate(sun.getDate() + 1);
+      const GAME_META = {
+        tictactoe: { label: 'TTT',   bg: 'rgba(50,200,170,0.18)',  bd: 'rgba(50,200,170,0.4)',  tc: '#4ecdc4' },
+        connect5:  { label: 'C5',    bg: 'rgba(140,80,255,0.18)', bd: 'rgba(140,80,255,0.4)',  tc: '#b388ff' },
+        pickelbol: { label: 'Pong',  bg: 'rgba(60,140,255,0.18)', bd: 'rgba(60,140,255,0.4)',  tc: '#82b1ff' },
+        poker:     { label: '♠ Poker',bg: 'rgba(255,190,30,0.15)', bd: 'rgba(255,190,30,0.35)', tc: '#ffd740' },
+        mafia:     { label: 'Mafia', bg: 'rgba(255,70,70,0.15)',  bd: 'rgba(255,70,70,0.35)',  tc: '#ff8a80' },
+      };
       const totals = {};
       for (const [key, players] of Object.entries(allData || {})) {
         const d = new Date(key);
         if (d >= rangeStart && d <= rangeEnd && players) {
-          for (const [name, wins] of Object.entries(players)) {
-            const n = decodeURIComponent(name);
-            totals[n] = (totals[n] || 0) + wins;
+          for (const [rawName, gameData] of Object.entries(players)) {
+            const n = decodeURIComponent(rawName);
+            if (!totals[n]) totals[n] = { total: 0, games: {} };
+            if (typeof gameData === 'number') {
+              totals[n].total += gameData;
+            } else if (gameData && typeof gameData === 'object') {
+              for (const [game, count] of Object.entries(gameData)) {
+                totals[n].total += count;
+                totals[n].games[game] = (totals[n].games[game] || 0) + count;
+              }
+            }
           }
         }
       }
-      const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-      const maxWins = sorted.length ? sorted[0][1] : 1;
+      const sorted = Object.entries(totals).sort((a, b) => b[1].total - a[1].total);
+      const maxWins = sorted.length ? sorted[0][1].total : 1;
       const medals = ['🥇','🥈','🥉'];
       const rankClasses = ['gold', 'silver', 'bronze'];
       const html = sorted.length
-        ? sorted.map(([name, w], i) => {
+        ? sorted.map(([name, data], i) => {
+            const w = data.total;
             const pct = Math.round((w / maxWins) * 100);
             const isMe = name === myName;
             const rc = rankClasses[i] || '';
+            const gameTags = Object.entries(data.games)
+              .sort((a, b) => b[1] - a[1])
+              .map(([game, cnt]) => {
+                const m = GAME_META[game] || { label: game, bg: 'rgba(255,255,255,0.1)', bd: 'rgba(255,255,255,0.25)', tc: '#fff' };
+                return `<span class="lb-game-tag" style="background:${m.bg};border-color:${m.bd};color:${m.tc}">${m.label} ×${cnt}</span>`;
+              }).join('');
             return `<div class="lb-row${rc?' '+rc:''}${isMe?' me':''}">
               <span class="lb-rank">${medals[i]||(i+1)+'.'}</span>
               <div class="lb-mid">
                 <span class="lb-name">${name}${isMe?' <span class="lb-you">you</span>':''}</span>
+                ${gameTags ? `<div class="lb-games">${gameTags}</div>` : ''}
                 <div class="lb-bar-track"><div class="lb-bar-fill" data-pct="${pct}"></div></div>
               </div>
               <span class="lb-wins" data-target="${w}">0</span>
@@ -1101,7 +1126,7 @@
     const winner = iAmWinner ? myName : (opponentName || 'Opponent');
     document.getElementById('champ-sub').textContent =
       iAmWinner ? `${myName} is the FILO GANG ARENA Champion! 🎉` : `${winner} is the FILO GANG ARENA Champion!`;
-    if (iAmWinner) { recordWin(myName); setTimeout(() => toast(`${myName} added to the leaderboard!`), 600); }
+    if (iAmWinner) { recordWin(myName, 'tictactoe'); setTimeout(() => toast(`${myName} added to the leaderboard!`), 600); }
     if (currentRoom && myRole) { clearPresence(currentRoom, myRole); currentRoom = null; myRole = null; }
     show('s-champ');
   }

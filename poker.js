@@ -43,7 +43,7 @@ function getWeekKey(){
   return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
 }
 async function recordWin(name){
-  const url=`${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}.json`;
+  const url=`${DB}/leaderboard/${getWeekKey()}/${encodeURIComponent(name)}/poker.json`;
   try{const cur=await fetch(url).then(r=>r.json()).catch(()=>0)||0;
     await fetch(url,{method:'PUT',body:JSON.stringify(cur+1)});}catch{}
 }
