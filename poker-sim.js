@@ -28,8 +28,6 @@ const PLAYERS = [
   { name: 'Matt' },
   { name: 'Gianne' },
   { name: 'Austin' },
-  { name: 'Charm' },
-  { name: 'Kee' },
 ];
 const ALL = [DEALER, ...PLAYERS];
 const COLS = ALL.length;           // 6 windows
