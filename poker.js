@@ -450,6 +450,8 @@ async function reloadDealerState(){
   if(communityD){
     communityCards=[];
     for(let i=0;i<5;i++) communityCards[i]=communityD[i]||null;
+  } else {
+    communityCards=[null,null,null,null,null];
   }
   if(communityFullD){communityFull=communityFullD;}
   if(potD!=null)pot=potD;
@@ -1088,7 +1090,8 @@ async function pollGameState(){
     foldedMap=foldedD?Object.fromEntries(Object.entries(foldedD).map(([k,v])=>[decN(k),v])):{};
     allInMap=allInD?Object.fromEntries(Object.entries(allInD).map(([k,v])=>[decN(k),v])):{};
     if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
-    if(commD)for(let i=0;i<5;i++) communityCards[i]=commD[i]||null;
+    if(commD){for(let i=0;i<5;i++) communityCards[i]=commD[i]||null;}
+    else if(phD==='preflop'||phD==='lobby') communityCards=[null,null,null,null,null];
     if(betD){
       currentBet=betD.current||0;
       betOn=betD.on||'';
