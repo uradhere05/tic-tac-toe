@@ -304,11 +304,16 @@ function bestOfN(cards){
   if(n<5)return -1;
   if(n===5)return evalHand5(cards);
   let best=-1;
-  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
-    const five=cards.filter((_,k)=>k!==i&&k!==j);
-    if(five.length!==5)continue;
-    const s=evalHand5(five);
-    if(s>best)best=s;
+  if(n===6){
+    for(let i=0;i<6;i++){
+      const s=evalHand5(cards.filter((_,k)=>k!==i));
+      if(s>best)best=s;
+    }
+  } else {
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      const s=evalHand5(cards.filter((_,k)=>k!==i&&k!==j));
+      if(s>best)best=s;
+    }
   }
   return best;
 }
