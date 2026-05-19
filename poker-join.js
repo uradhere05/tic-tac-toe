@@ -11,7 +11,17 @@ function getScreenSize(){
 const{w:SCR_W,h:SCR_H}=getScreenSize();
 const COLS=3, WIN_W=Math.floor(SCR_W/COLS), WIN_H=SCR_H;
 
-const NAMES=['Kuya AD','Matt','Gianne','Austin'];
+const NAMES=['Kuya AD','Matt','Gianne'];
+const FB_URL='https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
+
+async function fbReset(){
+  // Wipe the whole lobby + host so joinAsPlayer/joinAsDealer start fresh
+  await Promise.all([
+    fetch(`${FB_URL}/poker2/host.json`,{method:'DELETE'}),
+    fetch(`${FB_URL}/poker2/lobby.json`,{method:'DELETE'}),
+  ]);
+  console.log('Firebase state cleared.');
+}
 
 async function run(){
   const browser = await chromium.launch({
@@ -19,6 +29,8 @@ async function run(){
     args: ['--disable-background-timer-throttling','--disable-renderer-backgrounding',
            '--disable-backgrounding-occluded-windows','--disable-infobars','--no-default-browser-check'],
   });
+
+  await fbReset();
 
   const pages = [];
   console.log(`Opening ${NAMES.length} windows…`);
@@ -59,7 +71,19 @@ async function run(){
     await new Promise(r => setTimeout(r, 400));
   }
 
-  console.log('\nAll players in lobby and ready. Dealer can now click "Arrange Seats".');
+  // Dealer clicks "Arrange Seats" → then confirms seat order
+  await new Promise(r => setTimeout(r, 1200));
+  console.log('\nDealer clicking "Arrange Seats"…');
+  await pages[0].page.evaluate(() => startGame());
+  await new Promise(r => setTimeout(r, 800));
+  console.log('  Dealer confirming seat order…');
+  await pages[0].page.evaluate(() => confirmSeats());
+  await new Promise(r => setTimeout(r, 1200));
+  console.log('  Dealer dealing first hand…');
+  await pages[0].page.evaluate(() => hostStartHand());
+  console.log('  ✅ Hand dealt!');
+
+  console.log('\nAll windows open. Play away!');
   await new Promise(()=>{});  // keep open
 }
 
