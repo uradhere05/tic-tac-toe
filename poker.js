@@ -242,10 +242,12 @@ async function joinAsPlayer(){
     fb('GET','/poker2/phase'),
     fb('GET',`/poker2/chips/${encN(myName)}`),
   ]);
-  if(phaseD&&phaseD!=='lobby'&&phaseD!=='reset'){
-    if(chipsVal==null){toast('A game is already in progress');return;}
+  const activePhases=['preflop','flop','turn','river'];
+  if(activePhases.includes(phaseD)){
+    if(chipsVal==null){toast('A hand is in progress — wait for it to finish');return;}
     show('s-player');startPlayerPolling();return;
   }
+  // Allow joining during lobby, showdown, or reset
   const lobbyEntry=await fb('GET',`/poker2/lobby/${encN(myName)}`);
   if(lobbyEntry?.name===myName){toast('You are already in the lobby');return;}
   enterLobby();
@@ -355,10 +357,17 @@ async function lobbyTick(){
     ]);
     if(!document.getElementById('s-lobby').classList.contains('active'))return;
     if(phaseD&&phaseD!=='lobby'&&phaseD!=='reset'){
-      stopIvs();
       isHost=hostD===myName;hostName=hostD||'';
-      if(isHost){await reloadDealerState();reconnectDealer(phaseD);}
-      else{show('s-player');startPlayerPolling();}
+      if(isHost){stopIvs();await reloadDealerState();reconnectDealer(phaseD);return;}
+      // Only redirect to player view if already in the game (has chips)
+      const myChips=chipsD&&chipsD[encN(myName)]!=null;
+      if(myChips){stopIvs();show('s-player');startPlayerPolling();return;}
+      // No chips yet = new player waiting for next hand — stay in lobby
+      if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
+      hostName=hostD||'';
+      lobbyPlayers=lobbyD||{};
+      Object.values(lobbyPlayers).forEach(p=>{if(p?.name&&p.avatar)avatarsMap[p.name]=p.avatar;});
+      renderLobbyUI();
       return;
     }
     if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
@@ -542,7 +551,21 @@ async function increaseBlinds(){
 }
 
 async function hostStartHand(){
+  // Include any ready lobby players who aren't in the game yet
+  const freshLobby=await fb('GET','/poker2/lobby')||{};
+  const now2=Date.now();
+  Object.values(freshLobby).forEach(p=>{
+    if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName&&!(p.name in chipsMap)){
+      chipsMap[p.name]=STARTING_CHIPS;
+    }
+  });
   const activePlayers=playersInHand.filter(n=>chipsMap[n]>0);
+  // Append new players not yet in playersInHand
+  Object.values(freshLobby).forEach(p=>{
+    if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName
+       &&chipsMap[p.name]===STARTING_CHIPS&&!playersInHand.includes(p.name))
+      activePlayers.push(p.name);
+  });
   if(activePlayers.length<2){toast('Need at least 2 players with chips');return;}
   playersInHand=activePlayers;
 
@@ -701,6 +724,19 @@ function renderDealerConsole(ph){
 
   if(phase==='lobby'||phase==='showdown'){
     ctrl.innerHTML=btn('🃏 Deal New Hand','hostStartHand()','btn-gold');
+    // Show waiting new players from lobby
+    fb('GET','/poker2/lobby').then(lobD=>{
+      if(!lobD)return;
+      const now=Date.now();
+      const waiting=Object.values(lobD)
+        .filter(p=>p?.name&&p.ready&&now-p.ts<STALE_MS&&p.name!==hostName&&!(p.name in chipsMap));
+      if(!waiting.length)return;
+      const names=waiting.map(p=>escHtml(p.name)).join(', ');
+      const notice=document.createElement('div');
+      notice.style.cssText='font-size:.65rem;color:#ffd200;opacity:.8;margin-top:6px;text-align:center;';
+      notice.textContent=`🟡 Waiting to join: ${names}`;
+      ctrl.appendChild(notice);
+    });
   }
   if((phase==='lobby'||phase==='showdown')&&blindLevel<BLIND_LEVELS.length-1){
     const next=BLIND_LEVELS[blindLevel+1];
