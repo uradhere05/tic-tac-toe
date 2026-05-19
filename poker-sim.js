@@ -12,7 +12,7 @@ const { execSync } = require('child_process');
 const BASE  = 'http://localhost:8080';
 const DB    = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const N_HANDS = 5; // hands to play per session
+const N_HANDS = 10; // hands to play per session
 
 function getScreenSize() {
   try {
@@ -28,6 +28,7 @@ const PLAYERS = [
   { name: 'Matt' },
   { name: 'Gianne' },
   { name: 'Austin' },
+  { name: 'Charm' },
 ];
 const ALL = [DEALER, ...PLAYERS];
 const COLS = ALL.length;           // 6 windows
@@ -164,9 +165,12 @@ async function playHand(dealerPage, playerPages, handNum) {
   const pot    = await fb('/poker2/pot');
   const chips  = await fb('/poker2/chips') || {};
   const total  = Object.values(chips).reduce((s, v) => s + (v || 0), 0);
+  const expectedTotal = PLAYERS.length * 2000;
   console.log(`\n  Winner: ${winner || '?'}   Pot was: $${((pot || 0) / 100).toFixed(2)}`);
   console.log(`  Chips: ${Object.entries(chips).map(([k,v]) => `${k.replace(/_/g,' ')}=$${(v/100).toFixed(2)}`).join('  ')}`);
-  console.log(`  Total chips conserved: $${(total / 100).toFixed(2)} ${total === PLAYERS.length * 2000 ? '✅' : '⚠️'}`);
+  const conserved = total === expectedTotal;
+  console.log(`  Total chips conserved: $${(total / 100).toFixed(2)} ${conserved ? '✅' : `⚠️  expected $${(expectedTotal/100).toFixed(2)}`}`);
+  assert(conserved, `Hand #${handNum}: chips conserved ($${(total/100).toFixed(2)})`);
   return true;
 }
 
@@ -253,17 +257,55 @@ async function run() {
   assert(await waitScreen(playerPages, 's-lobby', 12000), 'Players on poker lobby');
   await sleep(1000);
 
-  // ── Step 6: Play N hands ──
+  // ── Step 6: Play N hands (raise blinds before hand 5) ──
+  const BLIND_RAISE_AT = 5;
   for (let h = 1; h <= N_HANDS; h++) {
+    // Raise blinds before hand 5 (dealer side + verify Firebase)
+    if (h === BLIND_RAISE_AT) {
+      console.log(`\n${'─'.repeat(52)}`);
+      console.log('  ⬆  Raising blinds before hand 5…');
+      await dealerPage.evaluate(() => increaseBlinds()).catch(() => {});
+      await sleep(1000);
+      const blLevel = await fb('/poker2/blindLevel');
+      const blAnn   = await fb('/poker2/announcement');
+      assert(blLevel === 1, `blindLevel in Firebase = 1 (got ${blLevel})`);
+      assert(typeof blAnn === 'string' && blAnn.includes('20/40'),
+        `blind announcement contains 20/40 (got: ${blAnn})`);
+      // verify dealer UI shows updated blind
+      const dealerBlinds = await dealerPage.evaluate(() =>
+        document.getElementById('d-blinds')?.textContent
+      ).catch(() => '');
+      assert(dealerBlinds === '$0.20/$0.40', `Dealer UI shows $0.20/$0.40 (got: ${dealerBlinds})`);
+      // verify at least one player sees the announcement
+      const playerAnn = await playerPages[0].evaluate(() =>
+        document.getElementById('p-ann')?.textContent
+      ).catch(() => '');
+      console.log(`  Player announcement: "${playerAnn}"`);
+      console.log('─'.repeat(52));
+    }
+
     const ok = await playHand(dealerPage, playerPages, h);
     if (!ok) break;
+
+    // After each hand, check blind level is still correct
+    if (h >= BLIND_RAISE_AT) {
+      const blLevel = await fb('/poker2/blindLevel');
+      assert(blLevel === 1, `After hand #${h}: blindLevel still 1 (got ${blLevel})`);
+      // Verify lastRaise stored is currentBB (40¢ = 40 cents) not hardcoded BB (20¢)
+      const lastRaise = await fb('/poker2/bet/lastRaise');
+      // lastRaise is reset at start of each hand to currentBB, check it's ≥ 40
+      if (lastRaise !== null) {
+        assert(lastRaise >= 40, `Hand #${h}: lastRaise in Firebase >= 40 (got ${lastRaise})`);
+      }
+    }
+
     if (h < N_HANDS) await sleep(2000);
   }
 
   // ── Step 7: End session → records Hall of Chips ──
   console.log(`\n${'═'.repeat(52)}`);
   console.log('  🚫 Ending session → recording Hall of Chips…');
-  await dealerPage.evaluate(() => endSession()).catch(() => {});
+  await dealerPage.evaluate(() => hostEndSession()).catch(() => {});
   await sleep(3000);
 
   // Read back Hall of Chips
