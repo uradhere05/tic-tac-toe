@@ -83,6 +83,25 @@ async function run(){
   await pages[0].page.evaluate(() => hostStartHand());
   console.log('  ✅ Hand dealt!');
 
+  // TEST 1: Stand up Matt mid-hand after 3s
+  await new Promise(r => setTimeout(r, 3000));
+  console.log('\n[TEST 1] Dealer standing up Matt mid-hand…');
+  const mattEnc = await pages[0].page.evaluate(() => encN('Matt'));
+  await pages[0].page.evaluate(enc => dealerStandPlayer(enc), mattEnc);
+  console.log('  ✅ Stand-up triggered.');
+
+  // TEST 2: Matt readies up from lobby after 4s
+  await new Promise(r => setTimeout(r, 4000));
+  console.log('\n[TEST 2] Matt readying up from lobby…');
+  await pages[1].page.evaluate(() => toggleReady());
+  console.log('  ✅ Matt ready.');
+
+  // TEST 3: Dealer deals next hand — Matt should be included
+  await new Promise(r => setTimeout(r, 2000));
+  console.log('\n[TEST 3] Dealer dealing next hand…');
+  await pages[0].page.evaluate(() => hostStartHand());
+  console.log('  ✅ Next hand dealt. Matt should be back in.');
+
   console.log('\nAll windows open. Play away!');
   await new Promise(()=>{});  // keep open
 }
