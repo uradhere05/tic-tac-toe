@@ -1220,6 +1220,7 @@ async function renderPlayerPhase(ph,winner){
 
 function renderActionButtons(toCall,myChips){
   const canCheck=toCall===0;
+  const isBet=currentBet===0;
   const minRaise=currentBet+betLastRaise;
   const actionEl=document.getElementById('p-action');
   actionEl.innerHTML=`
@@ -1235,10 +1236,10 @@ function renderActionButtons(toCall,myChips){
         <input type="number" class="raise-input" id="raise-amt"
           min="${(minRaise/100).toFixed(2)}" max="${((betStreetMap[myName]||0)+myChips)/100}"
           step="0.10" value="${(minRaise/100).toFixed(2)}" placeholder="${fmtChips(minRaise)}">
-        <button class="btn btn-gold btn-sm" onclick="submitRaise()">Raise</button>
+        <button class="btn btn-gold btn-sm" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
       </div>
       <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
-        min raise: ${fmtChips(minRaise)} · max: ${fmtChips((betStreetMap[myName]||0)+myChips)}
+        min ${isBet?'bet':'raise'}: ${fmtChips(minRaise)} · max: ${fmtChips((betStreetMap[myName]||0)+myChips)}
       </div>
     </div>`;
 }
