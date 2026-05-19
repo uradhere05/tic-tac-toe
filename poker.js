@@ -414,7 +414,9 @@ function renderLobbyUI(){
 
 async function toggleReady(){
   amReady=!amReady;
-  await fb('PUT',`/poker2/lobby/${encN(myName)}`,{name:myName,ts:Date.now(),ready:amReady,avatar:myAvatar});
+  const writes=[fb('PUT',`/poker2/lobby/${encN(myName)}`,{name:myName,ts:Date.now(),ready:amReady,avatar:myAvatar})];
+  if(amReady)writes.push(fb('DELETE',`/poker2/standing/${encN(myName)}`));
+  await Promise.all(writes);
   renderLobbyUI();
 }
 
@@ -551,19 +553,23 @@ async function increaseBlinds(){
 }
 
 async function hostStartHand(){
-  // Include any ready lobby players who aren't in the game yet
-  const freshLobby=await fb('GET','/poker2/lobby')||{};
+  const[freshLobby,standingD]=await Promise.all([
+    fb('GET','/poker2/lobby'),fb('GET','/poker2/standing'),
+  ]);
+  const lobby=freshLobby||{}, standing=standingD||{};
   const now2=Date.now();
-  Object.values(freshLobby).forEach(p=>{
-    if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName&&!(p.name in chipsMap)){
+  // Buy in brand-new lobby players
+  Object.values(lobby).forEach(p=>{
+    if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName&&!(p.name in chipsMap))
       chipsMap[p.name]=STARTING_CHIPS;
-    }
   });
-  const activePlayers=playersInHand.filter(n=>chipsMap[n]>0);
-  // Append new players not yet in playersInHand
-  Object.values(freshLobby).forEach(p=>{
+  const inHand=new Set(playersInHand);
+  // Existing seated players with chips, not standing
+  const activePlayers=playersInHand.filter(n=>chipsMap[n]>0&&!standing[encN(n)]);
+  // New / returning lobby players (ready, has chips, not standing, not already seated)
+  Object.values(lobby).forEach(p=>{
     if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName
-       &&chipsMap[p.name]===STARTING_CHIPS&&!playersInHand.includes(p.name))
+       &&chipsMap[p.name]>0&&!standing[encN(p.name)]&&!inHand.has(p.name))
       activePlayers.push(p.name);
   });
   if(activePlayers.length<2){toast('Need at least 2 players with chips');return;}
@@ -693,6 +699,7 @@ function renderDealerConsole(ph){
       <span class="pr-status ${statusCls}">${statusTxt}</span>
       ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`:''}
       <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?cardHTML(null,true)+cardHTML(null,true):''}</span>
+      <button class="btn-stand-player" onclick="dealerStandPlayer('${enc}')" title="Ask player to stand">⬆ Stand</button>
     </div>`;
   });
 
@@ -963,6 +970,7 @@ async function hostEndSession(){
     fb('DELETE','/poker2/round'),fb('DELETE','/poker2/players'),
     fb('DELETE','/poker2/host'),fb('DELETE','/poker2/chips'),
     fb('DELETE','/poker2/rebuys'),fb('DELETE','/poker2/blindLevel'),fb('DELETE','/poker2/phase'),
+    fb('DELETE','/poker2/standing'),
   ]),3000);
   enterLobby();
 }
@@ -978,6 +986,25 @@ async function startGame(){
   readyPlayers.forEach(n=>{if(freshLobby[encN(n)]?.avatar)avatarsMap[n]=freshLobby[encN(n)].avatar;});
   enterSeating(readyPlayers);
 }
+async function dealerStandPlayer(enc){
+  const name=decN(enc);
+  if(name===hostName)return;
+  await fb('PUT',`/poker2/standing/${enc}`,true);
+  await fb('PUT','/poker2/announcement',`${name} has left the table`);
+  const activePhases=['preflop','flop','turn','river'];
+  if(activePhases.includes(phase)&&!foldedMap[name]&&!allInMap[name]){
+    foldedMap[name]=true;
+    await fb('PUT',`/poker2/folded/${enc}`,true);
+    betQueue=betQueue.filter(n=>n!==name);
+    if(betOn===name){betOn=betQueue[0]||'';await fb('PUT','/poker2/bet/on',betOn||null);}
+    await fb('PUT','/poker2/bet/queue',betQueue);
+    const alive=playersInHand.filter(n=>!foldedMap[n]);
+    if(alive.length===1){await autoWin(alive[0]);return;}
+  }
+  toast(`${name} stood up`);
+  renderDealerConsole(phase);
+}
+
 async function sendAnnouncement(){
   const text=document.getElementById('d-ann').value.trim();
   if(!text)return;
@@ -1124,15 +1151,22 @@ async function writePlayerPresence(){
 async function pollGameState(){
   if(_pollRunning)return;_pollRunning=true;
   try{
-    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD]=await Promise.all([
+    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD,standD]=await Promise.all([
       fb('GET','/poker2/phase'),fb('GET','/poker2/pot'),
       fb('GET','/poker2/community'),fb('GET','/poker2/announcement'),
       fb('GET','/poker2/chips'),fb('GET','/poker2/bet'),
       fb('GET','/poker2/folded'),fb('GET','/poker2/allIn'),
       fb('GET','/poker2/winner'),fb('GET','/poker2/avatars'),
-      fb('GET','/poker2/blindLevel'),
+      fb('GET','/poker2/blindLevel'),fb('GET',`/poker2/standing/${encN(myName)}`),
     ]);
     if(blD!=null){blindLevel=blD;currentSB=BLIND_LEVELS[blindLevel].sb;currentBB=BLIND_LEVELS[blindLevel].bb;}
+    if(standD){
+      stopIvs();
+      holeCards=[];_knownPhase='';_knownBetOn='';
+      toast('You have been asked to stand up',4000);
+      setTimeout(()=>enterLobby(),1500);
+      return;
+    }
     if(phD==='reset'){
       stopIvs();
       toast('Dealer ended the session',3000);
