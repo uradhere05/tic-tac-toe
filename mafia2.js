@@ -20,6 +20,7 @@ let rolesMap={},aliveMap={},myAction=null,myVote=null,mySuspect=null,ivs=[],know
 let amReady=false,lobbyPlayers={},lastSave='',myAvatar='',avatarsMap={};
 let isEnded=false,myEliminated=false,_lastAutoAnn='',_lobbyTickRunning=false;
 let _pollPhaseRunning=false,_pollNightRunning=false,_roleRevealTimer=null;
+let _revealShownForRound=0;
 
 /* ─── Firebase ─── */
 function getWeekKey(){
@@ -883,8 +884,8 @@ async function pollPhase(){
       const ls=await fb('GET','/mafia2/lastSave');
       lastSave=ls||'';
     }
-    // Show role reveal only on a fresh round-1 first connect; skip it on reconnects
-    if(!myAction&&!mySuspect&&round===1) showRoleReveal();
+    // Show role reveal once per round (first time entering night with no action yet)
+    if(!myAction&&!mySuspect&&_revealShownForRound!==round) showRoleReveal();
     else showNightUI();
   } else if(phD==='day'){
     if(aliveMap[myName]===false){
@@ -906,6 +907,7 @@ async function pollPhase(){
 }
 
 function showRoleReveal(){
+  _revealShownForRound=round;
   if(_roleRevealTimer){clearInterval(_roleRevealTimer);_roleRevealTimer=null;}
   const cfg=ROLE_CFG[myRole]||ROLE_CFG.civilian;
   document.getElementById('p-content').innerHTML=`

@@ -583,6 +583,14 @@ async function hostStartHand(){
     fb('DELETE','/poker2/folded'),
     fb('DELETE','/poker2/allIn'),
     fb('DELETE','/poker2/announcement'),
+  ]);
+  // Write blind-post all-ins to Firebase now that the DELETE has cleared old state
+  const blindAllIns=Object.entries(allInMap).filter(([,v])=>v).map(([k])=>k);
+  if(blindAllIns.length){
+    const allInObj=Object.fromEntries(blindAllIns.map(n=>[encN(n),true]));
+    await fb('PATCH','/poker2/allIn',allInObj);
+  }
+  await Promise.all([
     fb('DELETE','/poker2/winner'),
     fb('DELETE','/poker2/showdown'),
   ]);
@@ -838,6 +846,7 @@ async function hostShowdown(){
   if(betOn){toast('Betting not complete');return;}
   const alive=playersInHand.filter(n=>!foldedMap[n]);
   const board=communityCards.filter(Boolean);
+  if(board.length<3){toast('Cannot show hands before the flop');return;}
 
   const handsD=await fb('GET','/poker2/hands')||{};
   const scores={};
