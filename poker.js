@@ -698,7 +698,6 @@ function renderDealerConsole(ph){
     const enc=encN(name);
     prows.innerHTML+=`<div class="pr-row${folded?' is-folded':''}${isActing?' pr-acting':''}">
       <span class="pdot ${isOnline(name)?'pdot-on':'pdot-off'}" id="pdot-${enc}"></span>
-      <span class="pr-av">${getAvatar(name)}</span>
       <span class="pr-name-col">
         <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
         <button class="btn-stand-player" onclick="dealerStandPlayer('${enc}')" title="Ask player to stand">⬆ Stand</button>
