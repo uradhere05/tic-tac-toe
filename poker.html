@@ -334,6 +334,15 @@ body {
   text-transform: uppercase;
   opacity: 0.4;
 }
+.hand-strength {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #ffd200;
+  opacity: 0.85;
+  min-height: 1em;
+}
 
 .status-row {
   width: 100%;
@@ -811,6 +820,7 @@ body {
   <div class="hole-area" onclick="openCardOverlay()" title="Tap to view full screen">
     <div class="ha-lbl">Your Hole Cards · <span style="opacity:.45;font-size:.9em">tap to expand</span></div>
     <div class="cards-row" id="p-hole"></div>
+    <div class="hand-strength" id="p-hand-strength"></div>
   </div>
 
   <!-- Status row: stack / pot / to-call -->

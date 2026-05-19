@@ -1098,6 +1098,7 @@ async function pollGameState(){
       betStreetMap=betD.street?Object.fromEntries(Object.entries(betD.street).map(([k,v])=>[decN(k),v])):{};
     }
     renderCommunityCards();
+    renderHandStrength();
     renderStatusRow();
     renderOtherPlayers();
     const annEl=document.getElementById('p-ann');
@@ -1107,6 +1108,21 @@ async function pollGameState(){
       await renderPlayerPhase(phD,winnerD);
     }
   }finally{_pollRunning=false;}
+}
+
+function renderHandStrength(){
+  const el=document.getElementById('p-hand-strength');
+  if(!el)return;
+  const board=communityCards.filter(Boolean);
+  if(holeCards.length!==2){el.textContent='';return;}
+  if(board.length===0){
+    // Preflop: evaluate hole cards alone as 2-card rank
+    const ranks=holeCards.map(c=>c.r).sort((a,b)=>b-a);
+    el.textContent=ranks[0]===ranks[1]?`Pair of ${RANKS[ranks[0]]}s`:`${RANKS[ranks[0]]}-${RANKS[ranks[1]]} High`;
+  } else {
+    const score=bestOf7([...holeCards,...board]);
+    el.textContent=handName(score);
+  }
 }
 
 function renderCommunityCards(){
@@ -1161,11 +1177,12 @@ async function renderPlayerPhase(ph,winner){
     return;
   }
   if(ph==='preflop'||ph==='flop'||ph==='turn'||ph==='river'){
-    if(ph==='preflop'&&holeEl&&holeEl.innerHTML){holeEl.innerHTML='';holeCards=[];}
+    if(ph==='preflop'&&holeEl&&holeEl.innerHTML){holeEl.innerHTML='';holeCards=[];const hs=document.getElementById('p-hand-strength');if(hs)hs.textContent='';}
     if(holeEl&&!holeEl.innerHTML){
       const hD=await fb('GET',`/poker2/hands/${encN(myName)}`);
       if(hD&&Array.isArray(hD))holeEl.innerHTML=hD.map(c=>cardHTML(c)).join('');
       holeCards=hD||[];
+      renderHandStrength();
     }
     if(myFolded||myChips===0){
       actionEl.innerHTML='<div class="phase-card"><div style="font-size:2rem">👻</div><div style="opacity:.6;margin-top:8px">'+
