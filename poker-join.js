@@ -9,9 +9,9 @@ function getScreenSize(){
   }catch{return{w:1440,h:900};}
 }
 const{w:SCR_W,h:SCR_H}=getScreenSize();
-const COLS=5, WIN_W=Math.floor(SCR_W/COLS), WIN_H=SCR_H;
+const COLS=3, WIN_W=Math.floor(SCR_W/COLS), WIN_H=SCR_H;
 
-const NAMES=['Kuya AD','Matt','Gianne','Austin','Charm'];
+const NAMES=['Kuya AD','Matt','Gianne','Austin'];
 
 async function run(){
   const browser = await chromium.launch({
