@@ -1112,6 +1112,7 @@ async function pollGameState(){
     else if(phD==='preflop'||phD==='lobby') communityCards=[null,null,null,null,null];
     if(betD){
       currentBet=betD.current||0;
+      betLastRaise=betD.lastRaise||currentBB;
       betOn=betD.on||'';
       betStreetMap=betD.street?Object.fromEntries(Object.entries(betD.street).map(([k,v])=>[decN(k),v])):{};
     }
