@@ -1116,7 +1116,6 @@ async function pollGameState(){
       betStreetMap=betD.street?Object.fromEntries(Object.entries(betD.street).map(([k,v])=>[decN(k),v])):{};
     }
     renderCommunityCards();
-    renderHandStrength();
     renderStatusRow();
     renderOtherPlayers();
     const annEl=document.getElementById('p-ann');
@@ -1125,6 +1124,7 @@ async function pollGameState(){
       _knownPhase=phD;_knownBetOn=betOn;
       await renderPlayerPhase(phD,winnerD);
     }
+    renderHandStrength();
   }finally{_pollRunning=false;}
 }
 
@@ -1200,7 +1200,6 @@ async function renderPlayerPhase(ph,winner){
       const hD=await fb('GET',`/poker2/hands/${encN(myName)}`);
       if(hD&&Array.isArray(hD))holeEl.innerHTML=hD.map(c=>cardHTML(c)).join('');
       holeCards=hD||[];
-      renderHandStrength();
     }
     if(myFolded||myChips===0){
       actionEl.innerHTML='<div class="phase-card"><div style="font-size:2rem">👻</div><div style="opacity:.6;margin-top:8px">'+
