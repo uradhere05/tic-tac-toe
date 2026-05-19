@@ -806,9 +806,10 @@ async function processAction(playerName,action){
     chipsMap[playerName]=(chipsMap[playerName]||0)-toAdd;
     betStreetMap[playerName]=(betStreetMap[playerName]||0)+toAdd;
     pot+=toAdd;
-    const increment=raiseTotal-currentBet;
-    if(increment>=betLastRaise)betLastRaise=increment;
-    currentBet=raiseTotal;
+    const raiseIncrement=raiseTotal-currentBet;
+    if(raiseIncrement>=betLastRaise)betLastRaise=raiseIncrement;
+    // use actual street total as currentBet — handles all-in sub-raises where toAdd < owe
+    currentBet=betStreetMap[playerName];
     if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
     await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
     await fb('PUT','/poker2/pot',pot);
@@ -919,7 +920,7 @@ async function hostShowdown(){
     const hole=handsD[encN(n)]||[];
     showdownObj[encN(n)]=hole;
     if(hole.length===2&&board.length>=3){
-      scores[n]=bestOf7([...hole,...board]);
+      scores[n]=bestOfN([...hole,...board]);
     } else {
       scores[n]=-1;
     }
@@ -1133,7 +1134,7 @@ async function confirmSeats(){
 }
 
 /* ─── Player ─── */
-let _knownPhase='',_knownBetOn='';
+let _knownPhase='',_knownBetOn='',_lastRenderPhase='';
 
 function startPlayerPolling(){
   stopIvs();
@@ -1245,10 +1246,10 @@ function renderOtherPlayers(){
   const players=Object.keys(chipsMap).filter(n=>n!==myName);
   el.innerHTML=players.map(n=>{
     const folded=foldedMap[n];
-    const isMe=n===myName;
-    return`<div class="pl-row${folded?' pl-folded':''}${isMe?' pl-me':''}">
-      <span>${getAvatar(n)} ${escHtml(n)}${n===betOn?' ⏳':''}</span>
-      <span class="pl-chips">${fmtChips(chipsMap[n]||0)}</span>
+    const allin=allInMap[n];
+    return`<div class="pl-row${folded?' pl-folded':''}">
+      <span>${getAvatar(n)} ${escHtml(n)}${n===betOn?' ⏳':''}${allin?' 🔴':''}</span>
+      <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
     </div>`;
   }).join('');
 }
@@ -1261,13 +1262,16 @@ async function renderPlayerPhase(ph,winner){
   const isMyTurn=betOn===myName&&!myFolded;
   const actionEl=document.getElementById('p-action');
   const holeEl=document.getElementById('p-hole');
+  const prevPhase=_lastRenderPhase;
+  _lastRenderPhase=ph;
 
   if(ph==='lobby'||ph==='reset'){
     actionEl.innerHTML='<div style="opacity:.4;font-size:.82rem;text-align:center;padding:16px">Waiting for dealer to start…</div>';
     return;
   }
   if(ph==='preflop'||ph==='flop'||ph==='turn'||ph==='river'){
-    if(ph==='preflop'&&holeEl&&holeEl.innerHTML){holeEl.innerHTML='';holeCards=[];const hs=document.getElementById('p-hand-strength');if(hs)hs.textContent='';}
+    // only clear hole cards on transition INTO preflop, not on every betOn change
+    if(ph==='preflop'&&prevPhase!=='preflop'&&holeEl){holeEl.innerHTML='';holeCards=[];const hs=document.getElementById('p-hand-strength');if(hs)hs.textContent='';}
     if(holeEl&&!holeEl.innerHTML){
       const hD=await fb('GET',`/poker2/hands/${encN(myName)}`);
       if(hD&&Array.isArray(hD))holeEl.innerHTML=hD.map(c=>cardHTML(c)).join('');
@@ -1290,12 +1294,12 @@ async function renderPlayerPhase(ph,winner){
     if(holeEl&&sdD.length)holeEl.innerHTML=sdD.map(c=>cardHTML(c)).join('');
     const showCards=sdD.length===2?sdD:holeCards;
     const myScore=showCards.length===2&&communityCards.filter(Boolean).length>=3
-      ?bestOf7([...showCards,...communityCards.filter(Boolean)]):-1;
-    const isWinner=winner&&winner.includes(myName);
+      ?bestOfN([...showCards,...communityCards.filter(Boolean)]):-1;
+    const isWinner=winner&&winner.split(' & ').includes(myName);
     actionEl.innerHTML=`<div class="phase-card" style="border-color:${isWinner?'rgba(255,210,0,.5)':'rgba(76,175,80,.3)'}">
       <div style="font-size:2.2rem">${isWinner?'🏆':'💸'}</div>
       <div style="font-weight:900;font-size:1.1rem;margin:6px 0">${isWinner?'You Win!':'Better luck next time'}</div>
-      ${myScore>0?`<div style="font-size:.75rem;opacity:.6">${handName(myScore)}</div>`:''}
+      ${myScore>=0?`<div style="font-size:.75rem;opacity:.6">${handName(myScore)}</div>`:''}
       <div style="font-size:.78rem;opacity:.5;margin-top:6px">Waiting for dealer to start next hand…</div>
     </div>`;
     if(myChips===0){
