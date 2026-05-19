@@ -699,13 +699,15 @@ function renderDealerConsole(ph){
     prows.innerHTML+=`<div class="pr-row${folded?' is-folded':''}${isActing?' pr-acting':''}">
       <span class="pdot ${isOnline(name)?'pdot-on':'pdot-off'}" id="pdot-${enc}"></span>
       <span class="pr-av">${getAvatar(name)}</span>
-      <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
+      <span class="pr-name-col">
+        <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
+        <button class="btn-stand-player" onclick="dealerStandPlayer('${enc}')" title="Ask player to stand">⬆ Stand</button>
+      </span>
       <span class="pr-stack">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
       ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`:''}
       <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?cardHTML(null,true)+cardHTML(null,true):''}</span>
-      <button class="btn-stand-player" onclick="dealerStandPlayer('${enc}')" title="Ask player to stand">⬆ Stand</button>
     </div>`;
   });
 
