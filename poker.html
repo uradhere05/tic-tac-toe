@@ -279,12 +279,14 @@ body {
   border-radius: 12px;
   padding: 12px 14px;
   color: #e8f0e0;
-  font-size: 16px;
+  font-size: 16px; /* 16px prevents iOS auto-zoom */
   resize: vertical;
   min-height: 58px;
   outline: none;
   margin-bottom: 10px;
   font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .ann-area:focus { border-color: rgba(46,204,113,0.5); }
 
@@ -399,11 +401,13 @@ body {
   border-radius: 50px;
   padding: 10px 16px;
   color: #e8f0e0;
-  font-size: 0.9rem;
+  font-size: 16px; /* 16px prevents iOS auto-zoom */
   font-weight: 700;
   outline: none;
   min-height: 44px;
   font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .raise-input:focus { border-color: rgba(46,204,113,0.5); }
 .raise-input::placeholder { opacity: 0.4; }
@@ -645,6 +649,81 @@ body {
 }
 .hole-area { cursor:pointer; }
 .hole-area:active { opacity:0.8; }
+
+/* ── Mobile optimizations ── */
+@media (max-width: 430px) {
+  /* Tighter screen padding */
+  .screen {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Smaller cards so 5 community cards fit without scrolling */
+  .card-img     { height: 76px; }
+  .card-empty   { width: 52px; height: 76px; }
+  .card-img-sm  { height: 38px; }
+  .pr-cards .card-img-sm { height: 34px; }
+
+  /* Cards row: center + allow horizontal scroll as fallback */
+  .cards-row {
+    justify-content: center;
+    padding-bottom: 2px;
+  }
+
+  /* Action buttons: bigger tap targets, stacked on very small */
+  .action-row { gap: 6px; }
+  .action-row .btn { font-size: 0.78rem; padding: 12px 10px; }
+  .raise-row { gap: 6px; }
+
+  /* Status row: reduce padding so 4 cells fit */
+  .status-cell { padding: 8px 4px; }
+  .status-cell .sc-val { font-size: 0.88rem; }
+  .status-cell .sc-lbl { font-size: 0.48rem; }
+
+  /* Dealer player rows: wrap cards to second line on tiny screens */
+  .pr-name  { min-width: 60px; font-size: 0.8rem; }
+  .pr-stack { min-width: 44px; font-size: 0.72rem; }
+  .pr-bet   { min-width: 34px; font-size: 0.68rem; }
+  .pr-status { min-width: 44px; font-size: 0.5rem; }
+
+  /* Dealer console: remove side padding constraints */
+  .console-hdr, .community-area, .player-rows,
+  .ann-area, .ctrl-row, .hall-panel, .divider { max-width: 100%; }
+  .console-hdr-cell .chc-val { font-size: 0.9rem; }
+
+  /* Phase card: less padding */
+  .phase-card { padding: 22px 16px; }
+  .phase-icon { font-size: 3rem; }
+
+  /* Confirm modal: full-width friendly */
+  #confirm-modal .cm-box { padding: 22px 18px; }
+
+  /* Seat rows: tighter */
+  .seat-row { padding: 10px 12px; min-height: 52px; }
+}
+
+@media (max-width: 360px) {
+  /* Very small phones (SE, Galaxy A series) */
+  .card-img    { height: 64px; }
+  .card-empty  { width: 44px; height: 64px; }
+  .card-img-sm { height: 32px; }
+
+  .status-row { gap: 4px; }
+  .status-cell .sc-val { font-size: 0.78rem; }
+
+  .action-row .btn { font-size: 0.72rem; letter-spacing: 1px; }
+  .btn-sm { padding: 8px 10px; font-size: 0.68rem; }
+}
+
+/* Landscape mobile: keep card sizes manageable */
+@media (max-height: 500px) and (orientation: landscape) {
+  .screen { padding-top: max(8px, env(safe-area-inset-top)); }
+  .card-img   { height: 58px; }
+  .card-empty { width: 40px; height: 58px; }
+  .phase-card { padding: 14px 16px; }
+  .phase-icon { font-size: 2rem; margin-bottom: 6px; }
+  .hole-area  { padding: 10px; }
+}
 </style>
 </head>
 <body>
