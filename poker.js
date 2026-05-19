@@ -351,17 +351,18 @@ async function lobbyTick(){
   if(!document.getElementById('s-lobby').classList.contains('active'))return;
   if(_lobbyRunning)return;_lobbyRunning=true;
   try{
-    const[lobbyD,hostD,phaseD,chipsD]=await Promise.all([
+    const[lobbyD,hostD,phaseD,chipsD,standingD]=await Promise.all([
       fb('GET','/poker2/lobby'),fb('GET','/poker2/host'),
       fb('GET','/poker2/phase'),fb('GET','/poker2/chips'),
+      fb('GET',`/poker2/standing/${encN(myName)}`),
     ]);
     if(!document.getElementById('s-lobby').classList.contains('active'))return;
     if(phaseD&&phaseD!=='lobby'&&phaseD!=='reset'){
       isHost=hostD===myName;hostName=hostD||'';
       if(isHost){stopIvs();await reloadDealerState();reconnectDealer(phaseD);return;}
-      // Only redirect to player view if already in the game (has chips)
+      // Only redirect to player view if in the game (has chips) AND not stood up
       const myChips=chipsD&&chipsD[encN(myName)]!=null;
-      if(myChips){stopIvs();show('s-player');startPlayerPolling();return;}
+      if(myChips&&!standingD){stopIvs();show('s-player');startPlayerPolling();return;}
       // No chips yet = new player waiting for next hand — stay in lobby
       if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
       hostName=hostD||'';
