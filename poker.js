@@ -299,6 +299,19 @@ function bestOf7(cards7){
   }
   return best;
 }
+function bestOfN(cards){
+  const n=cards.length;
+  if(n<5)return -1;
+  if(n===5)return evalHand5(cards);
+  let best=-1;
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    const five=cards.filter((_,k)=>k!==i&&k!==j);
+    if(five.length!==5)continue;
+    const s=evalHand5(five);
+    if(s>best)best=s;
+  }
+  return best;
+}
 
 const HAND_NAMES=['High Card','One Pair','Two Pair','Three of a Kind','Straight','Flush','Full House','Four of a Kind','Straight Flush'];
 function handName(score){return HAND_NAMES[score>>20]||'High Card';}
@@ -1120,8 +1133,8 @@ function renderHandStrength(){
     const ranks=holeCards.map(c=>c.r).sort((a,b)=>b-a);
     el.textContent=ranks[0]===ranks[1]?`Pair of ${RANKS[ranks[0]]}s`:`${RANKS[ranks[0]]}-${RANKS[ranks[1]]} High`;
   } else {
-    const score=bestOf7([...holeCards,...board]);
-    el.textContent=handName(score);
+    const score=bestOfN([...holeCards,...board]);
+    el.textContent=score>=0?handName(score):'';
   }
 }
 
