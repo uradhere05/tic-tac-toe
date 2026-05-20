@@ -1388,7 +1388,7 @@ function renderActionButtons(toCall,myChips){
         <button class="btn btn-gold btn-sm" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
       </div>
       <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
-        min ${isBet?'bet':'raise'}: ${fmtChips(minRaise)} · all-in: ${fmtChips(myChips)}
+        min ${isBet?'bet':'raise'}: ${fmtChips(minRaise)} · all-in: ${fmtChips(myMaxBet)}
       </div>`;
 }
 
