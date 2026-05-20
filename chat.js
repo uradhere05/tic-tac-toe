@@ -12,7 +12,7 @@
   // ── inject CSS ─────────────────────────────────────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
-    html, body { overflow-x: hidden; max-width: 100%; }
+    body { overflow-x: hidden; max-width: 100vw; }
     #ac-bubble { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
     #ac-toggle { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,#f7971e,#ffd200); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 4px 18px rgba(255,140,0,.45); -webkit-tap-highlight-color:transparent; transition:transform 150ms,box-shadow 150ms; position:relative; }
     #ac-toggle:active { transform:scale(.92); }
