@@ -228,7 +228,7 @@
       transition: transform 300ms var(--ease-expo), border-color 300ms ease, box-shadow 300ms ease;
       -webkit-tap-highlight-color: transparent; will-change: transform;
     }
-    .room-card-mafia::before { content: '🩸'; position: absolute; top: -6px; right: 8px; font-size: 1.8rem; opacity: 0.07; pointer-events: none; transform: rotate(20deg); }
+    .room-card-mafia::before { content: ''; }
     .mafia-icons { font-size: 0.75rem; letter-spacing: 5px; opacity: 0.45; margin-top: 6px; white-space: nowrap; text-shadow: 0 0 8px rgba(200,0,0,0.35); }
     .room-card-mafia::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(180,0,0,0.12) 0%, transparent 70%); opacity: 0; transition: opacity 300ms ease; pointer-events: none; }
     .room-card-mafia:hover { border-color: rgba(220,30,30,0.65); box-shadow: 0 0 0 1px rgba(200,0,0,0.28), 0 10px 48px rgba(160,0,0,0.28), inset 0 1px 0 rgba(220,50,50,0.16); }
@@ -569,7 +569,7 @@
       <div class="mafia-title">🔪 Filo Mafia</div>
       <div class="mafia-sub">Mafia</div>
       <div class="mafia-rl" id="rp-8">Room Open</div>
-      <div class="mafia-icons">🔪  👁  🩺  👥</div>
+      <div class="mafia-icons">🩸  👁  🩺  👥</div>
     </div>
     <div class="room-card coming-soon">
       <div class="coming-soon-badge">Coming Soon</div>
@@ -677,7 +677,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.14</div>
+  <div class="app-version">v4.15</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
