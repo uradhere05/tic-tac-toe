@@ -677,7 +677,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.8</div>
+  <div class="app-version">v4.9</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1481,8 +1481,8 @@
   let _chatOpen = false;
   window._chatOpen = false;
   let _chatUnread = 0;
-  let _chatLastCount = 0;
-  let _chatBaseline = false;
+  // Persist last-seen count so reloads don't re-badge already-seen messages
+  let _chatLastCount = parseInt(localStorage.getItem('chatSeenCount') || '0');
 
   function toggleChat() {
     _chatOpen = !_chatOpen;
@@ -1495,6 +1495,8 @@
       _chatUnread = 0;
       const badge = document.getElementById('chat-badge');
       badge.style.display = 'none';
+      // Save current count so next reload knows where we left off
+      localStorage.setItem('chatSeenCount', String(_chatLastCount));
       const log = document.getElementById('chat-log');
       log.scrollTop = log.scrollHeight;
       document.getElementById('chat-input').focus();
@@ -1506,8 +1508,7 @@
   }
 
   function _updateChatBadge(newCount) {
-    if (_chatOpen) { _chatLastCount = newCount; return; }
-    if (!_chatBaseline) { _chatLastCount = newCount; _chatBaseline = true; return; }
+    if (_chatOpen) { _chatLastCount = newCount; localStorage.setItem('chatSeenCount', String(newCount)); return; }
     const added = newCount - _chatLastCount;
     if (added > 0) {
       _chatUnread += added;
