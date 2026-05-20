@@ -130,7 +130,8 @@ async function loadPokerHall(){
       <span class="hall-tr-amt ${netCls(t.net)}">${fmtNet(t.net)}</span>
     </div>`;
   });
-  html+='<details class="hall-history-details"><summary class="hall-sub-hdr hall-history-toggle" style="margin-top:14px">Session History <span class="hall-history-caret">▾</span></summary><div class="hall-history-body">';
+  html+='<div class="hall-sub-hdr hall-history-toggle" style="margin-top:14px;cursor:pointer;user-select:none;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.hall-history-caret\').style.transform=this.nextElementSibling.style.display===\'none\'?\'\':\' rotate(180deg)\' ">Session History <span class="hall-history-caret" style="font-size:0.7rem;opacity:0.5;display:inline-block;transition:transform 150ms;">▾</span></div>';
+  html+='<div class="hall-history-body" style="display:none">';
   for(const s of sessions){
     const d=new Date(s.date+'T12:00:00');
     const dateStr=d.toLocaleDateString('en-AU',{month:'short',day:'numeric'});
@@ -147,7 +148,7 @@ async function loadPokerHall(){
     });
     html+='</div>';
   }
-  html+='</div></details>';
+  html+='</div>';
   bodies.forEach(el=>el.innerHTML=html);
 }
 
