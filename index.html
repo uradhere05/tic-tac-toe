@@ -405,20 +405,26 @@
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ── Chat ── */
-    .chat-section { width: 100%; margin-top: 16px; background: rgba(8,4,24,0.48); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 16px; }
-    .chat-lbl { font-size:.65rem; letter-spacing:3px; text-transform:uppercase; opacity:.32; text-align:center; margin-bottom:12px; }
-    #chat-log { text-align:left; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.065); border-radius:14px; height:190px; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:5px; margin-bottom:10px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.1) transparent; }
+    /* ── Floating Chat Bubble ── */
+    #chat-bubble { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+    #chat-toggle { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--orange),var(--gold)); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 4px 18px rgba(255,140,0,.45); -webkit-tap-highlight-color:transparent; transition:transform 150ms, box-shadow 150ms; position:relative; }
+    #chat-toggle:active { transform:scale(.92); }
+    #chat-toggle.open { background:linear-gradient(135deg,#4a3080,#6a40c0); box-shadow:0 4px 18px rgba(100,60,200,.45); }
+    #chat-badge { position:absolute; top:-2px; right:-2px; background:#ff4444; color:#fff; border-radius:50%; width:18px; height:18px; font-size:.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; display:none; }
+    #chat-panel { width:min(320px, calc(100vw - 40px)); background:rgba(8,4,24,0.92); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid rgba(255,255,255,0.10); border-radius:20px; padding:14px; display:none; flex-direction:column; gap:10px; box-shadow:0 8px 32px rgba(0,0,0,.6); }
+    #chat-panel.open { display:flex; }
+    .chat-lbl { font-size:.6rem; letter-spacing:3px; text-transform:uppercase; opacity:.32; text-align:center; }
+    #chat-log { text-align:left; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.065); border-radius:14px; height:200px; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:5px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.1) transparent; }
     .chat-msg { font-size:.8rem; line-height:1.4; word-break:break-word; text-align:left; }
     .chat-msg .cm-name { font-weight:700; color:var(--gold); margin-right:4px; }
     .chat-msg.cm-mine .cm-name { color:var(--orange); }
     .cm-time { font-size:.62rem; opacity:.28; margin-left:6px; white-space:nowrap; }
     .chat-empty { font-size:.72rem; opacity:.22; text-align:center; letter-spacing:1px; padding:12px 0; margin:auto; }
     .chat-input-row { display:flex; gap:8px; width:100%; }
-    .chat-input-row input { flex:1; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.11); border-radius:30px; padding:11px 16px; color:#fff; font-size:1rem; outline:none; font-family:inherit; -webkit-tap-highlight-color:transparent; -webkit-appearance:none; appearance:none; min-height:44px; }
+    .chat-input-row input { flex:1; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.11); border-radius:30px; padding:9px 14px; color:#fff; font-size:.95rem; outline:none; font-family:inherit; -webkit-tap-highlight-color:transparent; -webkit-appearance:none; appearance:none; min-height:40px; }
     .chat-input-row input::placeholder { opacity:.28; }
     .chat-input-row input:focus { border-color:rgba(255,210,0,.4); box-shadow: 0 0 0 3px rgba(255,210,0,0.07); }
-    .chat-send { background:linear-gradient(90deg,var(--orange),var(--gold)); color:#1a1a2e; border:none; border-radius:30px; padding:0 20px; min-height:44px; font-size:.9rem; font-weight:700; cursor:pointer; letter-spacing:1px; -webkit-tap-highlight-color:transparent; white-space:nowrap; transition: opacity 150ms; }
+    .chat-send { background:linear-gradient(90deg,var(--orange),var(--gold)); color:#1a1a2e; border:none; border-radius:30px; padding:0 16px; min-height:40px; font-size:.85rem; font-weight:700; cursor:pointer; letter-spacing:1px; -webkit-tap-highlight-color:transparent; white-space:nowrap; transition: opacity 150ms; }
     .chat-send:active { opacity:.8; }
 
     footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.18; margin-top: 20px; }
@@ -433,12 +439,13 @@
       .rooms-grid { gap: 8px; }
       .room-card, .room-card-mafia, .room-card-poker { padding: 14px 8px; border-radius: 12px; }
       .room-card .rn, .mafia-num, .poker-num { font-size: 1.6rem; }
-      .lb-section, .online-section, .chat-section { border-radius: 14px; padding: 14px 12px; }
+      .lb-section, .online-section { border-radius: 14px; padding: 14px 12px; }
     }
     @supports not (backdrop-filter: blur(1px)) {
       .name-card, .room-card, .room-card-mafia, .room-card-poker,
-      .lb-section, .online-section, .chat-section, .code-box, .score-box, .player-badge {
-        background: rgba(8, 4, 28, 0.92) !important;
+      .lb-section, .online-section, .code-box, .score-box, .player-badge,
+      #chat-panel {
+        background: rgba(8, 4, 28, 0.96) !important;
       }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -451,6 +458,22 @@
 <canvas id="bg-canvas"></canvas>
 <div id="toast"></div>
 <button id="sound-btn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+
+<!-- ══ Floating Chat Bubble ══ -->
+<div id="chat-bubble">
+  <div id="chat-panel">
+    <div class="chat-lbl">💬 Arena Chat</div>
+    <div id="chat-log"><div class="chat-empty">No messages yet…</div></div>
+    <div class="chat-input-row">
+      <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" autocomplete="off" autocorrect="off" autocapitalize="sentences" inputmode="text" onkeydown="if(event.key==='Enter')sendChat()" />
+      <button class="chat-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+  <button id="chat-toggle" onclick="toggleChat()" title="Arena Chat">
+    💬
+    <span id="chat-badge"></span>
+  </button>
+</div>
 
 <!-- ══ NAME SELECTION ══ -->
 <div class="screen active" id="s-name">
@@ -564,14 +587,6 @@
     <div class="hall-month-idx" id="hall-month-idx">—</div>
     <div class="hall-body-idx" id="hall-body-idx"><div class="lb-empty">Loading…</div></div>
   </div>
-  <div class="chat-section">
-    <div class="chat-lbl">💬 Arena Chat</div>
-    <div id="chat-log"><div class="chat-empty">No messages yet…</div></div>
-    <div class="chat-input-row">
-      <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" autocomplete="off" autocorrect="off" autocapitalize="sentences" inputmode="text" onkeydown="if(event.key==='Enter')sendChat()" />
-      <button class="chat-send" onclick="sendChat()">Send</button>
-    </div>
-  </div>
 </div>
 
 <!-- ══ WAITING ══ -->
@@ -656,7 +671,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.95</div>
+  <div class="app-version">v3.96</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1418,7 +1433,7 @@
     try {
       const raw = await fetch(`${DB}/chat.json`).then(r => r.json()).catch(() => ({}));
       const msgs = Object.values(raw||{}).filter(Boolean).sort((a,b) => a.ts-b.ts).slice(-20);
-      if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No messages yet…</div>'; return; }
+      if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No messages yet…</div>'; _updateChatBadge(0); return; }
       el.innerHTML = msgs.map(m => {
         const mine = m.name === myName;
         const d = new Date(m.ts);
@@ -1428,7 +1443,8 @@
         const ampm = valid ? (d.getHours()<12?'AM':'PM') : '';
         return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}<span class="cm-time">${h12}:${mm} ${ampm}</span></div>`;
       }).join('');
-      el.scrollTop = el.scrollHeight;
+      _updateChatBadge(msgs.length);
+      if (_chatOpen) el.scrollTop = el.scrollHeight;
     } catch {}
   }
 
@@ -1455,6 +1471,38 @@
 
   function startChatPoll() { loadChat(); clearInterval(_chatIv); _chatIv = setInterval(loadChat, 2500); pruneChatOnce(); }
   function stopChatPoll()  { clearInterval(_chatIv); _chatIv = null; }
+
+  let _chatOpen = false;
+  let _chatUnread = 0;
+  let _chatLastCount = 0;
+
+  function toggleChat() {
+    _chatOpen = !_chatOpen;
+    const panel = document.getElementById('chat-panel');
+    const btn = document.getElementById('chat-toggle');
+    panel.classList.toggle('open', _chatOpen);
+    btn.classList.toggle('open', _chatOpen);
+    if (_chatOpen) {
+      _chatUnread = 0;
+      const badge = document.getElementById('chat-badge');
+      badge.style.display = 'none';
+      const log = document.getElementById('chat-log');
+      log.scrollTop = log.scrollHeight;
+      document.getElementById('chat-input').focus();
+    }
+  }
+
+  function _updateChatBadge(newCount) {
+    if (_chatOpen) { _chatLastCount = newCount; return; }
+    const added = newCount - _chatLastCount;
+    if (added > 0) {
+      _chatUnread += added;
+      const badge = document.getElementById('chat-badge');
+      badge.textContent = _chatUnread > 9 ? '9+' : _chatUnread;
+      badge.style.display = 'flex';
+    }
+    _chatLastCount = newCount;
+  }
 
   /* ── Sound ── */
   let _actx = null;
