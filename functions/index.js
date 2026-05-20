@@ -1,61 +1,47 @@
 const { onValueCreated } = require('firebase-functions/v2/database');
-const admin = require('firebase-admin');
+const admin   = require('firebase-admin');
+const webpush = require('web-push');
 
 admin.initializeApp();
 
-// Fires when any new message is written to /chat
+const VAPID_PUBLIC  = 'BDkO2jrQb2hbZ8HiBJByJKeu8BSrT29cOUcI1svt3akFncLo0XGjpo3hJUJaFwDGZfhmmvhxWTeAHMASdk44qqk';
+const VAPID_PRIVATE = 'V0HY6trH9rKWAuGjFjbfLqB8SBbFOgo9ePH0mQ4kz6I';
+const VAPID_EMAIL   = 'mailto:uradhere05@gmail.com';
+
+webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
+
 exports.notifyChat = onValueCreated(
   { ref: '/chat/{msgId}', region: 'us-central1' },
   async (event) => {
     const msg = event.data.val();
     if (!msg || !msg.name || !msg.text) return;
 
-    // Fetch all registered push tokens
-    const tokensSnap = await admin.database().ref('/push_tokens').once('value');
-    if (!tokensSnap.exists()) return;
+    const subsSnap = await admin.database().ref('/push_subs').once('value');
+    if (!subsSnap.exists()) return;
 
-    const tokens = [];
-    tokensSnap.forEach((child) => {
-      const entry = child.val();
-      // Don't notify the sender
-      if (entry && entry.token && entry.name !== msg.name) {
-        tokens.push(entry.token);
-      }
+    const payload = JSON.stringify({
+      title: msg.name,
+      body:  msg.text.length > 100 ? msg.text.slice(0, 97) + '…' : msg.text
     });
 
-    if (!tokens.length) return;
+    const staleKeys = [];
 
-    // Fan-out push to all subscribers except the sender
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens,
-      notification: {
-        title: msg.name,
-        body: msg.text.length > 100 ? msg.text.slice(0, 97) + '…' : msg.text
-      },
-      webpush: {
-        notification: {
-          icon: 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com/icon-192.png',
-          badge: 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com/icon-192.png',
-          tag: 'arena-chat',
-          renotify: true,
-          vibrate: [200, 100, 200]
-        },
-        fcmOptions: { link: 'https://YOUR_DOMAIN/index.html' }
-      }
-    });
+    await Promise.all(
+      Object.entries(subsSnap.val() || {}).map(async ([key, entry]) => {
+        if (!entry || !entry.sub || entry.name === msg.name) return;
+        try {
+          const sub = JSON.parse(entry.sub);
+          await webpush.sendNotification(sub, payload);
+        } catch (e) {
+          // 410 Gone / 404 = expired subscription
+          if (e.statusCode === 410 || e.statusCode === 404) staleKeys.push(key);
+        }
+      })
+    );
 
-    // Prune tokens that returned errors (expired / unsubscribed)
-    const stale = [];
-    response.responses.forEach((r, i) => {
-      if (!r.success) stale.push(tokens[i]);
-    });
-
-    if (stale.length) {
-      const updates = {};
-      tokensSnap.forEach((child) => {
-        if (stale.includes(child.val()?.token)) updates[child.key] = null;
-      });
-      await admin.database().ref('/push_tokens').update(updates);
+    if (staleKeys.length) {
+      const updates = Object.fromEntries(staleKeys.map(k => [k, null]));
+      await admin.database().ref('/push_subs').update(updates);
     }
   }
 );

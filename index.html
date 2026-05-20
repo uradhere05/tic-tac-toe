@@ -677,7 +677,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.1</div>
+  <div class="app-version">v4.2</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1639,71 +1639,49 @@
   })();
 </script>
 
-<!-- ── Firebase App + Messaging (FCM) ── -->
-<!-- TODO: replace REPLACE_* values with your Firebase config -->
-<script type="module">
-  import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-  import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js';
-
-  const FIREBASE_CONFIG = {
-    apiKey:            'REPLACE_apiKey',
-    authDomain:        'REPLACE_authDomain',
-    databaseURL:       'https://filo-gang-tictactoe-default-rtdb.firebaseio.com',
-    projectId:         'REPLACE_projectId',
-    storageBucket:     'REPLACE_storageBucket',
-    messagingSenderId: 'REPLACE_messagingSenderId',
-    appId:             'REPLACE_appId'
-  };
-
-  // VAPID public key from Firebase Console → Project Settings → Cloud Messaging → Web push certificates
-  const VAPID_KEY = 'REPLACE_VAPID_PUBLIC_KEY';
-
+<!-- ── Web Push (native VAPID, no FCM SDK needed) ── -->
+<script>
+  const VAPID_PUBLIC_KEY = 'BDkO2jrQb2hbZ8HiBJByJKeu8BSrT29cOUcI1svt3akFncLo0XGjpo3hJUJaFwDGZfhmmvhxWTeAHMASdk44qqk';
   const DB_URL = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
 
-  // Don't init until config is filled in
-  if (!FIREBASE_CONFIG.apiKey.startsWith('REPLACE')) {
-    const app       = initializeApp(FIREBASE_CONFIG);
-    const messaging = getMessaging(app);
-
-    // Register service worker scope
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/firebase-messaging-sw.js')
-        .then(reg => console.log('[FCM] SW registered', reg.scope))
-        .catch(err => console.warn('[FCM] SW registration failed', err));
-    }
-
-    // Expose helper so the chat toggle can request permission
-    window._fcmInit = async (playerName) => {
-      if (!playerName) return;
-      try {
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') return;
-
-        const sw  = await navigator.serviceWorker.ready;
-        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
-        if (!token) return;
-
-        // Store token keyed by player name in Firebase
-        const key = encodeURIComponent(playerName);
-        await fetch(`${DB_URL}/push_tokens/${key}.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: playerName, token, ts: Date.now() })
-        });
-        console.log('[FCM] Token registered for', playerName);
-      } catch (e) {
-        console.warn('[FCM] Token registration failed', e);
-      }
-    };
-
-    // Foreground message handler — show a toast if chat panel is closed
-    onMessage(messaging, (payload) => {
-      const n = payload.notification || {};
-      if (!window._chatOpen) {
-        window.toast && window.toast(`${n.title}: ${n.body}`);
-      }
-    });
+  function _urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
   }
+
+  // Register service worker once on page load
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => { window._swReg = reg; console.log('[Push] SW registered'); })
+      .catch(err => console.warn('[Push] SW failed', err));
+  }
+
+  // Called when user first opens the chat panel
+  window._fcmInit = async (playerName) => {
+    if (!playerName || !('PushManager' in window)) return;
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+
+      const sw  = await navigator.serviceWorker.ready;
+      const sub = await sw.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+
+      const key = encodeURIComponent(playerName);
+      await fetch(`${DB_URL}/push_subs/${key}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: playerName, sub: JSON.stringify(sub), ts: Date.now() })
+      });
+      console.log('[Push] Subscribed:', playerName);
+    } catch (e) {
+      console.warn('[Push] Subscribe failed', e);
+    }
+  };
 </script>
 </body>
 </html>
