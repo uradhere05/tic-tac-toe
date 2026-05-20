@@ -677,7 +677,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.6</div>
+  <div class="app-version">v4.7</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1497,8 +1497,8 @@
       const log = document.getElementById('chat-log');
       log.scrollTop = log.scrollHeight;
       document.getElementById('chat-input').focus();
-      // Request push permission on first open (after name is chosen)
-      if (myName && window._fcmInit && Notification.permission === 'default') {
+      // Refresh push subscription every time chat opens (handles domain changes, stale subs)
+      if (myName && window._fcmInit && Notification.permission !== 'denied') {
         window._fcmInit(myName);
       }
     }
@@ -1658,18 +1658,24 @@
       .catch(err => console.warn('[Push] SW failed', err));
   }
 
-  // Called when user first opens the chat panel
+  // Registers/refreshes push subscription in Firebase. Safe to call repeatedly.
   window._fcmInit = async (playerName) => {
     if (!playerName || !('PushManager' in window)) return;
     try {
-      const perm = await Notification.requestPermission();
+      // Only prompt if not yet decided; otherwise honour existing permission silently
+      let perm = Notification.permission;
+      if (perm === 'default') perm = await Notification.requestPermission();
       if (perm !== 'granted') return;
 
-      const sw  = await navigator.serviceWorker.ready;
-      const sub = await sw.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
+      const sw = await navigator.serviceWorker.ready;
+      // Reuse existing subscription if present; create new one if not
+      let sub = await sw.pushManager.getSubscription();
+      if (!sub) {
+        sub = await sw.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
 
       const key = encodeURIComponent(playerName);
       await fetch(`${DB_URL}/push_subs/${key}.json`, {
@@ -1677,7 +1683,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: playerName, sub: JSON.stringify(sub), ts: Date.now() })
       });
-      console.log('[Push] Subscribed:', playerName);
+      console.log('[Push] Subscription refreshed:', playerName);
     } catch (e) {
       console.warn('[Push] Subscribe failed', e);
     }

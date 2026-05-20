@@ -26,14 +26,18 @@ exports.notifyChat = onValueCreated(
 
     const staleKeys = [];
 
+    console.log(`[notifyChat] sender="${msg.name}" subs=${JSON.stringify(Object.keys(subsSnap.val() || {}))}`);
+
     await Promise.all(
       Object.entries(subsSnap.val() || {}).map(async ([key, entry]) => {
-        if (!entry || !entry.sub || entry.name === msg.name) return;
+        if (!entry || !entry.sub) { console.log(`[notifyChat] skip ${key}: no entry/sub`); return; }
+        if (entry.name === msg.name) { console.log(`[notifyChat] skip ${key}: is sender`); return; }
+        console.log(`[notifyChat] sending to ${key} (entry.name="${entry.name}")`);
         try {
           const sub = JSON.parse(entry.sub);
           await webpush.sendNotification(sub, payload);
         } catch (e) {
-          // 410 Gone / 404 = expired subscription
+          console.log(`[notifyChat] push failed for ${key}: ${e.statusCode}`);
           if (e.statusCode === 410 || e.statusCode === 404) staleKeys.push(key);
         }
       })
