@@ -1,0 +1,13 @@
+{
+  "name": "FILO Gang Arena",
+  "short_name": "FILO Arena",
+  "description": "Games for the ADHD in you.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#08041c",
+  "theme_color": "#ffd200",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
