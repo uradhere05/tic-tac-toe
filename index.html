@@ -641,7 +641,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.19</div>
+  <div class="app-version">v4.20</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -769,7 +769,8 @@
         <span class="hall-tr-amt-idx ${netCls(t.net)}">${fmtNet(t.net)}</span>
       </div>`;
     });
-    html += '<div class="hall-sub-hdr-idx" style="margin-top:14px">Session History</div>';
+    html += '<div class="hall-sub-hdr-idx" style="margin-top:14px;cursor:pointer;user-select:none;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.hall-history-caret\').style.transform=this.nextElementSibling.style.display===\'none\'?\'\':\' rotate(180deg)\'">Session History <span class="hall-history-caret" style="font-size:0.7rem;opacity:0.5;display:inline-block;transition:transform 150ms;">▾</span></div>';
+    html += '<div style="display:none">';
     for (const s of sessions) {
       const d = new Date(s.date + 'T12:00:00');
       const dateStr = d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
@@ -786,6 +787,7 @@
       });
       html += '</div>';
     }
+    html += '</div>';
     body.innerHTML = html;
   }
 
