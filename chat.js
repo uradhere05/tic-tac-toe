@@ -177,6 +177,18 @@
   document.getElementById('ac-send').addEventListener('click', sendChat);
   document.getElementById('ac-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
+  // Close chat when clicking outside the bubble
+  document.addEventListener('click', e => {
+    if (!open) return;
+    const bubble = document.getElementById('ac-bubble');
+    if (bubble && !bubble.contains(e.target)) {
+      open = false;
+      document.getElementById('ac-panel').classList.remove('open');
+      document.getElementById('ac-toggle').classList.remove('open');
+      localStorage.setItem('chatSeenTs', String(lastTs));
+    }
+  }, true);
+
   // ── start ──────────────────────────────────────────────────────────────────
   loadChat();
   pollIv = setInterval(loadChat, 2500);
