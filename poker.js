@@ -673,6 +673,7 @@ function renderDealerConsole(ph){
     if(isActing){statusCls='s-acting';statusTxt='acting…';}
     else if(folded){statusCls='s-folded';statusTxt='folded';}
     else if(allin){statusCls='s-allin';statusTxt='all-in';}
+    else if(!betOn){statusCls='s-acted';statusTxt='✓';}
 
     const enc=encN(name);
     prows.innerHTML+=`<div class="pr-row${folded?' is-folded':''}${isActing?' pr-acting':''}">
