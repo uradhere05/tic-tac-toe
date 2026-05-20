@@ -884,6 +884,8 @@ async function autoWin(winner){
 async function newBettingStreet(ph,startIdx){
   betStreetMap={};currentBet=0;betLastRaise=currentBB;
   betQueue=buildQueue(playersInHand,startIdx);
+  // if ≤1 player can act, all others are all-in — skip betting, run the board
+  if(betQueue.length<=1)betQueue=[];
   betOn=betQueue[0]||'';
   await Promise.all([
     fb('PUT','/poker2/bet',{
