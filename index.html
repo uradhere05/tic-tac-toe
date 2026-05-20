@@ -411,27 +411,7 @@
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ── Floating Chat Bubble ── */
-    #chat-bubble { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
-    #chat-toggle { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--orange),var(--gold)); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 4px 18px rgba(255,140,0,.45); -webkit-tap-highlight-color:transparent; transition:transform 150ms, box-shadow 150ms; position:relative; }
-    #chat-toggle:active { transform:scale(.92); }
-    #chat-toggle.open { background:linear-gradient(135deg,#4a3080,#6a40c0); box-shadow:0 4px 18px rgba(100,60,200,.45); }
-    #chat-badge { position:absolute; top:-2px; right:-2px; background:#ff4444; color:#fff; border-radius:50%; width:18px; height:18px; font-size:.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; display:none; }
-    #chat-panel { width:min(320px, calc(100vw - 40px)); background:rgba(8,4,24,0.92); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid rgba(255,255,255,0.10); border-radius:20px; padding:14px; display:none; flex-direction:column; gap:10px; box-shadow:0 8px 32px rgba(0,0,0,.6); }
-    #chat-panel.open { display:flex; }
-    .chat-lbl { font-size:.6rem; letter-spacing:3px; text-transform:uppercase; opacity:.32; text-align:center; }
-    #chat-log { text-align:left; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.065); border-radius:14px; height:200px; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:5px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.1) transparent; }
-    .chat-msg { font-size:.8rem; line-height:1.4; word-break:break-word; text-align:left; }
-    .chat-msg .cm-name { font-weight:700; color:var(--gold); margin-right:4px; }
-    .chat-msg.cm-mine .cm-name { color:var(--orange); }
-    .cm-time { font-size:.62rem; opacity:.28; margin-left:6px; white-space:nowrap; }
-    .chat-empty { font-size:.72rem; opacity:.22; text-align:center; letter-spacing:1px; padding:12px 0; margin:auto; }
-    .chat-input-row { display:flex; gap:8px; width:100%; }
-    .chat-input-row input { flex:1; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.11); border-radius:30px; padding:9px 14px; color:#fff; font-size:.95rem; outline:none; font-family:inherit; -webkit-tap-highlight-color:transparent; -webkit-appearance:none; appearance:none; min-height:40px; }
-    .chat-input-row input::placeholder { opacity:.28; }
-    .chat-input-row input:focus { border-color:rgba(255,210,0,.4); box-shadow: 0 0 0 3px rgba(255,210,0,0.07); }
-    .chat-send { background:linear-gradient(90deg,var(--orange),var(--gold)); color:#1a1a2e; border:none; border-radius:30px; padding:0 16px; min-height:40px; font-size:.85rem; font-weight:700; cursor:pointer; letter-spacing:1px; -webkit-tap-highlight-color:transparent; white-space:nowrap; transition: opacity 150ms; }
-    .chat-send:active { opacity:.8; }
+
 
     footer { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.18; margin-top: 20px; }
 
@@ -449,8 +429,7 @@
     }
     @supports not (backdrop-filter: blur(1px)) {
       .name-card, .room-card, .room-card-mafia, .room-card-poker,
-      .lb-section, .online-section, .code-box, .score-box, .player-badge,
-      #chat-panel {
+      .lb-section, .online-section, .code-box, .score-box, .player-badge {
         background: rgba(8, 4, 28, 0.96) !important;
       }
     }
@@ -465,21 +444,6 @@
 <div id="toast"></div>
 <button id="sound-btn" onclick="toggleSound()" title="Toggle sound">🔊</button>
 
-<!-- ══ Floating Chat Bubble ══ -->
-<div id="chat-bubble">
-  <div id="chat-panel">
-    <div class="chat-lbl">💬 Arena Chat</div>
-    <div id="chat-log"><div class="chat-empty">No messages yet…</div></div>
-    <div class="chat-input-row">
-      <input id="chat-input" type="text" placeholder="Say something…" maxlength="120" autocomplete="off" autocorrect="off" autocapitalize="sentences" inputmode="text" onkeydown="if(event.key==='Enter')sendChat()" />
-      <button class="chat-send" onclick="sendChat()">Send</button>
-    </div>
-  </div>
-  <button id="chat-toggle" onclick="toggleChat()" title="Arena Chat">
-    💬
-    <span id="chat-badge"></span>
-  </button>
-</div>
 
 <!-- ══ NAME SELECTION ══ -->
 <div class="screen active" id="s-name">
@@ -677,7 +641,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.15</div>
+  <div class="app-version">v4.16</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -693,7 +657,6 @@
 
   /* ── State ── */
   let myName = '', opponentName = '';
-  let _chatIv = null;
   let peer = null, conn = null;
   let myPiece = null, currentRoom = null, myRole = null;
   let board = Array(9).fill(null), current = 'X', over = false;
@@ -1020,9 +983,8 @@
     stopPresencePoll();
     loadRoomPresence(); loadOnlineUsers();
     presenceInterval = setInterval(() => { loadRoomPresence(); loadOnlineUsers(); }, 2000);
-    startChatPoll();
   }
-  function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; stopChatPoll(); stopOnlinePoll(); }
+  function stopPresencePoll() { clearInterval(presenceInterval); presenceInterval = null; stopOnlinePoll(); }
 
   async function loadRoomPresence() {
     try {
@@ -1428,98 +1390,6 @@
   });
 
 
-  /* ── Chat ── */
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  async function loadChat() {
-    const el = document.getElementById('chat-log');
-    if (!el) return;
-    try {
-      const raw = await fetch(`${DB}/chat.json`).then(r => r.json()).catch(() => ({}));
-      const msgs = Object.values(raw||{}).filter(Boolean).sort((a,b) => a.ts-b.ts).slice(-20);
-      if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No messages yet…</div>'; _updateChatBadge([]); return; }
-      el.innerHTML = msgs.map(m => {
-        const mine = m.name === myName;
-        const d = new Date(m.ts);
-        const valid = !isNaN(d.getTime());
-        const h12 = valid ? (d.getHours()%12||12) : 12;
-        const mm = valid ? String(d.getMinutes()).padStart(2,'0') : '00';
-        const ampm = valid ? (d.getHours()<12?'AM':'PM') : '';
-        return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}<span class="cm-time">${h12}:${mm} ${ampm}</span></div>`;
-      }).join('');
-      _updateChatBadge(msgs);
-      if (_chatOpen) el.scrollTop = el.scrollHeight;
-    } catch {}
-  }
-
-  async function sendChat() {
-    const inp = document.getElementById('chat-input');
-    const text = (inp?.value||'').trim().slice(0, 300);
-    if (!text||!myName) { if (!myName) toast('Pick your name first!'); return; }
-    inp.value = '';
-    const ts = Date.now();
-    const key = `${ts}_${Math.random().toString(36).slice(2,7)}`;
-    await fetch(`${DB}/chat/${key}.json`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:myName,text,ts}) }).catch(()=>{});
-    loadChat();
-  }
-
-  function pruneChatOnce() {
-    fetch(`${DB}/chat.json`).then(r=>r.json()).then(async data => {
-      const cutoff = Date.now()-86400000;
-      const stale = Object.entries(data||{}).filter(([,v])=>v&&v.ts<cutoff).map(([k])=>k);
-      for (let i = 0; i < stale.length; i += 10) {
-        await Promise.all(stale.slice(i, i+10).map(k => fetch(`${DB}/chat/${k}.json`,{method:'DELETE'})));
-      }
-    }).catch(()=>{});
-  }
-
-  function startChatPoll() { loadChat(); clearInterval(_chatIv); _chatIv = setInterval(loadChat, 2500); pruneChatOnce(); }
-  function stopChatPoll()  { clearInterval(_chatIv); _chatIv = null; }
-
-  let _chatOpen = false;
-  window._chatOpen = false;
-  let _chatUnread = 0;
-  // Track newest seen message timestamp — immune to pruning unlike count-based tracking
-  let _chatLastTs = parseInt(localStorage.getItem('chatSeenTs') || '0');
-
-  function toggleChat() {
-    _chatOpen = !_chatOpen;
-    window._chatOpen = _chatOpen;
-    const panel = document.getElementById('chat-panel');
-    const btn = document.getElementById('chat-toggle');
-    panel.classList.toggle('open', _chatOpen);
-    btn.classList.toggle('open', _chatOpen);
-    if (_chatOpen) {
-      _chatUnread = 0;
-      const badge = document.getElementById('chat-badge');
-      badge.style.display = 'none';
-      localStorage.setItem('chatSeenTs', String(_chatLastTs));
-      const log = document.getElementById('chat-log');
-      log.scrollTop = log.scrollHeight;
-      document.getElementById('chat-input').focus();
-      // Refresh push subscription every time chat opens (handles domain changes, stale subs)
-      if (myName && window._fcmInit && Notification.permission !== 'denied') {
-        window._fcmInit(myName);
-      }
-    }
-  }
-
-  function _updateChatBadge(msgs) {
-    const latestTs = msgs.length ? msgs[msgs.length - 1].ts : 0;
-    if (_chatOpen) { _chatLastTs = latestTs; localStorage.setItem('chatSeenTs', String(latestTs)); return; }
-    const unseen = msgs.filter(m => m.ts > _chatLastTs).length;
-    if (unseen > 0) {
-      _chatUnread = unseen;
-      const badge = document.getElementById('chat-badge');
-      badge.textContent = _chatUnread > 9 ? '9+' : _chatUnread;
-      badge.style.display = 'flex';
-    } else if (!_chatUnread) {
-      document.getElementById('chat-badge').style.display = 'none';
-    }
-  }
-
   /* ── Sound ── */
   let _actx = null;
   let soundOn = localStorage.getItem('filoSound') !== 'off';
@@ -1643,55 +1513,6 @@
   })();
 </script>
 
-<!-- ── Web Push (native VAPID, no FCM SDK needed) ── -->
-<script>
-  const VAPID_PUBLIC_KEY = 'BDkO2jrQb2hbZ8HiBJByJKeu8BSrT29cOUcI1svt3akFncLo0XGjpo3hJUJaFwDGZfhmmvhxWTeAHMASdk44qqk';
-  const DB_URL = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
-
-  function _urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = atob(base64);
-    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-  }
-
-  // Register service worker once on page load
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => { window._swReg = reg; console.log('[Push] SW registered'); })
-      .catch(err => console.warn('[Push] SW failed', err));
-  }
-
-  // Registers/refreshes push subscription in Firebase. Safe to call repeatedly.
-  window._fcmInit = async (playerName) => {
-    if (!playerName || !('PushManager' in window)) return;
-    try {
-      // Only prompt if not yet decided; otherwise honour existing permission silently
-      let perm = Notification.permission;
-      if (perm === 'default') perm = await Notification.requestPermission();
-      if (perm !== 'granted') return;
-
-      const sw = await navigator.serviceWorker.ready;
-      // Reuse existing subscription if present; create new one if not
-      let sub = await sw.pushManager.getSubscription();
-      if (!sub) {
-        sub = await sw.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-      }
-
-      const key = encodeURIComponent(playerName);
-      await fetch(`${DB_URL}/push_subs/${key}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: playerName, sub: JSON.stringify(sub), ts: Date.now() })
-      });
-      console.log('[Push] Subscription refreshed:', playerName);
-    } catch (e) {
-      console.warn('[Push] Subscribe failed', e);
-    }
-  };
-</script>
+<script src="/chat.js"></script>
 </body>
 </html>
