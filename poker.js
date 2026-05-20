@@ -17,7 +17,7 @@ const STALE_MS=75000;
 /* ─── State ─── */
 let myName='',myAvatar='',isHost=false,hostName='';
 let phase='',round=0;
-let chipsMap={},foldedMap={},allInMap={},betStreetMap={},handContribMap={};
+let chipsMap={},foldedMap={},allInMap={},betStreetMap={},handContribMap={},startStackMap={};
 let pot=0,currentBet=0,betLastRaise=BB;
 let betQueue=[],betOn='',handStartTs=0;
 let holeCards=[],communityCards=[],communityFull=[];
@@ -568,6 +568,10 @@ async function hostStartHand(){
   const sbName=n===2?activePlayers[dealerPos]:activePlayers[sbIdx];
   const bbName=n===2?activePlayers[sbIdx]:activePlayers[bbIdx];
 
+  // Capture pre-blind stacks as the authoritative all-in cap for this street
+  const startStackObj={};
+  activePlayers.forEach(p=>{startStackObj[encN(p)]=chipsMap[p];});
+
   const sbPosted=Math.min(currentSB,chipsMap[sbName]);
   const bbPosted=Math.min(currentBB,chipsMap[bbName]);
   chipsMap[sbName]-=sbPosted;
@@ -616,6 +620,7 @@ async function hostStartHand(){
     fb('DELETE','/poker2/allIn'),
     fb('DELETE','/poker2/announcement'),
     fb('PUT','/poker2/contrib',Object.fromEntries(Object.entries(handContribMap).map(([k,v])=>[encN(k),v]))),
+    fb('PUT','/poker2/startStack',startStackObj),
   ]);
   // Write blind-post all-ins to Firebase now that the DELETE has cleared old state
   const blindAllIns=Object.entries(allInMap).filter(([,v])=>v).map(([k])=>k);
@@ -850,11 +855,15 @@ async function newBettingStreet(ph,startIdx){
   // if ≤1 player can act, all others are all-in — skip betting, run the board
   if(betQueue.length<=1)betQueue=[];
   betOn=betQueue[0]||'';
+  const streetStartStack=Object.fromEntries(
+    playersInHand.filter(n=>!allInMap[n]).map(p=>[encN(p),chipsMap[p]])
+  );
   await Promise.all([
     fb('PUT','/poker2/bet',{
       current:0,lastRaise:currentBB,on:betOn||null,queue:betQueue,street:{},
     }),
     fb('PUT','/poker2/phase',ph),
+    fb('PUT','/poker2/startStack',streetStartStack),
   ]);
 }
 
@@ -1007,6 +1016,7 @@ async function hostEndSession(){
     fb('DELETE','/poker2/host'),fb('DELETE','/poker2/hostTs'),fb('DELETE','/poker2/chips'),
     fb('DELETE','/poker2/rebuys'),fb('DELETE','/poker2/blindLevel'),fb('DELETE','/poker2/phase'),
     fb('DELETE','/poker2/standing'),fb('DELETE','/poker2/contrib'),
+    fb('DELETE','/poker2/startStack'),
   ]),3000);
   enterLobby();
 }
@@ -1186,13 +1196,14 @@ async function writePlayerPresence(){
 async function pollGameState(){
   if(_pollRunning)return;_pollRunning=true;
   try{
-    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD,standD]=await Promise.all([
+    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD,standD,ssD]=await Promise.all([
       fb('GET','/poker2/phase'),fb('GET','/poker2/pot'),
       fb('GET','/poker2/community'),fb('GET','/poker2/announcement'),
       fb('GET','/poker2/chips'),fb('GET','/poker2/bet'),
       fb('GET','/poker2/folded'),fb('GET','/poker2/allIn'),
       fb('GET','/poker2/winner'),fb('GET','/poker2/avatars'),
       fb('GET','/poker2/blindLevel'),fb('GET',`/poker2/standing/${encN(myName)}`),
+      fb('GET','/poker2/startStack'),
     ]);
     if(blD!=null){blindLevel=blD;currentSB=BLIND_LEVELS[blindLevel].sb;currentBB=BLIND_LEVELS[blindLevel].bb;}
     if(standD){
@@ -1210,6 +1221,8 @@ async function pollGameState(){
     }
     if(potD!=null)pot=potD;
     if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
+    if(ssD)Object.entries(ssD).forEach(([k,v])=>{startStackMap[decN(k)]=v;});
+    else startStackMap={};
     foldedMap=foldedD?Object.fromEntries(Object.entries(foldedD).map(([k,v])=>[decN(k),v])):{};
     allInMap=allInD?Object.fromEntries(Object.entries(allInD).map(([k,v])=>[decN(k),v])):{};
     if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
@@ -1261,7 +1274,7 @@ function renderCommunityCards(){
 function renderStatusRow(){
   const myChips=chipsMap[myName]||0;
   const myBet=betStreetMap[myName]||0;
-  const toCall=Math.max(0,currentBet-myBet);
+  const toCall=foldedMap[myName]?0:Math.max(0,currentBet-myBet);
   document.getElementById('p-mystack').textContent=fmtChips(myChips);
   document.getElementById('p-pot').textContent=fmtChips(pot);
   const sc=document.getElementById('p-stack-chips');
@@ -1280,7 +1293,7 @@ function renderOtherPlayers(){
   el.innerHTML=players.map(n=>{
     const folded=foldedMap[n];
     const allin=allInMap[n];
-    return`<div class="pl-row${folded?' pl-folded':''}">
+    return`<div class="pl-row${folded?' pl-folded':''}${n===betOn?' pl-acting':''}">
       <span>${escHtml(n)}${n===betOn?' ⏳':''}${allin?' 🔴':''}</span>
       <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
     </div>`;
@@ -1357,12 +1370,11 @@ async function renderPlayerPhase(ph,winner){
 function renderActionButtons(toCall,myChips){
   const canCheck=toCall===0;
   const isBet=currentBet===0;
-  const myMaxBet=(betStreetMap[myName]||0)+myChips;
+  const myMaxBet=startStackMap[myName]||(myChips+(betStreetMap[myName]||0));
   const minRaise=currentBet+betLastRaise;
   const actionEl=document.getElementById('p-action');
   actionEl.innerHTML=`
-    <div class="action-panel">
-      <div class="action-row">
+    <div class="action-row">
         <button class="btn btn-danger btn-sm" onclick="submitAction('fold',0)">Fold</button>
         ${canCheck
           ?`<button class="btn btn-primary btn-sm" onclick="submitAction('check',0)">Check</button>`
@@ -1377,8 +1389,7 @@ function renderActionButtons(toCall,myChips){
       </div>
       <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
         min ${isBet?'bet':'raise'}: ${fmtChips(minRaise)} · all-in: ${fmtChips(myChips)}
-      </div>
-    </div>`;
+      </div>`;
 }
 
 async function submitAction(type,amount){
@@ -1391,7 +1402,7 @@ async function submitAction(type,amount){
 async function submitRaise(){
   const input=document.getElementById('raise-amt');
   const raiseTotal=Math.round(+input.value*100/10)*10;
-  const myMaxBet=(betStreetMap[myName]||0)+(chipsMap[myName]||0);
+  const myMaxBet=startStackMap[myName]||((betStreetMap[myName]||0)+(chipsMap[myName]||0));
   const minRaise=currentBet+betLastRaise;
   if(raiseTotal<minRaise){toast(`Min ${currentBet===0?'bet':'raise'}: ${fmtChips(minRaise)}`);return;}
   if(raiseTotal>myMaxBet){toast(`Max: ${fmtChips(myMaxBet)}`);return;}
