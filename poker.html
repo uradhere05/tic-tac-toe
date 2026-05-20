@@ -617,6 +617,13 @@ body {
 .hall-sr-name   { flex:1; font-size:0.75rem; text-align:left; }
 .hall-sr-buyin  { font-size:0.6rem; opacity:0.38; font-variant-numeric:tabular-nums; }
 .hall-sr-amt    { font-size:0.77rem; font-weight:700; font-variant-numeric:tabular-nums; min-width:48px; text-align:right; }
+.hall-history-details { margin-top:4px; }
+.hall-history-details summary { list-style:none; cursor:pointer; user-select:none; }
+.hall-history-details summary::-webkit-details-marker { display:none; }
+.hall-history-toggle { display:flex; align-items:center; justify-content:space-between; }
+.hall-history-caret { font-size:0.7rem; opacity:0.5; transition:transform 150ms; }
+.hall-history-details[open] .hall-history-caret { transform:rotate(180deg); }
+.hall-history-body { margin-top:8px; }
 .chip-pos  { color:#2ecc71; }
 .chip-neg  { color:#e74c3c; }
 .chip-zero { opacity:0.4; }

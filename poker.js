@@ -130,7 +130,7 @@ async function loadPokerHall(){
       <span class="hall-tr-amt ${netCls(t.net)}">${fmtNet(t.net)}</span>
     </div>`;
   });
-  html+='<div class="hall-sub-hdr" style="margin-top:14px">Session History</div>';
+  html+='<details class="hall-history-details"><summary class="hall-sub-hdr hall-history-toggle" style="margin-top:14px">Session History <span class="hall-history-caret">▾</span></summary><div class="hall-history-body">';
   for(const s of sessions){
     const d=new Date(s.date+'T12:00:00');
     const dateStr=d.toLocaleDateString('en-AU',{month:'short',day:'numeric'});
@@ -147,6 +147,7 @@ async function loadPokerHall(){
     });
     html+='</div>';
   }
+  html+='</div></details>';
   bodies.forEach(el=>el.innerHTML=html);
 }
 
