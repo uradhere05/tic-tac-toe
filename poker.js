@@ -351,7 +351,7 @@ function renderLobbyUI(){
     `Lobby — ${players.length} player${players.length!==1?'s':''} · ${readyCount} ready`;
   document.getElementById('lb-players').innerHTML=players.length
     ?players.map(p=>`<div class="lp-row${p.ready?' is-ready':''}">
-        <span class="lp-name">${escHtml(p.name)}${p.name===hostName?' 🃏':''}</span>
+        <span class="lp-name">${escHtml(p.name)}</span>
         <span class="lp-chips">${chipsMap[p.name]!=null?fmtChips(chipsMap[p.name]):''}</span>
         ${p.ready?'<span style="font-size:.75rem">✅</span>':''}
       </div>`).join('')
