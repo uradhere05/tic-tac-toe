@@ -351,7 +351,6 @@ function renderLobbyUI(){
     `Lobby — ${players.length} player${players.length!==1?'s':''} · ${readyCount} ready`;
   document.getElementById('lb-players').innerHTML=players.length
     ?players.map(p=>`<div class="lp-row${p.ready?' is-ready':''}">
-        <span class="lp-av">${getAvatar(p.name)}</span>
         <span class="lp-name">${escHtml(p.name)}${p.name===hostName?' 🃏':''}</span>
         <span class="lp-chips">${chipsMap[p.name]!=null?fmtChips(chipsMap[p.name]):''}</span>
         ${p.ready?'<span style="font-size:.75rem">✅</span>':''}
@@ -1091,7 +1090,6 @@ function renderSeatList(){
          ondragend="seatDragEnd()">
       <span class="seat-handle">☰</span>
       <span class="seat-num">${i+1}</span>
-      <span class="seat-av">${getAvatar(name)}</span>
       <span class="seat-name">${escHtml(name)}</span>
     </div>`).join('');
   list.querySelectorAll('.seat-row').forEach((row,i)=>{
@@ -1176,7 +1174,7 @@ function startPlayerPolling(){
   const badge=document.getElementById('p-hole');
   if(badge)badge.innerHTML='';
   const nb=document.getElementById('p-name-badge');
-  if(nb)nb.textContent=`${getAvatar(myName)} ${myName}`;
+  if(nb)nb.textContent=myName;
   ivs.push(setInterval(pollGameState,1500));
   ivs.push(setInterval(writePlayerPresence,20000));
 }
@@ -1283,7 +1281,7 @@ function renderOtherPlayers(){
     const folded=foldedMap[n];
     const allin=allInMap[n];
     return`<div class="pl-row${folded?' pl-folded':''}">
-      <span>${getAvatar(n)} ${escHtml(n)}${n===betOn?' ⏳':''}${allin?' 🔴':''}</span>
+      <span>${escHtml(n)}${n===betOn?' ⏳':''}${allin?' 🔴':''}</span>
       <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
     </div>`;
   }).join('');
