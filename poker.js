@@ -529,6 +529,16 @@ function isOnline(name){
   return Date.now()-ts<40000;
 }
 
+function dealerCardHTML(cards){
+  let html=cards.map(c=>cardHTML(c,true)).join('');
+  const board=communityCards.filter(Boolean);
+  if(board.length>=3){
+    const score=bestOfN([...cards,...board]);
+    if(score>=0)html+=`<span class="pr-hand-strength">${handName(score)}</span>`;
+  }
+  return html;
+}
+
 function togglePlayerCards(enc){
   hiddenCards[enc]=!hiddenCards[enc];
   const el=document.getElementById(`pr-cards-${enc}`);
@@ -539,7 +549,7 @@ function togglePlayerCards(enc){
     if(btn)btn.textContent='👁';
   }else{
     const cards=dealerHandsCache[enc];
-    if(cards&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
+    if(cards&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
     if(btn)btn.textContent='🙈';
   }
 }
@@ -717,15 +727,14 @@ function renderDealerConsole(ph){
       Object.entries(handsD).forEach(([k,cards])=>{
         if(hiddenCards[k])return;
         const el=document.getElementById(`pr-cards-${k}`);
-        if(el&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('');
+        if(el&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
       });
     });
     fb('GET','/poker2/showdown').then(sd=>{
       if(!sd)return;
       Object.entries(sd).forEach(([k,cards])=>{
         const el=document.getElementById(`pr-cards-${k}`);
-        if(el&&Array.isArray(cards))el.innerHTML=cards.map(c=>cardHTML(c,true)).join('')+
-          '<br><span style="font-size:.55rem;opacity:.6">'+handName(bestOf7([...cards,...communityCards.filter(Boolean)]))+'</span>';
+        if(el&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
         const btn=document.getElementById(`pr-reveal-${k}`);
         if(btn)btn.style.display='none';
       });
