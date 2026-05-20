@@ -98,7 +98,10 @@ async function loadPokerHall(){
   bodies.forEach(el=>el.innerHTML='<div class="hall-empty">Loading…</div>');
   const monthKey=getMonthKey();
   const data=await fb('GET',`/poker-hall/${monthKey}`)||{};
-  const sessions=Object.values(data.sessions||{}).filter(Boolean).sort((a,b)=>b.gameNum-a.gameNum);
+  const sessions=Object.values(data.sessions||{}).filter(Boolean).sort((a,b)=>{
+    if(b.date!==a.date)return b.date>a.date?1:-1; // newest date first
+    return b.gameNum-a.gameNum;                    // within same date: latest game first
+  });
   if(!sessions.length){
     bodies.forEach(el=>el.innerHTML='<div class="hall-empty">No sessions this month</div>');
     return;
@@ -1354,12 +1357,12 @@ async function renderPlayerPhase(ph,winner){
       return;
     }
     if(myChips===0){
-      // knocked out between hands — not dealt in, show rebuy
+      // knocked out — not dealt in this hand; rebuy button unlocks at showdown
       actionEl.innerHTML=`<div class="phase-card">
         <div style="font-size:1.8rem">💸</div>
         <div style="font-weight:700;font-size:1rem;margin:8px 0">You're out of chips!</div>
-        <div style="font-size:.75rem;opacity:.5;margin-bottom:14px">Watching current hand… rebuy opens next hand.</div>
-        <button class="btn btn-gold btn-sm" onclick="requestRebuy()">💵 Re-buy $20.00</button>
+        <div style="font-size:.75rem;opacity:.5">Watching current hand…</div>
+        <div style="font-size:.7rem;opacity:.4;margin-top:6px">Rebuy button will appear at showdown.</div>
       </div>`;
       return;
     }
@@ -1438,18 +1441,24 @@ async function submitRaise(){
   actionEl.innerHTML=`<div style="opacity:.5;font-size:.82rem;text-align:center;padding:12px">Raised to ${fmtChips(raiseTotal)}. Waiting…</div>`;
 }
 
+let _rebuying=false;
 async function requestRebuy(){
-  const curChips=await fb('GET',`/poker2/chips/${encN(myName)}`)||0;
-  if(curChips>0){toast('You still have chips!');return;}
-  const ph=await fb('GET','/poker2/phase');
-  if(ph==='preflop'||ph==='flop'||ph==='turn'||ph==='river'){
-    toast("Can't rebuy during a live hand");return;
-  }
-  const curRebuys=await fb('GET',`/poker2/rebuys/${encN(myName)}`)||0;
-  await fb('PUT',`/poker2/rebuys/${encN(myName)}`,curRebuys+1);
-  chipsMap[myName]=STARTING_CHIPS;
-  await fb('PUT',`/poker2/chips/${encN(myName)}`,STARTING_CHIPS);
-  toast('Re-bought for $20.00! You\'re back in.');
+  if(_rebuying)return;
+  _rebuying=true;
+  try{
+    const[curChips,ph]=await Promise.all([
+      fb('GET',`/poker2/chips/${encN(myName)}`),
+      fb('GET','/poker2/phase'),
+    ]);
+    if((curChips||0)>0){toast('You still have chips!');return;}
+    const activePhases=['preflop','flop','turn','river'];
+    if(!ph||activePhases.includes(ph)){toast("Can't rebuy during a live hand");return;}
+    const curRebuys=await fb('GET',`/poker2/rebuys/${encN(myName)}`)||0;
+    await fb('PUT',`/poker2/rebuys/${encN(myName)}`,curRebuys+1);
+    chipsMap[myName]=STARTING_CHIPS;
+    await fb('PUT',`/poker2/chips/${encN(myName)}`,STARTING_CHIPS);
+    toast('Re-bought for $20.00! You\'re back in.');
+  }finally{_rebuying=false;}
 }
 
 function openCardOverlay(){
