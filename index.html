@@ -677,7 +677,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.7</div>
+  <div class="app-version">v4.8</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1482,6 +1482,7 @@
   window._chatOpen = false;
   let _chatUnread = 0;
   let _chatLastCount = 0;
+  let _chatBaseline = false;
 
   function toggleChat() {
     _chatOpen = !_chatOpen;
@@ -1506,6 +1507,7 @@
 
   function _updateChatBadge(newCount) {
     if (_chatOpen) { _chatLastCount = newCount; return; }
+    if (!_chatBaseline) { _chatLastCount = newCount; _chatBaseline = true; return; }
     const added = newCount - _chatLastCount;
     if (added > 0) {
       _chatUnread += added;
