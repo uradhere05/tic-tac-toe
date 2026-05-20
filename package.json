@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "canvas": "^3.2.3",
     "node-fetch": "^3.3.2",
     "playwright": "^1.60.0"
   }

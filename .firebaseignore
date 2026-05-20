@@ -1,0 +1,16 @@
+node_modules/
+functions/
+docs/
+.playwright-mcp/
+.git/
+.claude/
+everything-claude-code/
+*.sim.js
+*.verify.js
+*.test.js
+gen-icons.js
+mafia-bug-test.js
+chat-bubble-*.png
+firebase-expect.log
+package.json
+package-lock.json
