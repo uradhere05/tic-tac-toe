@@ -677,7 +677,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.9</div>
+  <div class="app-version">v4.10</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -1439,7 +1439,7 @@
     try {
       const raw = await fetch(`${DB}/chat.json`).then(r => r.json()).catch(() => ({}));
       const msgs = Object.values(raw||{}).filter(Boolean).sort((a,b) => a.ts-b.ts).slice(-20);
-      if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No messages yet…</div>'; _updateChatBadge(0); return; }
+      if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No messages yet…</div>'; _updateChatBadge([]); return; }
       el.innerHTML = msgs.map(m => {
         const mine = m.name === myName;
         const d = new Date(m.ts);
@@ -1449,7 +1449,7 @@
         const ampm = valid ? (d.getHours()<12?'AM':'PM') : '';
         return `<div class="chat-msg${mine?' cm-mine':''}"><span class="cm-name">${escHtml(m.name)}</span>${escHtml(m.text)}<span class="cm-time">${h12}:${mm} ${ampm}</span></div>`;
       }).join('');
-      _updateChatBadge(msgs.length);
+      _updateChatBadge(msgs);
       if (_chatOpen) el.scrollTop = el.scrollHeight;
     } catch {}
   }
@@ -1481,8 +1481,8 @@
   let _chatOpen = false;
   window._chatOpen = false;
   let _chatUnread = 0;
-  // Persist last-seen count so reloads don't re-badge already-seen messages
-  let _chatLastCount = parseInt(localStorage.getItem('chatSeenCount') || '0');
+  // Track newest seen message timestamp — immune to pruning unlike count-based tracking
+  let _chatLastTs = parseInt(localStorage.getItem('chatSeenTs') || '0');
 
   function toggleChat() {
     _chatOpen = !_chatOpen;
@@ -1495,8 +1495,7 @@
       _chatUnread = 0;
       const badge = document.getElementById('chat-badge');
       badge.style.display = 'none';
-      // Save current count so next reload knows where we left off
-      localStorage.setItem('chatSeenCount', String(_chatLastCount));
+      localStorage.setItem('chatSeenTs', String(_chatLastTs));
       const log = document.getElementById('chat-log');
       log.scrollTop = log.scrollHeight;
       document.getElementById('chat-input').focus();
@@ -1507,16 +1506,18 @@
     }
   }
 
-  function _updateChatBadge(newCount) {
-    if (_chatOpen) { _chatLastCount = newCount; localStorage.setItem('chatSeenCount', String(newCount)); return; }
-    const added = newCount - _chatLastCount;
-    if (added > 0) {
-      _chatUnread += added;
+  function _updateChatBadge(msgs) {
+    const latestTs = msgs.length ? msgs[msgs.length - 1].ts : 0;
+    if (_chatOpen) { _chatLastTs = latestTs; localStorage.setItem('chatSeenTs', String(latestTs)); return; }
+    const unseen = msgs.filter(m => m.ts > _chatLastTs).length;
+    if (unseen > 0) {
+      _chatUnread = unseen;
       const badge = document.getElementById('chat-badge');
       badge.textContent = _chatUnread > 9 ? '9+' : _chatUnread;
       badge.style.display = 'flex';
+    } else if (!_chatUnread) {
+      document.getElementById('chat-badge').style.display = 'none';
     }
-    _chatLastCount = newCount;
   }
 
   /* ── Sound ── */
