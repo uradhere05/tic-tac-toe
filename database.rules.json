@@ -38,6 +38,13 @@
       ".write": true
     },
 
+    "push_subs": {
+      "$name": {
+        ".write": true,
+        ".validate": "newData.val() === null || (newData.hasChildren(['name','sub','ts']) && newData.child('name').isString() && newData.child('sub').isString() && newData.child('ts').isNumber())"
+      }
+    },
+
     "$other": {
       ".read": false,
       ".write": false
