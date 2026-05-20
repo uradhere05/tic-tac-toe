@@ -214,9 +214,10 @@ async function joinAsPlayer(){
 }
 
 async function joinAsDealer(){
-  const cur=await fb('GET','/poker2/host');
-  if(cur&&cur!==myName){toast(`${cur} is already the Dealer`);return;}
-  await fb('PUT','/poker2/host',myName);
+  const [cur,curTs]=await Promise.all([fb('GET','/poker2/host'),fb('GET','/poker2/hostTs')]);
+  const stale=!curTs||Date.now()-curTs>STALE_MS*2;
+  if(cur&&cur!==myName&&!stale){toast(`${cur} is already the Dealer`);return;}
+  await Promise.all([fb('PUT','/poker2/host',myName),fb('PUT','/poker2/hostTs',Date.now())]);
   isHost=true;hostName=myName;
   enterLobby();
 }
@@ -311,6 +312,7 @@ async function lobbyTick(){
   if(!document.getElementById('s-lobby').classList.contains('active'))return;
   if(_lobbyRunning)return;_lobbyRunning=true;
   try{
+    if(isHost)fb('PUT','/poker2/hostTs',Date.now());
     const[lobbyD,hostD,phaseD,chipsD,standingD]=await Promise.all([
       fb('GET','/poker2/lobby'),fb('GET','/poker2/host'),
       fb('GET','/poker2/phase'),fb('GET','/poker2/chips'),
@@ -382,9 +384,10 @@ async function toggleReady(){
 }
 
 async function claimDealer(){
-  const cur=await fb('GET','/poker2/host');
-  if(cur){toast(`${cur} is already the Dealer`);return;}
-  await fb('PUT','/poker2/host',myName);
+  const [cur,curTs]=await Promise.all([fb('GET','/poker2/host'),fb('GET','/poker2/hostTs')]);
+  const stale=!curTs||Date.now()-curTs>STALE_MS*2;
+  if(cur&&!stale){toast(`${cur} is already the Dealer`);return;}
+  await Promise.all([fb('PUT','/poker2/host',myName),fb('PUT','/poker2/hostTs',Date.now())]);
   isHost=true;hostName=myName;
   lobbyTick();
 }

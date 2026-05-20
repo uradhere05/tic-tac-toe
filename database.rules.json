@@ -38,6 +38,14 @@
       ".write": true
     },
 
+    "poker2": {
+      ".write": true
+    },
+
+    "poker-hall": {
+      ".write": true
+    },
+
     "push_subs": {
       "$name": {
         ".write": true,
