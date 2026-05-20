@@ -151,7 +151,8 @@
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const swPath = document.currentScript?.src.replace(/\/[^/]+$/, '/sw.js') || '/sw.js';
+    navigator.serviceWorker.register(swPath).catch(() => {});
   }
 
   async function _refreshSub(name) {
