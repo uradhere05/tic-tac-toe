@@ -956,13 +956,19 @@ function computeSidePots(allPlayers,eligible,contribs){
 
 async function hostShowdown(){
   if(betOn){toast('Betting not complete');return;}
-  const alive=playersInHand.filter(n=>!foldedMap[n]);
-  const board=communityCards.filter(Boolean);
+
+  const[handsD,contribD,commD]=await Promise.all([
+    fb('GET','/poker2/hands'),fb('GET','/poker2/contrib'),
+    fb('GET','/poker2/community'),
+  ]);
+
+  // use Firebase community as the authoritative board — same cards players saw
+  const commArr=[];
+  if(commD){for(let i=0;i<5;i++)commArr.push(commD[i]||null);}
+  const board=commArr.filter(Boolean);
   if(board.length<3){toast('Cannot show hands before the flop');return;}
 
-  const[handsD,contribD]=await Promise.all([
-    fb('GET','/poker2/hands'),fb('GET','/poker2/contrib'),
-  ]);
+  const alive=playersInHand.filter(n=>!foldedMap[n]);
   const handsData=handsD||{};
   const contribs={};
   playersInHand.forEach(n=>{contribs[n]=(contribD&&contribD[encN(n)])||handContribMap[n]||0;});
@@ -970,9 +976,11 @@ async function hostShowdown(){
   const scores={};
   const showdownObj={};
   alive.forEach(n=>{
-    const hole=handsData[encN(n)]||[];
+    const raw=handsData[encN(n)];
+    // Firebase may return a 2-element array as a plain object {0:{…},1:{…}}
+    const hole=Array.isArray(raw)?raw:(raw?Object.values(raw):[]);
     showdownObj[encN(n)]=hole;
-    scores[n]=hole.length===2&&board.length>=3?bestOfN([...hole,...board]):-1;
+    scores[n]=hole.length===2?bestOfN([...hole,...board]):-1;
   });
 
   const sidePots=computeSidePots(playersInHand,alive,contribs);
