@@ -102,53 +102,8 @@ async function loadPokerHall(){
     if(b.date!==a.date)return b.date>a.date?1:-1; // newest date first
     return b.gameNum-a.gameNum;                    // within same date: latest game first
   });
-  if(!sessions.length){
-    bodies.forEach(el=>el.innerHTML='<div class="hall-empty">No sessions this month</div>');
-    return;
-  }
-  // parse result entry — supports old flat number and new {buyIn,net} object
   const parseEntry=v=>typeof v==='object'&&v!==null?{buyIn:v.buyIn||STARTING_CHIPS,net:v.net||0}:{buyIn:STARTING_CHIPS,net:v||0};
-  // accumulate monthly totals
-  const totals={};   // { name: { buyIn, net } }
-  for(const s of sessions){
-    for(const[enc,val]of Object.entries(s.results||{})){
-      const n=decN(enc);
-      const{buyIn,net}=parseEntry(val);
-      if(!totals[n])totals[n]={buyIn:0,net:0};
-      totals[n].buyIn+=buyIn;
-      totals[n].net+=net;
-    }
-  }
-  const sortedTotals=Object.entries(totals).sort((a,b)=>b[1].net-a[1].net);
-  const medals=['🥇','🥈','🥉'];
-  let html='<div class="hall-sub-hdr">Monthly Totals</div>';
-  sortedTotals.forEach(([name,t],i)=>{
-    html+=`<div class="hall-total-row">
-      <span class="hall-tr-rank">${medals[i]||i+1}</span>
-      <span class="hall-tr-name">${name}</span>
-      <span class="hall-tr-buyin">$${(t.buyIn/100).toFixed(0)} in</span>
-      <span class="hall-tr-amt ${netCls(t.net)}">${fmtNet(t.net)}</span>
-    </div>`;
-  });
-  html+='<div class="hall-sub-hdr hall-history-toggle" style="margin-top:14px;cursor:pointer;user-select:none;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.hall-history-caret\').style.transform=this.nextElementSibling.style.display===\'none\'?\'\':\' rotate(180deg)\' ">Session History <span class="hall-history-caret" style="font-size:0.7rem;opacity:0.5;display:inline-block;transition:transform 150ms;">▾</span></div>';
-  html+='<div class="hall-history-body" style="display:none">';
-  for(const s of sessions){
-    const d=new Date(s.date+'T12:00:00');
-    const dateStr=d.toLocaleDateString('en-AU',{month:'short',day:'numeric'});
-    const players=Object.entries(s.results||{})
-      .map(([k,v])=>{const{buyIn,net}=parseEntry(v);return[decN(k),buyIn,net];})
-      .sort((a,b)=>b[2]-a[2]);
-    html+=`<div class="hall-session"><div class="hall-session-hdr">Game #${s.gameNum} · ${dateStr}${s.time?' · '+s.time:''}</div>`;
-    players.forEach(([name,buyIn,net])=>{
-      html+=`<div class="hall-session-row">
-        <span class="hall-sr-name">${name}</span>
-        <span class="hall-sr-buyin">$${(buyIn/100).toFixed(0)}</span>
-        <span class="hall-sr-amt ${netCls(net)}">${fmtNet(net)}</span>
-      </div>`;
-    });
-    html+='</div>';
-  }
-  html+='</div>';
+  const html=window.buildHallHtml(sessions,decN,parseEntry);
   bodies.forEach(el=>el.innerHTML=html);
 }
 
