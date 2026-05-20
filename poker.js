@@ -978,7 +978,8 @@ async function hostShowdown(){
   const sidePots=computeSidePots(playersInHand,alive,contribs);
   const chipsUpdate={};
   const winMessages=[];
-  const allWinners=new Set();
+  const contestedWinners=new Set(); // won a contested pot
+  const allRecipients=new Set();    // all players receiving chips (incl. uncontested returns)
 
   for(const{amount,eligible}of sidePots){
     if(!amount||!eligible.length)continue;
@@ -989,13 +990,19 @@ async function hostShowdown(){
     potWinners.forEach((n,i)=>{
       chipsMap[n]=(chipsMap[n]||0)+share+(i===0?rem:0);
       chipsUpdate[encN(n)]=chipsMap[n];
-      allWinners.add(n);
+      allRecipients.add(n);
     });
-    const handStr=potWinners.length===1?handName(maxS):'split pot';
-    winMessages.push(`${potWinners.join(' & ')} wins ${fmtChips(amount)} with ${handStr}`);
+    if(eligible.length===1){
+      // uncontested — excess uncalled bet returned, no hand comparison needed
+      winMessages.push(`${eligible[0]} gets ${fmtChips(amount)} back (uncalled)`);
+    } else {
+      const handStr=potWinners.length===1?handName(maxS):'split pot';
+      winMessages.push(`${potWinners.join(' & ')} wins ${fmtChips(amount)} with ${handStr}`);
+      potWinners.forEach(n=>contestedWinners.add(n));
+    }
   }
 
-  const winnerNames=[...allWinners].join(' & ');
+  const winnerNames=[...(contestedWinners.size?contestedWinners:allRecipients)].join(' & ');
   const ann=winMessages.join(' · ')+'!';
 
   await Promise.all([
@@ -1007,7 +1014,7 @@ async function hostShowdown(){
     fb('PUT','/poker2/phase','showdown'),
   ]);
   pot=0;
-  await Promise.all([...allWinners].map(n=>recordWin(n)));
+  await Promise.all([...contestedWinners].map(n=>recordWin(n)));
   toast(`${winnerNames} wins!`);
   phase='showdown';
   renderDealerConsole('showdown');
