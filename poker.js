@@ -1378,7 +1378,7 @@ function renderActionButtons(toCall,myChips){
         <button class="btn btn-danger btn-sm" onclick="submitAction('fold',0)">Fold</button>
         ${canCheck
           ?`<button class="btn btn-primary btn-sm" onclick="submitAction('check',0)">Check</button>`
-          :`<button class="btn btn-primary btn-sm" onclick="submitAction('call',${currentBet})">${toCall>=myChips?'All-In':'Call'} ${fmtChips(toCall)}</button>`
+          :`<button class="btn btn-primary btn-sm" onclick="submitAction('call',${currentBet})">${toCall>=myChips?'All-In':'Call'} ${fmtChips(Math.min(toCall,myChips))}</button>`
         }
       </div>
       <div class="raise-row">
