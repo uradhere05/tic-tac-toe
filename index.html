@@ -205,7 +205,7 @@
     .room-card-poker:hover { border-color: rgba(76,175,80,0.65); box-shadow: 0 0 0 1px rgba(50,180,80,0.28), 0 10px 48px rgba(0,120,40,0.28), inset 0 1px 0 rgba(80,220,100,0.16); }
     .room-card-poker:hover::after { opacity: 1; }
     .room-card-poker:active { transform: scale(0.95) !important; }
-    .room-card-poker::before { content: '♠  ♣  ♥  ♦'; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; letter-spacing: 3px; opacity: 0.09; pointer-events: none; white-space: nowrap; }
+    .room-card-poker::before { content: '♠  ♣  ♥  ♦'; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 0.85rem; letter-spacing: 5px; opacity: 0.45; pointer-events: none; white-space: nowrap; color: #a5d6a7; text-shadow: 0 0 8px rgba(76,175,80,0.4); }
     .room-card-poker::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(60,200,80,0.07) 0%, transparent 70%); pointer-events: none; opacity: 0; transition: opacity 300ms ease; }
     .poker-num   { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; line-height: 1; color: #4caf50; text-shadow: 0 0 18px rgba(76,175,80,0.5); }
     .poker-title { font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: #a5d6a7; opacity: 0.88; margin-top: 5px; }
@@ -223,18 +223,20 @@
       -webkit-tap-highlight-color: transparent; will-change: transform;
     }
     .room-card-mafia::before { content: '🔪'; position: absolute; top: -6px; right: 8px; font-size: 1.8rem; opacity: 0.07; pointer-events: none; transform: rotate(20deg); }
+    .mafia-icons { font-size: 0.75rem; letter-spacing: 5px; opacity: 0.45; margin-top: 6px; white-space: nowrap; text-shadow: 0 0 8px rgba(200,0,0,0.35); }
     .room-card-mafia::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(180,0,0,0.12) 0%, transparent 70%); opacity: 0; transition: opacity 300ms ease; pointer-events: none; }
     .room-card-mafia:hover { border-color: rgba(220,30,30,0.65); box-shadow: 0 0 0 1px rgba(200,0,0,0.28), 0 10px 48px rgba(160,0,0,0.28), inset 0 1px 0 rgba(220,50,50,0.16); }
     .room-card-mafia:hover::after { opacity: 1; }
     .room-card-mafia:active { transform: scale(0.95) !important; }
     .mafia-num   { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; line-height: 1; color: #cc2200; text-shadow: 0 0 18px rgba(200,0,0,0.6); }
     .mafia-title { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: #ffb3b3; opacity: 0.95; margin-top: 5px; font-weight: 700; }
-    .mafia-sub   { font-size: 0.56rem; letter-spacing: 2px; text-transform: uppercase; color: #e57373; opacity: 0.52; margin-top: 2px; }
-    .mafia-rl    { font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.42; margin-top: 5px; min-height: 20px; display:flex; align-items:center; justify-content:center; color: #ff8a80; }
-    .room-card.coming-soon { cursor: not-allowed; opacity: 0.48; grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; background: rgba(8,8,20,0.58); border: 1px dashed rgba(255,255,255,0.14); pointer-events: none; }
-    .room-card.coming-soon .rn { color: rgba(255,255,255,0.28); text-shadow: none; }
-    .room-card.coming-soon .rg { opacity: 0.32; }
-    .coming-soon-badge { display: inline-block; font-size: 0.5rem; letter-spacing: 2px; text-transform: uppercase; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14); border-radius: 20px; padding: 2px 8px; margin-bottom: 4px; opacity: 0.62; }
+    .mafia-sub   { font-size: 0.56rem; letter-spacing: 2px; text-transform: uppercase; color: #e57373; opacity: 0.52; margin-top: 2px; display: block; }
+    .mafia-rl    { font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.42; margin-top: 5px; min-height: 28px; display:flex; align-items:center; justify-content:center; color: #ff8a80; }
+    .room-card.coming-soon { cursor: not-allowed; opacity: 0.75; grid-column: 1 / -1; max-width: 47%; margin: 0 auto; width: 100%; background: rgba(40,0,80,0.85); border: 1px dashed rgba(200,120,255,0.7); pointer-events: none; box-shadow: 0 0 32px rgba(160,60,255,0.25), inset 0 1px 0 rgba(220,160,255,0.18); }
+    .room-card.coming-soon .rn { color: #cc88ff; text-shadow: 0 0 24px rgba(180,80,255,0.8); }
+    .room-card.coming-soon .rg { opacity: 1; color: #e0b0ff; }
+    .room-card.coming-soon .rl { color: #c080ff; opacity: 1; }
+    .coming-soon-badge { display: inline-block; font-size: 0.5rem; letter-spacing: 2px; text-transform: uppercase; background: rgba(160,60,255,0.35); border: 1px solid rgba(200,120,255,0.7); border-radius: 20px; padding: 2px 8px; margin-bottom: 4px; opacity: 1; color: #f0d0ff; }
 
     #sound-btn {
       position:fixed; top:14px; right:14px;
@@ -536,7 +538,9 @@
     <div class="room-card room-card-mafia" onclick="window.location.href='mafia2.html'">
       <div class="mafia-num">8</div>
       <div class="mafia-title">🔪 Filo Mafia</div>
+      <div class="mafia-sub">Mafia</div>
       <div class="mafia-rl" id="rp-8">Room Open</div>
+      <div class="mafia-icons">🔪  👁  🩺  👥</div>
     </div>
     <div class="room-card coming-soon">
       <div class="coming-soon-badge">Coming Soon</div>
@@ -652,7 +656,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.94</div>
+  <div class="app-version">v3.95</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
