@@ -1325,9 +1325,19 @@ async function renderPlayerPhase(ph,winner){
       if(hD&&Array.isArray(hD))holeEl.innerHTML=hD.map(c=>cardHTML(c)).join('');
       holeCards=hD||[];
     }
-    if(myFolded||myChips===0){
+    if(myFolded||allInMap[myName]){
       actionEl.innerHTML='<div class="phase-card"><div style="font-size:2rem">👻</div><div style="opacity:.6;margin-top:8px">'+
         (myFolded?'You folded. Watching…':'You\'re all-in. Watching…')+'</div></div>';
+      return;
+    }
+    if(myChips===0){
+      // knocked out between hands — not dealt in, show rebuy
+      actionEl.innerHTML=`<div class="phase-card">
+        <div style="font-size:1.8rem">💸</div>
+        <div style="font-weight:700;font-size:1rem;margin:8px 0">You're out of chips!</div>
+        <div style="font-size:.75rem;opacity:.5;margin-bottom:14px">Watching current hand… rebuy opens next hand.</div>
+        <button class="btn btn-gold btn-sm" onclick="requestRebuy()">💵 Re-buy $20.00</button>
+      </div>`;
       return;
     }
     if(isMyTurn){
