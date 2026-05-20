@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "filo-gang-tictactoe"
-  }
+  },
+  "targets": {
+    "filo-gang-tictactoe": {
+      "hosting": {
+        "default": [
+          "filo-gang-arena"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
