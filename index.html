@@ -646,7 +646,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v3.91</div>
+  <div class="app-version">v3.92</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -749,7 +749,10 @@
     body.innerHTML = '<div class="lb-empty">Loading…</div>';
     const monthKey = getMonthKey();
     const data = await fetch(`${DB}/poker-hall/${monthKey}.json`).then(r => r.json()).catch(() => null) || {};
-    const sessions = Object.values(data.sessions || {}).filter(Boolean).sort((a, b) => b.gameNum - a.gameNum);
+    const sessions = Object.values(data.sessions || {}).filter(Boolean).sort((a, b) => {
+      if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+      return b.gameNum - a.gameNum;
+    });
     if (!sessions.length) { body.innerHTML = '<div class="lb-empty">No sessions this month</div>'; return; }
     const parseEntry = v => typeof v === 'object' && v !== null ? { buyIn: v.buyIn || 2000, net: v.net || 0 } : { buyIn: 2000, net: v || 0 };
     const totals = {};
