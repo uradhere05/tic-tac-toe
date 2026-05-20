@@ -513,12 +513,16 @@ function reconnectDealer(phaseD){
 }
 
 async function pollPresence(){
-  onlineMap=await fb('GET','/online')||{};
+  const[onlineD,chipsD]=await Promise.all([fb('GET','/online'),fb('GET','/poker2/chips')]);
+  onlineMap=onlineD||{};
+  if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
   if(!document.getElementById('s-dealer')?.classList.contains('active'))return;
   const activePlayers=playersInHand.length?playersInHand:Object.keys(chipsMap);
   activePlayers.forEach(name=>{
     const dot=document.getElementById(`pdot-${encN(name)}`);
     if(dot)dot.className=`pdot ${isOnline(name)?'pdot-on':'pdot-off'}`;
+    const stackEl=document.getElementById(`pr-stack-${encN(name)}`);
+    if(stackEl)stackEl.textContent=fmtChips(chipsMap[name]??0);
   });
 }
 
@@ -566,9 +570,11 @@ async function increaseBlinds(){
 }
 
 async function hostStartHand(){
-  const[freshLobby,standingD]=await Promise.all([
-    fb('GET','/poker2/lobby'),fb('GET','/poker2/standing'),
+  const[freshLobby,standingD,freshChips]=await Promise.all([
+    fb('GET','/poker2/lobby'),fb('GET','/poker2/standing'),fb('GET','/poker2/chips'),
   ]);
+  // sync local chipsMap from Firebase so rebuys are picked up
+  if(freshChips)Object.entries(freshChips).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
   const lobby=freshLobby||{}, standing=standingD||{};
   const now2=Date.now();
   // Buy in brand-new lobby players
@@ -712,7 +718,7 @@ function renderDealerConsole(ph){
         <span class="pr-name">${escHtml(name)}${name===playersInHand[dealerPos]?' 🔘':''}</span>
         <button class="btn-stand-player" onclick="dealerStandPlayer('${enc}')" title="Ask player to stand">⬆ Stand</button>
       </span>
-      <span class="pr-stack">${fmtChips(chips)}</span>
+      <span class="pr-stack" id="pr-stack-${enc}">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
       ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`:''}
