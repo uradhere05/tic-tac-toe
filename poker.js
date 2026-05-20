@@ -215,7 +215,7 @@ async function joinAsPlayer(){
 
 async function joinAsDealer(){
   const [cur,curTs]=await Promise.all([fb('GET','/poker2/host'),fb('GET','/poker2/hostTs')]);
-  const stale=!curTs||Date.now()-curTs>STALE_MS*2;
+  const stale=!curTs||Date.now()-curTs>STALE_MS;
   if(cur&&cur!==myName&&!stale){toast(`${cur} is already the Dealer`);return;}
   await Promise.all([fb('PUT','/poker2/host',myName),fb('PUT','/poker2/hostTs',Date.now())]);
   isHost=true;hostName=myName;
@@ -385,7 +385,7 @@ async function toggleReady(){
 
 async function claimDealer(){
   const [cur,curTs]=await Promise.all([fb('GET','/poker2/host'),fb('GET','/poker2/hostTs')]);
-  const stale=!curTs||Date.now()-curTs>STALE_MS*2;
+  const stale=!curTs||Date.now()-curTs>STALE_MS;
   if(cur&&!stale){toast(`${cur} is already the Dealer`);return;}
   await Promise.all([fb('PUT','/poker2/host',myName),fb('PUT','/poker2/hostTs',Date.now())]);
   isHost=true;hostName=myName;
@@ -1004,7 +1004,7 @@ async function hostEndSession(){
     fb('DELETE','/poker2/pot'),fb('DELETE','/poker2/winner'),
     fb('DELETE','/poker2/showdown'),fb('DELETE','/poker2/announcement'),
     fb('DELETE','/poker2/round'),fb('DELETE','/poker2/players'),
-    fb('DELETE','/poker2/host'),fb('DELETE','/poker2/chips'),
+    fb('DELETE','/poker2/host'),fb('DELETE','/poker2/hostTs'),fb('DELETE','/poker2/chips'),
     fb('DELETE','/poker2/rebuys'),fb('DELETE','/poker2/blindLevel'),fb('DELETE','/poker2/phase'),
     fb('DELETE','/poker2/standing'),fb('DELETE','/poker2/contrib'),
   ]),3000);
@@ -1435,6 +1435,10 @@ window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
     fetch(`${DB}/poker2/lobby/${encN(myName)}.json`,{method:'DELETE',keepalive:true});
+    if(isHost){
+      fetch(`${DB}/poker2/host.json`,{method:'PUT',keepalive:true,headers:{'Content-Type':'application/json'},body:'null'});
+      fetch(`${DB}/poker2/hostTs.json`,{method:'PUT',keepalive:true,headers:{'Content-Type':'application/json'},body:'null'});
+    }
   }
 });
 
