@@ -677,6 +677,8 @@ function renderDealerConsole(ph){
   document.getElementById('d-phase').textContent=(phase||'lobby').toUpperCase();
   document.getElementById('d-round').textContent=round;
   document.getElementById('d-pot').textContent=fmtChips(pot);
+  const dpb=document.getElementById('d-pot-breakdown');
+  if(dpb)dpb.innerHTML=sidePotHtml(buildLiveSidePots());
   document.getElementById('d-blinds').textContent=`${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
 
   const chipsEl=document.getElementById('d-chips');
@@ -963,6 +965,21 @@ async function hostDealRiver(){
     3:communityCards[3],4:communityCards[4]});
   await newBettingStreet('river',firstActiveFromDealer());
   renderDealerConsole('river');
+}
+
+function buildLiveSidePots(){
+  if(!playersInHand.length||!Object.keys(handContribMap).length)return[];
+  const alive=playersInHand.filter(n=>!foldedMap[n]);
+  const contribs={};
+  playersInHand.forEach(n=>{contribs[n]=handContribMap[n]||0;});
+  return computeSidePots(playersInHand,alive,contribs);
+}
+
+function sidePotHtml(pots){
+  if(pots.length<=1)return'';
+  return pots.map((p,i)=>
+    `<div>${i===0?'Main':'Side'+(pots.length>2?' '+(i):'')}:&nbsp;${fmtChips(p.amount)}</div>`
+  ).join('');
 }
 
 // Build side pots from per-hand contributions.
@@ -1359,6 +1376,8 @@ function renderStatusRow(){
   const toCall=foldedMap[myName]?0:Math.max(0,currentBet-myBet);
   document.getElementById('p-mystack').textContent=fmtChips(myChips);
   document.getElementById('p-pot').textContent=fmtChips(pot);
+  const psp=document.getElementById('p-sidepots');
+  if(psp)psp.innerHTML=sidePotHtml(buildLiveSidePots());
   const sc=document.getElementById('p-stack-chips');
   const pc=document.getElementById('p-pot-chips');
   if(sc)sc.innerHTML=chipsHTML(myChips);
