@@ -1409,7 +1409,9 @@ function renderActionButtons(toCall,myChips){
           :`<div class="raise-row">
             <input type="number" class="raise-input" id="raise-amt"
               min="${(minAdd/100).toFixed(2)}" max="${(maxAdd/100).toFixed(2)}"
-              step="0.10" value="${(defaultAdd/100).toFixed(2)}" placeholder="${fmtChips(minAdd)}">
+              step="0.10" value="${(defaultAdd/100).toFixed(2)}" placeholder="${fmtChips(minAdd)}"
+              onblur="this.value=isNaN(+this.value)?this.value:(+this.value).toFixed(2)"
+              oninput="clearTimeout(this._t);this._t=setTimeout(()=>{if(this.value&&!this.value.endsWith('.')){this.value=(+this.value).toFixed(2)}},800)">
             <button class="btn btn-gold btn-sm" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
           </div>
           <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
