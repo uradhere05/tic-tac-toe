@@ -486,9 +486,10 @@ function reconnectDealer(phaseD){
 }
 
 async function pollPresence(){
-  const[onlineD,chipsD]=await Promise.all([fb('GET','/online'),fb('GET','/poker2/chips')]);
+  const[onlineD,chipsD,rebuysD]=await Promise.all([fb('GET','/online'),fb('GET','/poker2/chips'),fb('GET','/poker2/rebuys')]);
   onlineMap=onlineD||{};
   if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
+  if(rebuysD)Object.entries(rebuysD).forEach(([k,v])=>{rebuysMap[decN(k)]=v;});
   if(!document.getElementById('s-dealer')?.classList.contains('active'))return;
   const activePlayers=playersInHand.length?playersInHand:Object.keys(chipsMap);
   activePlayers.forEach(name=>{
@@ -497,6 +498,9 @@ async function pollPresence(){
     const stackEl=document.getElementById(`pr-stack-${encN(name)}`);
     if(stackEl)stackEl.textContent=fmtChips(chipsMap[name]??0);
   });
+  // Refresh chip counts panel so net +/- reflects latest rebuys
+  const chipsEl=document.getElementById('d-chips');
+  if(chipsEl&&chipsEl.children.length)renderDealerConsole();
 }
 
 function isOnline(name){
