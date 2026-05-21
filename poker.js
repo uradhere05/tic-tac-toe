@@ -1338,7 +1338,9 @@ function renderStatusRow(){
   if(pc)pc.innerHTML=chipsHTML(pot);
   document.getElementById('p-tocall').textContent=fmtChips(toCall);
   const pb=document.getElementById('p-blinds');
-  if(pb)pb.textContent=`${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
+  if(pb)pb.textContent=`Blinds: ${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
+  const pcb=document.getElementById('p-curbet');
+  if(pcb)pcb.textContent=fmtChips(currentBet);
 }
 
 function posLabel(name){
@@ -1450,15 +1452,12 @@ function renderActionButtons(toCall,myChips){
   const canCheck=toCall===0;
   const isBet=currentBet===0;
   const myStreetBet=betStreetMap[myName]||0;
-  // Texas Hold'em raise model:
-  //   raise    = new_total_bet - current_bet   ← what the input represents
-  //   call     = current_bet - invested
-  //   chips_added = call + raise = new_total_bet - invested
-  //   min_raise = betLastRaise (size of previous raise)
   const minRaise=betLastRaise;                        // minimum raise increment
   const allInTotalBet=myStreetBet+myChips;            // new_total_bet if all chips go in
-  const maxRaise=Math.max(0,allInTotalBet-currentBet);// raise increment at all-in
-  const defaultRaise=Math.min(minRaise,maxRaise);
+  const maxRaiseDelta=Math.max(0,allInTotalBet-currentBet); // raise increment at all-in
+  // Input now shows TOTAL BET ("raise to $X.XX"), not the increment
+  const minTotalBet=currentBet+minRaise;              // minimum total bet
+  const maxTotalBet=allInTotalBet;                    // all-in total bet
   const actionEl=document.getElementById('p-action');
   actionEl.innerHTML=`
     <div class="action-row">
@@ -1468,21 +1467,22 @@ function renderActionButtons(toCall,myChips){
           :`<button class="btn btn-primary btn-sm" onclick="submitAction('call',${currentBet})">${toCall>=myChips?'All-In':'Call'} ${fmtChips(Math.min(toCall,myChips))}</button>`
         }
       </div>
-      ${maxRaise<=0?''
-        :maxRaise<=minRaise
+      ${maxRaiseDelta<=0?''
+        :maxRaiseDelta<=minRaise
           // Can only go all-in — fixed button, no input
           ?`<button class="btn btn-gold w100" style="margin-top:4px" onclick="submitRaise()">🔴 All-In ${fmtChips(myChips)}</button>`
-          // Normal raise — input shows raise increment above current bet
+          // Normal raise — input shows TOTAL BET amount
           :`<div class="raise-row">
+            <span style="font-size:.7rem;opacity:.55;white-space:nowrap">${isBet?'Bet':'Raise to'}</span>
             <input type="number" class="raise-input" id="raise-amt"
-              min="${(minRaise/100).toFixed(2)}" max="${(maxRaise/100).toFixed(2)}"
-              step="0.10" value="${(defaultRaise/100).toFixed(2)}" placeholder="${fmtChips(minRaise)}"
+              min="${(minTotalBet/100).toFixed(2)}" max="${(maxTotalBet/100).toFixed(2)}"
+              step="0.10" value="${(minTotalBet/100).toFixed(2)}" placeholder="${fmtChips(minTotalBet)}"
               onblur="this.value=isNaN(+this.value)?this.value:(+this.value).toFixed(2)"
               oninput="clearTimeout(this._t);this._t=setTimeout(()=>{if(this.value&&!this.value.endsWith('.')){this.value=(+this.value).toFixed(2)}},800)">
             <button class="btn btn-gold btn-sm" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
           </div>
           <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
-            min ${isBet?'bet':'raise'}: ${fmtChips(minRaise)} · all-in raise: ${fmtChips(maxRaise)}
+            min: ${fmtChips(minTotalBet)} · all-in: ${fmtChips(maxTotalBet)}
           </div>`
       }`;
 }
@@ -1497,16 +1497,15 @@ async function submitAction(type,amount){
 async function submitRaise(){
   const myStreetBet=betStreetMap[myName]||0;
   const myChipsNow=chipsMap[myName]||0;
-  const myMaxBet=myStreetBet+myChipsNow; // all-in cap = invested + remaining, no stale startStack
+  const myMaxBet=myStreetBet+myChipsNow;
   const input=document.getElementById('raise-amt');
-  // raise = new_total_bet - current_bet (what the input represents)
-  // all-in button: raise = allInTotalBet - currentBet
-  const raise=input
+  // Input now shows TOTAL BET. All-in button has no input.
+  const newTotalBet=input
     ?Math.round(+input.value*100/10)*10          // round to nearest 10¢
-    :Math.max(0,myStreetBet+myChipsNow-currentBet); // all-in raise increment
-  const newTotalBet=currentBet+raise;            // new_total_bet = current_bet + raise
-  const chipsAdded=newTotalBet-myStreetBet;      // chips_added = new_total_bet - invested
-  if(raise<betLastRaise&&newTotalBet<myMaxBet){toast(`Min ${currentBet===0?'bet':'raise'}: ${fmtChips(betLastRaise)}`);return;}
+    :myMaxBet;                                   // all-in button
+  const raise=newTotalBet-currentBet;            // raise increment
+  const chipsAdded=newTotalBet-myStreetBet;      // total chips added this street
+  if(raise<betLastRaise&&newTotalBet<myMaxBet){toast(`Min ${currentBet===0?'bet':'raise to'}: ${fmtChips(currentBet+betLastRaise)}`);return;}
   if(chipsAdded>myChipsNow){toast(`Not enough chips (need ${fmtChips(chipsAdded)})`);return;}
   await fb('PUT',`/poker2/bet/action/${encN(myName)}`,{type:'raise',amount:newTotalBet,ts:Date.now()});
   const actionEl=document.getElementById('p-action');
