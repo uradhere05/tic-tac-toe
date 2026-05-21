@@ -528,12 +528,11 @@ function togglePlayerCards(enc){
   if(!el)return;
   const icon=hiddenCards[enc]?'👁':'🙈';
   const btnHtml=`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${icon}</button>`;
-  if(hiddenCards[enc]){
-    el.innerHTML=`${btnHtml}<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`;
-  }else{
-    const cards=dealerHandsCache[enc];
-    el.innerHTML=btnHtml+(cards&&Array.isArray(cards)?dealerCardHTML(cards):`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`);
-  }
+  const cards=dealerHandsCache[enc];
+  const cardsHtml=hiddenCards[enc]
+    ?`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`
+    :(cards&&Array.isArray(cards)?dealerCardHTML(cards):`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`);
+  el.innerHTML=`${btnHtml}<div class="pr-cards-col">${cardsHtml}</div>`;
 }
 
 async function increaseBlinds(){
@@ -734,7 +733,7 @@ function renderDealerConsole(ph){
       <span class="pr-stack" id="pr-stack-${enc}">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
-      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button><div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`:''}</span>
+      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button><div class="pr-cards-col"><div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div></div>`:''}</span>
     </div>`;
   });
 
@@ -746,14 +745,14 @@ function renderDealerConsole(ph){
       Object.entries(handsD).forEach(([k,cards])=>{
         if(hiddenCards[k])return;
         const el=document.getElementById(`pr-cards-${k}`);
-        if(el&&Array.isArray(cards))el.innerHTML=revBtn(k)+dealerCardHTML(cards);
+        if(el&&Array.isArray(cards))el.innerHTML=revBtn(k)+`<div class="pr-cards-col">${dealerCardHTML(cards)}</div>`;
       });
     });
     fb('GET','/poker2/showdown').then(sd=>{
       if(!sd)return;
       Object.entries(sd).forEach(([k,cards])=>{
         const el=document.getElementById(`pr-cards-${k}`);
-        if(el&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
+        if(el&&Array.isArray(cards))el.innerHTML=`<div class="pr-cards-col">${dealerCardHTML(cards)}</div>`;
       });
     });
   }
