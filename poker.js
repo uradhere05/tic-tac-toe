@@ -1342,16 +1342,16 @@ function posLabel(name){
   const dPos=dealerPos%n;
   const sbPos=n===2?dPos:(dPos+1)%n;
   const bbPos=n===2?(dPos+1)%n:(dPos+2)%n;
-  if(idx===dPos)return n===2?'D/SB':'D';
-  if(idx===sbPos)return'SB';
-  if(idx===bbPos)return'BB';
+  if(idx===dPos)return n===2?'Dealer / Small Blind':'Dealer';
+  if(idx===sbPos)return'Small Blind';
+  if(idx===bbPos)return'Big Blind';
   return'';
 }
 function posChip(name){
   const lbl=posLabel(name);
   if(!lbl)return'';
-  const cls=lbl==='D'||lbl==='D/SB'?'background:#FFD200;color:#1a1000'
-    :lbl==='SB'?'background:rgba(52,152,219,0.8);color:#fff'
+  const cls=lbl.startsWith('Dealer')?'background:#FFD200;color:#1a1000'
+    :lbl==='Small Blind'?'background:rgba(52,152,219,0.8);color:#fff'
     :'background:rgba(46,204,113,0.8);color:#fff';
   return`<span style="font-size:.52rem;font-weight:900;padding:1px 6px;border-radius:8px;letter-spacing:1px;margin-left:5px;${cls}">${lbl}</span>`;
 }
