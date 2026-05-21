@@ -428,6 +428,7 @@ async function hostStartSession(orderedPlayers){
   playersInHand=orderedPlayers;
   dealerPos=-1;
   stopIvs();
+  fb('DELETE',`/rooms/room-7/lobby/${encN(myName)}`);
   show('s-dealer');
   renderDealerConsole('lobby');
   loadPokerHall();
@@ -809,7 +810,8 @@ async function processAction(playerName,action){
     // increment measured from old currentBet to new street total (handles all-in sub-raises)
     const newBet=betStreetMap[playerName];
     const raiseIncrement=newBet-currentBet;
-    if(raiseIncrement>=betLastRaise)betLastRaise=raiseIncrement;
+    const isFullRaise=raiseIncrement>=betLastRaise;
+    if(isFullRaise)betLastRaise=raiseIncrement;
     currentBet=newBet;
     if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
     await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
@@ -818,11 +820,18 @@ async function processAction(playerName,action){
     await fb('PUT','/poker2/bet/lastRaise',betLastRaise);
     await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
     await fb('PATCH','/poker2/contrib',{[enc]:handContribMap[playerName]});
-    const raiserIdx=playersInHand.indexOf(playerName);
-    betQueue=[];
-    for(let i=1;i<playersInHand.length;i++){
-      const p=playersInHand[(raiserIdx+i)%playersInHand.length];
-      if(!foldedMap[p]&&!allInMap[p])betQueue.push(p);
+    if(isFullRaise){
+      // Full raise: reopen betting — everyone gets to act again
+      const raiserIdx=playersInHand.indexOf(playerName);
+      betQueue=[];
+      for(let i=1;i<playersInHand.length;i++){
+        const p=playersInHand[(raiserIdx+i)%playersInHand.length];
+        if(!foldedMap[p]&&!allInMap[p])betQueue.push(p);
+      }
+    } else {
+      // Partial all-in (< min raise): does NOT reopen betting
+      // Only remove this player from the existing queue; others keep their position
+      betQueue=betQueue.filter(n=>n!==playerName);
     }
   }
 
@@ -1197,6 +1206,7 @@ let _knownPhase='',_knownBetOn='',_lastRenderPhase='';
 
 function startPlayerPolling(){
   stopIvs();
+  fb('DELETE',`/rooms/room-7/lobby/${encN(myName)}`);
   const badge=document.getElementById('p-hole');
   if(badge)badge.innerHTML='';
   const nb=document.getElementById('p-name-badge');
@@ -1485,6 +1495,7 @@ window.addEventListener('beforeunload',()=>{
   if(myName){
     fetch(`${DB}/online/${encodeURIComponent(myName)}.json`,{method:'DELETE',keepalive:true});
     fetch(`${DB}/poker2/lobby/${encN(myName)}.json`,{method:'DELETE',keepalive:true});
+    fetch(`${DB}/rooms/room-7/lobby/${encN(myName)}.json`,{method:'DELETE',keepalive:true});
     if(isHost){
       fetch(`${DB}/poker2/host.json`,{method:'PUT',keepalive:true,headers:{'Content-Type':'application/json'},body:'null'});
       fetch(`${DB}/poker2/hostTs.json`,{method:'PUT',keepalive:true,headers:{'Content-Type':'application/json'},body:'null'});
