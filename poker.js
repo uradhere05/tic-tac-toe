@@ -696,6 +696,7 @@ function renderDealerConsole(ph){
       const nCls=netCls(net);
       return`<div class="pl-row${folded?' pl-folded':''}${acting?' pl-acting':''}">
         <span class="pl-name">${escHtml(n)}${acting?' ⏳':''}${allin?' 🔴':''}</span>
+        <span style="font-size:.68rem;opacity:.45;flex-shrink:0">${fmtChips(buyIn)}</span>
         <span class="pl-stack">${fmtChips(chips)}</span>
         <span class="${nCls}" style="font-size:.72rem;font-weight:700;min-width:58px;text-align:right;flex-shrink:0">${netStr}</span>
       </div>`;
