@@ -506,11 +506,15 @@ function isOnline(name){
 function dealerCardHTML(cards){
   const cardsHtml=cards.map(c=>cardHTML(c,true)).join('');
   const board=communityCards.filter(Boolean);
-  let strengthHtml='';
+  let label='';
   if(board.length>=3){
     const score=bestOfN([...cards,...board]);
-    if(score>=0)strengthHtml=`<span class="pr-hand-strength">${handName(score)}</span>`;
+    if(score>=0)label=handName(score);
+  } else if(cards.length===2){
+    const ranks=cards.map(c=>c.r).sort((a,b)=>b-a);
+    label=ranks[0]===ranks[1]?`Pair of ${RANKS[ranks[0]]}s`:`${RANKS[ranks[0]]}-${RANKS[ranks[1]]} High`;
   }
+  const strengthHtml=label?`<span class="pr-hand-strength">${label}</span>`:'';
   return `<div class="pr-cards-row">${cardsHtml}</div>${strengthHtml}`;
 }
 
