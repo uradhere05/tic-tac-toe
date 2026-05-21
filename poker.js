@@ -1495,6 +1495,16 @@ async function renderPlayerPhase(ph,winner){
   }
 }
 
+function updateRaiseBtn(){
+  const input=document.getElementById('raise-amt');
+  const btn=document.getElementById('raise-btn');
+  if(!input||!btn)return;
+  const myStreetBet=betStreetMap[myName]||0;
+  const allInTotal=myStreetBet+(chipsMap[myName]||0);
+  const v=Math.round((+input.value||0)*100/10)*10;
+  btn.textContent=v>=allInTotal?'🔴 All-In':(currentBet===0?'Bet':'Raise');
+}
+
 function renderActionButtons(toCall,myChips){
   const canCheck=toCall===0;
   const isBet=currentBet===0;
@@ -1524,9 +1534,9 @@ function renderActionButtons(toCall,myChips){
             <input type="number" class="raise-input" id="raise-amt"
               min="${(minTotalBet/100).toFixed(2)}" max="${(maxTotalBet/100).toFixed(2)}"
               step="0.10" value="${(minTotalBet/100).toFixed(2)}" placeholder="${fmtChips(minTotalBet)}"
-              onblur="this.value=isNaN(+this.value)?this.value:(+this.value).toFixed(2)"
-              oninput="clearTimeout(this._t);this._t=setTimeout(()=>{if(this.value&&!this.value.endsWith('.')){this.value=(+this.value).toFixed(2)}},800)">
-            <button class="btn btn-gold btn-sm" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
+              onblur="this.value=isNaN(+this.value)?this.value:(+this.value).toFixed(2);updateRaiseBtn()"
+              oninput="clearTimeout(this._t);this._t=setTimeout(()=>{if(this.value&&!this.value.endsWith('.')){this.value=(+this.value).toFixed(2)}},800);updateRaiseBtn()">
+            <button class="btn btn-gold btn-sm" id="raise-btn" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
           </div>
           <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
             min: ${fmtChips(minTotalBet)} · all-in: ${fmtChips(maxTotalBet)}
