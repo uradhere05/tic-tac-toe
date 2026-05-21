@@ -800,10 +800,12 @@ async function processAction(playerName,action){
     pot+=toCall;
     handContribMap[playerName]=(handContribMap[playerName]||0)+toCall;
     if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
-    await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
-    await fb('PUT','/poker2/pot',pot);
-    await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
-    await fb('PATCH','/poker2/contrib',{[enc]:handContribMap[playerName]});
+    await Promise.all([
+      fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]}),
+      fb('PUT','/poker2/pot',pot),
+      fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]}),
+      fb('PATCH','/poker2/contrib',{[enc]:handContribMap[playerName]}),
+    ]);
     betQueue=betQueue.filter(n=>n!==playerName);
   } else if(type==='raise'){
     const prevStreet=betStreetMap[playerName]||0;
@@ -821,12 +823,12 @@ async function processAction(playerName,action){
     if(isFullRaise)betLastRaise=raiseIncrement;
     currentBet=newBet;
     if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
-    await fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]});
-    await fb('PUT','/poker2/pot',pot);
-    await fb('PUT','/poker2/bet/current',currentBet);
-    await fb('PUT','/poker2/bet/lastRaise',betLastRaise);
-    await fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]});
-    await fb('PATCH','/poker2/contrib',{[enc]:handContribMap[playerName]});
+    await Promise.all([
+      fb('PATCH','/poker2/chips',{[enc]:chipsMap[playerName]}),
+      fb('PUT','/poker2/pot',pot),
+      fb('PATCH','/poker2/bet/street',{[enc]:betStreetMap[playerName]}),
+      fb('PATCH','/poker2/contrib',{[enc]:handContribMap[playerName]}),
+    ]);
     if(isFullRaise){
       // Full raise: reopen betting — everyone gets to act again
       const raiserIdx=playersInHand.indexOf(playerName);
@@ -837,7 +839,6 @@ async function processAction(playerName,action){
       }
     } else {
       // Partial all-in (< min raise): does NOT reopen betting
-      // Only remove this player from the existing queue; others keep their position
       betQueue=betQueue.filter(n=>n!==playerName);
     }
   }
@@ -849,8 +850,14 @@ async function processAction(playerName,action){
   }
 
   betOn=betQueue[0]||'';
-  await fb('PUT','/poker2/bet/on',betOn||null);
-  await fb('PUT','/poker2/bet/queue',betQueue);
+  // Write current/lastRaise/on/queue in one atomic PATCH — prevents client from
+  // reading partial state (e.g. currentBet updated but lastRaise still stale)
+  await fb('PATCH','/poker2/bet',{
+    current:currentBet,
+    lastRaise:betLastRaise,
+    on:betOn||null,
+    queue:betQueue,
+  });
   renderDealerConsole(phase);
 }
 
