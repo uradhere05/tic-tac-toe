@@ -1490,7 +1490,7 @@ async function renderPlayerPhase(ph,winner){
     if(myChips===0){
       actionEl.innerHTML+=`<div style="text-align:center;margin-top:10px">
         <div style="font-size:1rem;font-weight:700;margin-bottom:8px">You're out of chips!</div>
-        <button class="btn btn-gold btn-sm" onclick="requestRebuy()">💵 Re-buy $20.00</button>
+        <button class="btn btn-gold btn-sm" onclick="confirmRebuy()">💵 Re-buy $20.00</button>
       </div>`;
     }
   }
@@ -1570,6 +1570,10 @@ async function submitRaise(){
   const isAllIn=chipsAdded>=myChipsNow;
   const label=isAllIn?`🔴 All-In ${fmtChips(newTotalBet)}`:`Raised to ${fmtChips(newTotalBet)}`;
   actionEl.innerHTML=`<div style="opacity:.5;font-size:.82rem;text-align:center;padding:12px">${label} Waiting…</div>`;
+}
+
+function confirmRebuy(){
+  if(confirm('Re-buy for $20.00?'))requestRebuy();
 }
 
 let _rebuying=false;
