@@ -67,10 +67,18 @@ function fmtNet(cents){
 function netCls(cents){return cents>0?'chip-pos':cents<0?'chip-neg':'chip-zero';}
 
 async function recordPokerSession(){
-  if(!isHost||!Object.keys(chipsMap).length)return;
+  if(!isHost)return;
   const monthKey=getMonthKey();
   const now=new Date();
   const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  // Read chips from Firebase — authoritative source, avoids local chipsMap staleness
+  const[freshChips,rebuysData]= await Promise.all([
+    fb('GET','/poker2/chips'),
+    fb('GET','/poker2/rebuys'),
+  ]);
+  const chipsD=freshChips||{};
+  if(!Object.keys(chipsD).length)return;
+  const rebuysD=rebuysData||{};
   // daily game number — resets to 1 each new day
   const dailyCount=await fb('GET',`/poker-hall/${monthKey}/daily/${today}`)||0;
   const gameNum=dailyCount+1;
@@ -79,12 +87,11 @@ async function recordPokerSession(){
   const totalCount=await fb('GET',`/poker-hall/${monthKey}/count`)||0;
   const sessionId=totalCount+1;
   await fb('PUT',`/poker-hall/${monthKey}/count`,sessionId);
-  const rebuysData=await fb('GET','/poker2/rebuys')||{};
   const results={};
-  for(const[name,chips]of Object.entries(chipsMap)){
-    const rebuys=rebuysData[encN(name)]||0;
+  for(const[enc,chips]of Object.entries(chipsD)){
+    const rebuys=rebuysD[enc]||0;
     const buyIn=(1+rebuys)*STARTING_CHIPS;
-    results[encN(name)]={buyIn,net:chips-buyIn};
+    results[enc]={buyIn,net:chips-buyIn};
   }
   const timeStr=new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:true});
   await fb('PUT',`/poker-hall/${monthKey}/sessions/${sessionId}`,{date:today,time:timeStr,gameNum,results});
@@ -960,6 +967,8 @@ async function hostShowdown(){
   const winMessages=[];
   const contestedWinners=new Set(); // won a contested pot
   const allRecipients=new Set();    // all players receiving chips (incl. uncontested returns)
+  let distributed=0;
+  let lastContestWinner=alive[0]; // fallback recipient for any undistributed remainder
 
   for(const{amount,eligible}of sidePots){
     if(!amount||!eligible.length)continue;
@@ -972,14 +981,21 @@ async function hostShowdown(){
       chipsUpdate[encN(n)]=chipsMap[n];
       allRecipients.add(n);
     });
+    distributed+=amount;
     if(eligible.length===1){
-      // uncontested — excess uncalled bet returned, no hand comparison needed
       winMessages.push(`${eligible[0]} gets ${fmtChips(amount)} back (uncalled)`);
     } else {
       const handStr=potWinners.length===1?handName(maxS):'split pot';
       winMessages.push(`${potWinners.join(' & ')} wins ${fmtChips(amount)} with ${handStr}`);
-      potWinners.forEach(n=>contestedWinners.add(n));
+      potWinners.forEach(n=>{contestedWinners.add(n);lastContestWinner=n;});
     }
+  }
+
+  // Safety: if contrib sum < pot (can happen if a Firebase write lagged), give remainder to winner
+  const potRemainder=pot-distributed;
+  if(potRemainder>0&&lastContestWinner){
+    chipsMap[lastContestWinner]=(chipsMap[lastContestWinner]||0)+potRemainder;
+    chipsUpdate[encN(lastContestWinner)]=chipsMap[lastContestWinner];
   }
 
   const winnerNames=[...(contestedWinners.size?contestedWinners:allRecipients)].join(' & ');
