@@ -672,6 +672,20 @@ function renderDealerConsole(ph){
   document.getElementById('d-pot').textContent=fmtChips(pot);
   document.getElementById('d-blinds').textContent=`${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
 
+  const chipsEl=document.getElementById('d-chips');
+  if(chipsEl){
+    const allP=Object.keys(chipsMap).length?Object.keys(chipsMap):playersInHand;
+    chipsEl.innerHTML=allP.map(n=>{
+      const folded=foldedMap[n];
+      const allin=allInMap[n];
+      const acting=betOn===n;
+      return`<div class="pl-row${folded?' pl-folded':''}${acting?' pl-acting':''}">
+        <span>${escHtml(n)}${acting?' ⏳':''}${allin?' 🔴':''}</span>
+        <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
+      </div>`;
+    }).join('');
+  }
+
   const comm=document.getElementById('d-community');
   comm.innerHTML='';
   for(let i=0;i<5;i++){
