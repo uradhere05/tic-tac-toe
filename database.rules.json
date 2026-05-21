@@ -11,6 +11,12 @@
 
     "rooms": {
       "$room": {
+        "lobby": {
+          "$player": {
+            ".write": true,
+            ".validate": "newData.val() === null || (newData.hasChildren(['name','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 30 && newData.child('ts').isNumber())"
+          }
+        },
         "$role": {
           ".write": true,
           ".validate": "newData.val() === null || (newData.hasChildren(['name','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 30 && newData.child('ts').isNumber())"
