@@ -1238,7 +1238,7 @@ async function writePlayerPresence(){
 async function pollGameState(){
   if(_pollRunning)return;_pollRunning=true;
   try{
-    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD,standD,ssD]=await Promise.all([
+    const[phD,potD,commD,annD,chipsD,betD,foldedD,allInD,winnerD,avsD,blD,standD,ssD,playersD,dealerPosD]=await Promise.all([
       fb('GET','/poker2/phase'),fb('GET','/poker2/pot'),
       fb('GET','/poker2/community'),fb('GET','/poker2/announcement'),
       fb('GET','/poker2/chips'),fb('GET','/poker2/bet'),
@@ -1246,6 +1246,7 @@ async function pollGameState(){
       fb('GET','/poker2/winner'),fb('GET','/poker2/avatars'),
       fb('GET','/poker2/blindLevel'),fb('GET',`/poker2/standing/${encN(myName)}`),
       fb('GET','/poker2/startStack'),
+      fb('GET','/poker2/players'),fb('GET','/poker2/dealerPos'),
     ]);
     if(blD!=null){blindLevel=blD;currentSB=BLIND_LEVELS[blindLevel].sb;currentBB=BLIND_LEVELS[blindLevel].bb;}
     if(standD){
@@ -1268,6 +1269,11 @@ async function pollGameState(){
     foldedMap=foldedD?Object.fromEntries(Object.entries(foldedD).map(([k,v])=>[decN(k),v])):{};
     allInMap=allInD?Object.fromEntries(Object.entries(allInD).map(([k,v])=>[decN(k),v])):{};
     if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
+    if(Array.isArray(playersD)&&playersD.length)playersInHand=playersD;
+    if(dealerPosD!=null)dealerPos=dealerPosD;
+    // Update name badge with position
+    const nb=document.getElementById('p-name-badge');
+    if(nb){const pos=posLabel(myName);nb.textContent=pos?`${myName} · ${pos}`:myName;}
     if(commD){for(let i=0;i<5;i++) communityCards[i]=commD[i]||null;}
     else if(phD==='preflop'||phD==='lobby') communityCards=[null,null,null,null,null];
     if(betD){
@@ -1328,15 +1334,39 @@ function renderStatusRow(){
   if(pb)pb.textContent=`${fmtChips(currentSB)}/${fmtChips(currentBB)}`;
 }
 
+function posLabel(name){
+  if(!playersInHand.length)return'';
+  const n=playersInHand.length;
+  const idx=playersInHand.indexOf(name);
+  if(idx===-1)return'';
+  const dPos=dealerPos%n;
+  const sbPos=n===2?dPos:(dPos+1)%n;
+  const bbPos=n===2?(dPos+1)%n:(dPos+2)%n;
+  if(idx===dPos)return n===2?'D/SB':'D';
+  if(idx===sbPos)return'SB';
+  if(idx===bbPos)return'BB';
+  return'';
+}
+function posChip(name){
+  const lbl=posLabel(name);
+  if(!lbl)return'';
+  const cls=lbl==='D'||lbl==='D/SB'?'background:#FFD200;color:#1a1000'
+    :lbl==='SB'?'background:rgba(52,152,219,0.8);color:#fff'
+    :'background:rgba(46,204,113,0.8);color:#fff';
+  return`<span style="font-size:.52rem;font-weight:900;padding:1px 6px;border-radius:8px;letter-spacing:1px;margin-left:5px;${cls}">${lbl}</span>`;
+}
+
 function renderOtherPlayers(){
   const el=document.getElementById('p-others');
   if(!el)return;
-  const players=Object.keys(chipsMap).filter(n=>n!==myName);
+  const players=playersInHand.length
+    ?playersInHand.filter(n=>n!==myName)
+    :Object.keys(chipsMap).filter(n=>n!==myName);
   el.innerHTML=players.map(n=>{
     const folded=foldedMap[n];
     const allin=allInMap[n];
     return`<div class="pl-row${folded?' pl-folded':''}${n===betOn?' pl-acting':''}">
-      <span>${escHtml(n)}${n===betOn?' ⏳':''}${allin?' 🔴':''}</span>
+      <span>${escHtml(n)}${posChip(n)}${n===betOn?' ⏳':''}${allin?' 🔴':''}</span>
       <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
     </div>`;
   }).join('');
