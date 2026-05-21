@@ -523,15 +523,14 @@ function dealerCardHTML(cards){
 function togglePlayerCards(enc){
   hiddenCards[enc]=!hiddenCards[enc];
   const el=document.getElementById(`pr-cards-${enc}`);
-  const btn=document.getElementById(`pr-reveal-${enc}`);
   if(!el)return;
+  const icon=hiddenCards[enc]?'👁':'🙈';
+  const btnHtml=`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${icon}</button>`;
   if(hiddenCards[enc]){
-    el.innerHTML=`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`;
-    if(btn)btn.textContent='👁';
+    el.innerHTML=`${btnHtml}<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`;
   }else{
     const cards=dealerHandsCache[enc];
-    if(cards&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
-    if(btn)btn.textContent='🙈';
+    el.innerHTML=btnHtml+(cards&&Array.isArray(cards)?dealerCardHTML(cards):`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`);
   }
 }
 
@@ -733,8 +732,7 @@ function renderDealerConsole(ph){
       <span class="pr-stack" id="pr-stack-${enc}">${fmtChips(chips)}</span>
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
-      ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`:''}
-      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`:''}</span>
+      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button><div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`:''}</span>
     </div>`;
   });
 
