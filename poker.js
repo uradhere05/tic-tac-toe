@@ -1409,7 +1409,7 @@ function renderActionButtons(toCall,myChips){
           :`<div class="raise-row">
             <input type="number" class="raise-input" id="raise-amt"
               min="${(minAdd/100).toFixed(2)}" max="${(maxAdd/100).toFixed(2)}"
-              step="0.01" value="${(defaultAdd/100).toFixed(2)}" placeholder="${fmtChips(minAdd)}">
+              step="0.10" value="${(defaultAdd/100).toFixed(2)}" placeholder="${fmtChips(minAdd)}">
             <button class="btn btn-gold btn-sm" onclick="submitRaise()">${isBet?'Bet':'Raise'}</button>
           </div>
           <div style="font-size:.6rem;opacity:.4;text-align:center;margin-top:4px">
@@ -1432,7 +1432,7 @@ async function submitRaise(){
   const minRaiseTotal=currentBet+betLastRaise;
   // All-in button path — no input element
   const input=document.getElementById('raise-amt');
-  const addAmt=input?Math.round(+input.value*100)*1:myChipsNow; // cents, no rounding needed for all-in
+  const addAmt=input?Math.round(+input.value*100/10)*10:myChipsNow; // round to nearest 10¢ chip
   const raiseTotal=addAmt+myStreetBet;
   if(raiseTotal<minRaiseTotal&&raiseTotal<myMaxBet){toast(`Min ${currentBet===0?'bet':'raise'}: ${fmtChips(Math.max(0,minRaiseTotal-myStreetBet))}`);return;}
   if(raiseTotal>myMaxBet){toast(`Max: ${fmtChips(myChipsNow)}`);return;}
