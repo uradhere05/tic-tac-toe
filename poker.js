@@ -504,13 +504,14 @@ function isOnline(name){
 }
 
 function dealerCardHTML(cards){
-  let html=cards.map(c=>cardHTML(c,true)).join('');
+  const cardsHtml=cards.map(c=>cardHTML(c,true)).join('');
   const board=communityCards.filter(Boolean);
+  let strengthHtml='';
   if(board.length>=3){
     const score=bestOfN([...cards,...board]);
-    if(score>=0)html+=`<span class="pr-hand-strength">${handName(score)}</span>`;
+    if(score>=0)strengthHtml=`<span class="pr-hand-strength">${handName(score)}</span>`;
   }
-  return html;
+  return `<div class="pr-cards-row">${cardsHtml}</div>${strengthHtml}`;
 }
 
 function togglePlayerCards(enc){
@@ -519,7 +520,7 @@ function togglePlayerCards(enc){
   const btn=document.getElementById(`pr-reveal-${enc}`);
   if(!el)return;
   if(hiddenCards[enc]){
-    el.innerHTML=cardHTML(null,true)+cardHTML(null,true);
+    el.innerHTML=`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`;
     if(btn)btn.textContent='👁';
   }else{
     const cards=dealerHandsCache[enc];
@@ -719,7 +720,7 @@ function renderDealerConsole(ph){
       <span class="pr-bet">${bet?fmtChips(bet):''}</span>
       <span class="pr-status ${statusCls}">${statusTxt}</span>
       ${phase!=='lobby'?`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`:''}
-      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?cardHTML(null,true)+cardHTML(null,true):''}</span>
+      <span class="pr-cards" id="pr-cards-${enc}">${phase!=='lobby'?`<div class="pr-cards-row">${cardHTML(null,true)+cardHTML(null,true)}</div>`:''}</span>
     </div>`;
   });
 
