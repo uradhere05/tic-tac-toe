@@ -958,5 +958,9 @@ body {
 <script src="hall.js"></script>
 <script src="poker.js?v=14"></script>
 <script src="chat.js"></script>
+<!-- 3D visual layer — load order matters: Three.js → GSAP → poker-3d -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="poker-3d.js"></script>
 </body>
 </html>
