@@ -1154,9 +1154,11 @@ async function sendAnnouncement(){
   toast('Announcement sent');
 }
 let _cmCallback=null;
-function showConfirm(title,msg,onOk){
+function showConfirm(title,msg,onOk,btnCls='btn-danger',btnLabel='Confirm'){
   document.getElementById('cm-title').textContent=title;
   document.getElementById('cm-msg').textContent=msg;
+  const okBtn=document.getElementById('cm-ok-btn');
+  if(okBtn){okBtn.className=`btn btn-sm ${btnCls}`;okBtn.textContent=btnLabel;}
   _cmCallback=onOk;
   document.getElementById('confirm-modal').classList.add('active');
 }
@@ -1175,7 +1177,7 @@ function endSession(){
     toast('Cannot end session while a hand is in progress',3000);
     return;
   }
-  showConfirm('End Session?','This will close the game for all players.',hostEndSession);
+  showConfirm('End Session?','This will close the game for all players.',hostEndSession,'btn-danger','End Session');
 }
 
 /* ─── Seat Arrangement ─── */
@@ -1577,7 +1579,7 @@ async function submitRaise(){
 }
 
 function confirmRebuy(){
-  if(confirm('Re-buy for $20.00?'))requestRebuy();
+  showConfirm('Re-buy?','Add $20.00 to your stack?',requestRebuy,'btn-gold','💵 Re-buy');
 }
 
 let _rebuying=false;
