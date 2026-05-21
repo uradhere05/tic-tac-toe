@@ -29,6 +29,7 @@ let seatOrder=[],_dragFrom=-1,_touchDragIdx=-1;
 let onlineMap={};
 let dealerHandsCache={},hiddenCards={};
 let blindLevel=0,currentSB=SB,currentBB=BB;
+let rebuysMap={};
 
 /* ─── Firebase ─── */
 const encN=n=>n.replace(/ /g,'_');
@@ -436,14 +437,14 @@ async function hostStartSession(orderedPlayers){
 
 /* ─── Dealer: Game Control ─── */
 async function reloadDealerState(){
-  const[,chipsD,foldedD,allInD,communityD,communityFullD,potD,betD,roundD,playersD,dealerPosD,avsD,contribD]=await Promise.all([
+  const[,chipsD,foldedD,allInD,communityD,communityFullD,potD,betD,roundD,playersD,dealerPosD,avsD,contribD,rebuysD]=await Promise.all([
     fb('GET','/poker2/hands'),fb('GET','/poker2/chips'),
     fb('GET','/poker2/folded'),fb('GET','/poker2/allIn'),
     fb('GET','/poker2/community'),fb('GET','/poker2/communityFull'),
     fb('GET','/poker2/pot'),fb('GET','/poker2/bet'),
     fb('GET','/poker2/round'),fb('GET','/poker2/players'),
     fb('GET','/poker2/dealerPos'),fb('GET','/poker2/avatars'),
-    fb('GET','/poker2/contrib'),
+    fb('GET','/poker2/contrib'),fb('GET','/poker2/rebuys'),
   ]);
   if(chipsD)Object.entries(chipsD).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
   if(foldedD)Object.entries(foldedD).forEach(([k,v])=>{foldedMap[decN(k)]=v;});
@@ -461,6 +462,7 @@ async function reloadDealerState(){
   if(dealerPosD!=null)dealerPos=dealerPosD;
   if(avsD)Object.entries(avsD).forEach(([k,v])=>{avatarsMap[decN(k)]=v;});
   if(contribD)Object.entries(contribD).forEach(([k,v])=>{handContribMap[decN(k)]=v;});
+  if(rebuysD)Object.entries(rebuysD).forEach(([k,v])=>{rebuysMap[decN(k)]=v;});
   if(betD){
     currentBet=betD.current||0;
     betLastRaise=betD.lastRaise||currentBB;
@@ -684,9 +686,15 @@ function renderDealerConsole(ph){
       const folded=foldedMap[n];
       const allin=allInMap[n];
       const acting=betOn===n;
+      const chips=chipsMap[n]||0;
+      const buyIn=(1+(rebuysMap[n]||0))*STARTING_CHIPS;
+      const net=chips-buyIn;
+      const netStr=fmtNet(net);
+      const nCls=netCls(net);
       return`<div class="pl-row${folded?' pl-folded':''}${acting?' pl-acting':''}">
-        <span>${escHtml(n)}${acting?' ⏳':''}${allin?' 🔴':''}</span>
-        <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
+        <span class="pl-name">${escHtml(n)}${acting?' ⏳':''}${allin?' 🔴':''}</span>
+        <span class="pl-stack">${fmtChips(chips)}</span>
+        <span class="${nCls}" style="font-size:.72rem;font-weight:700;min-width:58px;text-align:right;flex-shrink:0">${netStr}</span>
       </div>`;
     }).join('');
   }
