@@ -684,9 +684,15 @@ function renderDealerConsole(ph){
       const folded=foldedMap[n];
       const allin=allInMap[n];
       const acting=betOn===n;
+      const chips=chipsMap[n]||0;
+      const buyIn=(1+(rebuysMap[n]||0))*STARTING_CHIPS;
+      const net=chips-buyIn;
+      const netStr=net===0?'$0.00':(net>0?'+':'')+`$${(net/100).toFixed(2)}`;
+      const netCls=net>0?'chip-pos':net<0?'chip-neg':'chip-zero';
       return`<div class="pl-row${folded?' pl-folded':''}${acting?' pl-acting':''}">
-        <span>${escHtml(n)}${acting?' ⏳':''}${allin?' 🔴':''}</span>
-        <span class="pl-stack">${fmtChips(chipsMap[n]||0)}</span>
+        <span class="pl-name">${escHtml(n)}${acting?' ⏳':''}${allin?' 🔴':''}</span>
+        <span class="pl-stack">${fmtChips(chips)}</span>
+        <span class="${netCls}" style="font-size:.72rem;font-weight:700;min-width:58px;text-align:right;flex-shrink:0">${netStr}</span>
       </div>`;
     }).join('');
   }
