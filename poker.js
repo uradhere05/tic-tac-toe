@@ -547,11 +547,15 @@ async function hostStartHand(){
   if(freshChips)Object.entries(freshChips).forEach(([k,v])=>{chipsMap[decN(k)]=v;});
   const lobby=freshLobby||{}, standing=standingD||{};
   const now2=Date.now();
-  // Buy in brand-new lobby players
+  // Buy in brand-new lobby players — write to Firebase immediately so other clients see them
+  const newPlayerChips={};
   Object.values(lobby).forEach(p=>{
-    if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName&&!(p.name in chipsMap))
+    if(p?.name&&p.ready&&now2-p.ts<STALE_MS&&p.name!==hostName&&!(p.name in chipsMap)){
       chipsMap[p.name]=STARTING_CHIPS;
+      newPlayerChips[encN(p.name)]=STARTING_CHIPS;
+    }
   });
+  if(Object.keys(newPlayerChips).length)await fb('PATCH','/poker2/chips',newPlayerChips);
   const inHand=new Set(playersInHand);
   // Existing seated players with chips, not standing
   const activePlayers=playersInHand.filter(n=>chipsMap[n]>0&&!standing[encN(n)]);
@@ -565,7 +569,10 @@ async function hostStartHand(){
   playersInHand=activePlayers;
 
   round++;
-  dealerPos=(dealerPos+1)%activePlayers.length;
+  // Advance dealer by name so the button is correct even if players left mid-session
+  const prevDealerName=playersInHand[dealerPos]||null;
+  const prevIdx=prevDealerName?activePlayers.indexOf(prevDealerName):-1;
+  dealerPos=((prevIdx!==-1?prevIdx:dealerPos%activePlayers.length)+1)%activePlayers.length;
   foldedMap={};allInMap={};betStreetMap={};handContribMap={};dealerHandsCache={};pot=0;currentBet=currentBB;betLastRaise=currentBB;
   communityCards=[null,null,null,null,null];
   handStartTs=Date.now();
@@ -928,7 +935,8 @@ async function hostDealRiver(){
 // allPlayers includes folded players (their money is in the pot but they can't win).
 // eligible = non-folded players.
 function computeSidePots(allPlayers,eligible,contribs){
-  const levels=[...new Set(eligible.map(n=>contribs[n]||0))].sort((a,b)=>a-b);
+  // Use ALL players for levels so folded players' excess contributions are covered
+  const levels=[...new Set(allPlayers.map(n=>contribs[n]||0))].sort((a,b)=>a-b);
   const pots=[];
   let prev=0;
   for(const level of levels){
@@ -936,7 +944,15 @@ function computeSidePots(allPlayers,eligible,contribs){
     if(!inc)continue;
     const amount=allPlayers.reduce((s,n)=>s+Math.min(inc,Math.max(0,(contribs[n]||0)-prev)),0);
     const elig=eligible.filter(n=>(contribs[n]||0)>=level);
-    if(amount>0&&elig.length>0)pots.push({amount,eligible:elig});
+    if(amount>0){
+      if(elig.length>0){
+        pots.push({amount,eligible:elig});
+      } else if(pots.length>0){
+        // Folded player contributed above all eligible players' levels —
+        // excess goes to the winner of the highest eligible pot (correct side-pot rule)
+        pots[pots.length-1].amount+=amount;
+      }
+    }
     prev=level;
   }
   return pots;
@@ -1444,7 +1460,7 @@ async function submitAction(type,amount){
 async function submitRaise(){
   const myStreetBet=betStreetMap[myName]||0;
   const myChipsNow=chipsMap[myName]||0;
-  const myMaxBet=startStackMap[myName]||(myStreetBet+myChipsNow);
+  const myMaxBet=myStreetBet+myChipsNow; // all-in cap = invested + remaining, no stale startStack
   const input=document.getElementById('raise-amt');
   // raise = new_total_bet - current_bet (what the input represents)
   // all-in button: raise = allInTotalBet - currentBet
