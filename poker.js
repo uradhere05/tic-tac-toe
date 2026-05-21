@@ -1566,7 +1566,8 @@ async function submitRaise(){
   if(chipsAdded>myChipsNow){toast(`Not enough chips (need ${fmtChips(chipsAdded)})`);return;}
   await fb('PUT',`/poker2/bet/action/${encN(myName)}`,{type:'raise',amount:newTotalBet,ts:Date.now()});
   const actionEl=document.getElementById('p-action');
-  const label=input?`Raised to ${fmtChips(newTotalBet)}`:'All-In!';
+  const isAllIn=chipsAdded>=myChipsNow;
+  const label=isAllIn?`🔴 All-In ${fmtChips(newTotalBet)}`:`Raised to ${fmtChips(newTotalBet)}`;
   actionEl.innerHTML=`<div style="opacity:.5;font-size:.82rem;text-align:center;padding:12px">${label} Waiting…</div>`;
 }
 
