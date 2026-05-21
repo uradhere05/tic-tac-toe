@@ -820,7 +820,7 @@ async function processAction(playerName,action){
     const newBet=betStreetMap[playerName];
     const raiseIncrement=newBet-currentBet;
     const isFullRaise=raiseIncrement>=betLastRaise;
-    if(isFullRaise)betLastRaise=raiseIncrement;
+    if(isFullRaise)betLastRaise=newBet; // next min raise = newBet so total ≥ 2× current
     currentBet=newBet;
     if(chipsMap[playerName]<=0){allInMap[playerName]=true;await fb('PUT',`/poker2/allIn/${enc}`,true);}
     await Promise.all([
