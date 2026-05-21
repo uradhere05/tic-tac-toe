@@ -641,7 +641,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.45</div>
+  <div class="app-version">v4.46</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -867,12 +867,13 @@
 
   async function loadOnlineAndRooms() {
     try {
-      const [roomsData] = await Promise.all([
+      const [roomsData, pokerPhase] = await Promise.all([
         fetch(`${DB}/rooms.json`).then(r => r.json()).catch(() => ({})),
+        fetch(`${DB}/poker2/phase.json`).then(r => r.json()).catch(() => null),
         loadOnlineUsers(),
         renderMafiaRoom(),
       ]);
-      renderRooms(roomsData || {});
+      renderRooms(roomsData || {}, pokerPhase);
     } catch {}
   }
 
@@ -955,13 +956,16 @@
 
   async function loadRoomPresence() {
     try {
-      const data = await fetch(`${DB}/rooms.json`).then(r => r.json()) || {};
-      renderRooms(data);
+      const [data, pokerPhase] = await Promise.all([
+        fetch(`${DB}/rooms.json`).then(r => r.json()).catch(() => ({})),
+        fetch(`${DB}/poker2/phase.json`).then(r => r.json()).catch(() => null),
+      ]);
+      renderRooms(data || {}, pokerPhase);
       renderMafiaRoom();
     } catch { renderRooms({}); }
   }
 
-  function renderRooms(data) {
+  function renderRooms(data, pokerPhase) {
     const now = Date.now();
     nameRoomMap = {};
     const latestRoom = {};
@@ -997,17 +1001,22 @@
         card && card.classList.remove('full'); card && card.classList.remove('waiting');
       }
     }
-    // Room 7 — poker lobby presence
+    // Room 7 — poker: show game-in-progress, lobby count, or open
     const r7el = document.getElementById('rp-7');
     if (r7el) {
-      const r7 = (data && data['room-7']) || {};
-      const r7lobby = r7.lobby || {};
-      const activePlayers = Object.values(r7lobby).filter(p => p?.ts && now - p.ts < ONLINE_STALE);
-      if (activePlayers.length > 0) {
-        r7el.innerHTML = `<span class="rp-waiting">${activePlayers.length} in lobby…</span>`;
+      const activePokPhases = ['preflop','flop','turn','river','showdown'];
+      if (pokerPhase && activePokPhases.includes(pokerPhase)) {
+        r7el.innerHTML = '<span class="rp-playing">Game in progress 🃏</span>';
       } else {
-        r7el.textContent = 'Room Open';
-        r7el.className = 'rl';
+        const r7 = (data && data['room-7']) || {};
+        const r7lobby = r7.lobby || {};
+        const activePlayers = Object.values(r7lobby).filter(p => p?.ts && now - p.ts < ONLINE_STALE);
+        if (activePlayers.length > 0) {
+          r7el.innerHTML = `<span class="rp-waiting">${activePlayers.length} in lobby…</span>`;
+        } else {
+          r7el.textContent = 'Room Open';
+          r7el.className = 'rl';
+        }
       }
     }
   }
