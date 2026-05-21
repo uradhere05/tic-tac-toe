@@ -137,7 +137,7 @@
   // ── prune old messages once ────────────────────────────────────────────────
   function pruneOnce() {
     fetch(`${DB}/chat.json`).then(r => r.json()).then(async data => {
-      const cutoff = Date.now() - 28 * 86400000;
+      const cutoff = Date.now() - 7 * 86400000;
       const stale  = Object.entries(data || {}).filter(([, v]) => v && v.ts < cutoff).map(([k]) => k);
       for (let i = 0; i < stale.length; i += 10)
         await Promise.all(stale.slice(i, i + 10).map(k => fetch(`${DB}/chat/${k}.json`, { method: 'DELETE' })));
