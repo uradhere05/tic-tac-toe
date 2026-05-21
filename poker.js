@@ -291,6 +291,7 @@ function bestOfN(cards){
 
 const HAND_NAMES=['High Card','One Pair','Two Pair','Three of a Kind','Straight','Flush','Full House','Four of a Kind','Straight Flush'];
 function handName(score){return HAND_NAMES[score>>20]||'High Card';}
+const dispRank=r=>RANKS[r]==='T'?'10':RANKS[r];
 
 /* ─── Lobby ─── */
 async function enterLobby(){
@@ -515,8 +516,8 @@ function dealerCardHTML(cards){
   } else if(cards.length===2){
     const ranks=cards.map(c=>c.r).sort((a,b)=>b-a);
     const suited=cards[0].s===cards[1].s;
-    if(ranks[0]===ranks[1])label=`Pair of ${RANKS[ranks[0]]}s`;
-    else label=`${RANKS[ranks[0]]}-${RANKS[ranks[1]]}${suited?' Suited':' High'}`;
+    if(ranks[0]===ranks[1])label=`Pair of ${dispRank(ranks[0])}s`;
+    else label=`${dispRank(ranks[0])}-${dispRank(ranks[1])}${suited?' Suited':' High'}`;
   }
   const strengthHtml=label?`<span class="pr-hand-strength">${label}</span>`:'';
   return `<div class="pr-cards-row">${cardsHtml}</div>${strengthHtml}`;
@@ -1353,8 +1354,8 @@ function renderHandStrength(){
     // Preflop: evaluate hole cards alone as 2-card rank
     const ranks=holeCards.map(c=>c.r).sort((a,b)=>b-a);
     const suited=holeCards[0].s===holeCards[1].s;
-    if(ranks[0]===ranks[1])el.textContent=`Pair of ${RANKS[ranks[0]]}s`;
-    else el.textContent=`${RANKS[ranks[0]]}-${RANKS[ranks[1]]}${suited?' Suited':' High'}`;
+    if(ranks[0]===ranks[1])el.textContent=`Pair of ${dispRank(ranks[0])}s`;
+    else el.textContent=`${dispRank(ranks[0])}-${dispRank(ranks[1])}${suited?' Suited':' High'}`;
   } else {
     const score=bestOfN([...holeCards,...board]);
     el.textContent=score>=0?handName(score):'';
