@@ -28,7 +28,9 @@
       "$week": {
         "$name": {
           ".write": true,
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+          "$game": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+          }
         }
       }
     },

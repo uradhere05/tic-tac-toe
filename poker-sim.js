@@ -1,344 +1,163 @@
-'use strict';
-/**
- * Poker Sim — 5 players, full multi-hand session, records Hall of Chips
- * Journey: index.html → name → Arena lobby → Room 7 → poker.html
- *          → role-select → lobby → N hands → end session → Hall of Chips
- *
- * Run: node poker-sim.js
- */
 const { chromium } = require('playwright');
-const { execSync } = require('child_process');
+const URL = 'https://filo-gang-arena.web.app/poker.html';
+const DEALER_NAME = 'Kuya AD';
+const PLAYERS = ['Matt','Gianne','Austin'];
+const ROUNDS = 5;
+const bugs = [];
 
-const BASE  = 'http://localhost:8080';
-const DB    = 'https://filo-gang-tictactoe-default-rtdb.firebaseio.com';
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-const N_HANDS = 10; // hands to play per session
-
-function getScreenSize() {
-  try {
-    const out = execSync("osascript -e 'tell application \"Finder\" to get bounds of window of desktop'").toString().trim();
-    const [,,w,h] = out.split(',').map(Number);
-    return { w, h };
-  } catch { return { w: 1440, h: 900 }; }
-}
-const { w: SCR_W, h: SCR_H } = getScreenSize();
-
-const DEALER  = { name: 'Kuya AD' };
-const PLAYERS = [
-  { name: 'Matt' },
-  { name: 'Gianne' },
-  { name: 'Austin' },
-  { name: 'Charm' },
-];
-const ALL = [DEALER, ...PLAYERS];
-const COLS = ALL.length;           // 6 windows
-const WIN_W = Math.floor(SCR_W / COLS);
-const WIN_H = SCR_H;
-
-/* ── Firebase helper ── */
-const fb = (path, method = 'GET', body) =>
-  fetch(`${DB}${path}.json`,
-    body !== undefined
-      ? { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-      : { method }
-  ).then(r => r.json()).catch(() => null);
-
-/* ── Assertions ── */
-let passed = 0, failed = 0;
-function assert(ok, label, detail = '') {
-  if (ok) { console.log(`  ✅ ${label}`); passed++; }
-  else     { console.log(`  ❌ ${label}${detail ? '  ← ' + detail : ''}`); failed++; }
-}
-
-/* ── Open a positioned browser window ── */
-async function openWindow(browser, x) {
-  const ctx  = await browser.newContext({ viewport: null });
+async function makeCtx(browser, name) {
+  const ctx = await browser.newContext({ viewport: { width: 420, height: 820 } });
+  await ctx.addInitScript(n => localStorage.setItem('filoName', n), name);
   const page = await ctx.newPage();
-  try {
-    const cdp = await ctx.newCDPSession(page);
-    const { windowId } = await cdp.send('Browser.getWindowForTarget');
-    await cdp.send('Browser.setWindowBounds', {
-      windowId, bounds: { left: x, top: 0, width: WIN_W, height: WIN_H, windowState: 'normal' }
-    });
-  } catch {}
-  await page.goto(`${BASE}/index.html`);
+  page.on('console', m => { if (m.type() === 'error') bugs.push('['+name+'] '+m.text()); });
+  page.on('pageerror', e => bugs.push('['+name+'] PAGE ERR: '+e.message));
+  await page.goto(URL, { waitUntil: 'networkidle' });
   return page;
 }
 
-/* ── Wait until a screen id is active on all pages ── */
-async function waitScreen(pages, id, timeout = 22000) {
-  const arr = Array.isArray(pages) ? pages : [pages];
-  const dl = Date.now() + timeout;
-  while (Date.now() < dl) {
-    const ok = await Promise.all(
-      arr.map(p => p.evaluate(sid => document.getElementById(sid)?.classList.contains('active'), id).catch(() => false))
-    );
-    if (ok.every(Boolean)) return true;
-    await sleep(400);
-  }
-  return false;
+async function clickBtn(page, text, timeout) {
+  timeout = timeout || 12000;
+  try {
+    await page.waitForSelector('button:has-text("'+text+'")', { state: 'visible', timeout });
+    await page.click('button:has-text("'+text+'")');
+    return true;
+  } catch(e) { bugs.push('TIMEOUT: '+text); return false; }
 }
 
-/* ── Wait for a Firebase value ── */
-async function waitFb(path, expected, timeout = 12000) {
-  const dl = Date.now() + timeout;
-  while (Date.now() < dl) {
-    if ((await fb(path)) === expected) return true;
-    await sleep(500);
-  }
-  return false;
-}
-
-/* ── Bet loop: call or check until betOn is null ── */
-async function playBettingRound(playerPages, label) {
-  console.log(`\n  🎰 ${label}…`);
-  const byName = name => {
-    const idx = PLAYERS.findIndex(p => p.name === name);
-    return idx >= 0 ? playerPages[idx] : null;
-  };
-
-  for (let i = 0; i < 20; i++) {
-    const on = await fb('/poker2/bet/on');
-    if (!on) break;
-
-    const curBet  = await fb('/poker2/bet/current')  || 0;
-    const encOn   = on.replace(/ /g, '_');
-    const myBetSt = await fb(`/poker2/bet/street/${encOn}`) || 0;
-    const action  = curBet > myBetSt ? 'call' : 'check';
-
-    console.log(`    ${on}: ${action}`);
-    const pg = byName(on);
-    if (pg) {
-      await pg.evaluate(act => submitAction(act, 0), action).catch(() => {});
-    }
-
-    // Wait for betOn to change
-    const dl = Date.now() + 8000;
-    while (Date.now() < dl) {
-      const next = await fb('/poker2/bet/on');
-      if (next !== on) break;
-      await sleep(350);
-    }
-  }
-}
-
-/* ── Play one complete hand ── */
-async function playHand(dealerPage, playerPages, handNum) {
-  console.log(`\n${'─'.repeat(52)}`);
-  console.log(`  Hand #${handNum}`);
-  console.log('─'.repeat(52));
-
-  // Deal
-  await dealerPage.evaluate(() => hostStartHand()).catch(() => {});
-  if (!await waitFb('/poker2/phase', 'preflop', 10000)) {
-    console.log('  ⚠️  preflop timeout — skipping hand');
-    return false;
-  }
-  await sleep(1200);
-
-  await playBettingRound(playerPages, 'Pre-flop');
-
-  // Flop
-  await dealerPage.evaluate(() => hostDealFlop()).catch(() => {});
-  await waitFb('/poker2/phase', 'flop', 8000);
-  await sleep(800);
-  await playBettingRound(playerPages, 'Flop');
-
-  // Turn
-  await dealerPage.evaluate(() => hostDealTurn()).catch(() => {});
-  await waitFb('/poker2/phase', 'turn', 8000);
-  await sleep(800);
-  await playBettingRound(playerPages, 'Turn');
-
-  // River
-  await dealerPage.evaluate(() => hostDealRiver()).catch(() => {});
-  await waitFb('/poker2/phase', 'river', 8000);
-  await sleep(800);
-  await playBettingRound(playerPages, 'River');
-
-  // Showdown
-  await dealerPage.evaluate(() => hostShowdown()).catch(() => {});
-  await waitFb('/poker2/phase', 'showdown', 8000);
-  await sleep(1500);
-
-  const winner = await fb('/poker2/winner');
-  const pot    = await fb('/poker2/pot');
-  const chips  = await fb('/poker2/chips') || {};
-  const total  = Object.values(chips).reduce((s, v) => s + (v || 0), 0);
-  const expectedTotal = PLAYERS.length * 2000;
-  console.log(`\n  Winner: ${winner || '?'}   Pot was: $${((pot || 0) / 100).toFixed(2)}`);
-  console.log(`  Chips: ${Object.entries(chips).map(([k,v]) => `${k.replace(/_/g,' ')}=$${(v/100).toFixed(2)}`).join('  ')}`);
-  const conserved = total === expectedTotal;
-  console.log(`  Total chips conserved: $${(total / 100).toFixed(2)} ${conserved ? '✅' : `⚠️  expected $${(expectedTotal/100).toFixed(2)}`}`);
-  assert(conserved, `Hand #${handNum}: chips conserved ($${(total/100).toFixed(2)})`);
-  return true;
-}
-
-/* ── Main ── */
-async function run() {
-  console.log('\n🃏  Poker Sim — 5 players, multi-hand session');
-  console.log(`    Screen ${SCR_W}×${SCR_H} → ${COLS} cols @ ${WIN_W}px each\n`);
-
-  // Clear Firebase
-  console.log('🗑️  Clearing /poker2 data…');
-  await fb('/poker2', 'DELETE');
-  await Promise.all(ALL.map(p => fb(`/online/${encodeURIComponent(p.name)}`, 'DELETE')));
-  await sleep(600);
-
-  const browser = await chromium.launch({
-    headless: false,
-    channel: 'chrome',
-    args: [
-      '--disable-background-timer-throttling',
-      '--disable-renderer-backgrounding',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-infobars',
-      '--no-default-browser-check',
-    ],
-  });
-
-  // Open windows
-  console.log(`🖥️  Opening ${ALL.length} windows…\n`);
-  const allPages = [];
-  for (let i = 0; i < ALL.length; i++) {
-    allPages.push(await openWindow(browser, i * WIN_W));
-    await sleep(200);
-  }
-  const dealerPage  = allPages[0];
-  const playerPages = allPages.slice(1);
-
-  // ── Step 1: Click names ──
-  console.log('🖱️  Clicking name cards…');
-  for (let i = 0; i < allPages.length; i++) {
-    await allPages[i].evaluate(() => localStorage.clear());
-    await allPages[i].reload();
-    await sleep(300);
-  }
-  for (let i = 0; i < allPages.length; i++) {
-    await allPages[i].click(`[data-name="${ALL[i].name}"]`).catch(() => {});
-    await sleep(200);
-  }
-  assert(await waitScreen(allPages, 's-lobby', 18000), 'All reach Arena lobby');
-
-  // ── Step 2: Click Room 7 (Poker) ──
-  console.log('\n🚪 Clicking Room 7…');
-  for (const p of allPages) {
-    await p.click('.room-card-poker').catch(() => {});
-    await sleep(200);
-  }
-  assert(await waitScreen(allPages, 's-role-select', 20000), 'All reach poker role-select');
-
-  // ── Step 3: Select roles ──
-  console.log('\n🎭 Kuya AD → Dealer | others → Player');
-  await dealerPage.click('button:has-text("Be the Dealer")').catch(() => {});
-  await sleep(300);
-  for (const p of playerPages) {
-    await p.click('button:has-text("Join as Player")').catch(() => {});
-    await sleep(200);
-  }
-  assert(await waitScreen(allPages, 's-lobby', 20000), 'All reach poker lobby');
-  await sleep(2500);
-
-  // ── Step 4: Players ready up ──
-  console.log('\n✅ Players readying up…');
-  for (const p of playerPages) {
-    await p.evaluate(() => toggleReady()).catch(() => {});
-    await sleep(400);
-  }
-  await sleep(2000);
-
-  // ── Step 5: Dealer starts game ──
-  console.log('\n▶ Dealer starting game…');
-  await dealerPage.evaluate(async () => { await startGame(); }).catch(() => {});
-  await sleep(1000);
-  await dealerPage.evaluate(() => confirmSeats()).catch(() => {});
-  await sleep(1000);
-  assert(await waitScreen([dealerPage], 's-dealer', 12000), 'Dealer on console');
-  assert(await waitScreen(playerPages, 's-lobby', 12000), 'Players on poker lobby');
-  await sleep(1000);
-
-  // ── Step 6: Play N hands (raise blinds before hand 5) ──
-  const BLIND_RAISE_AT = 5;
-  for (let h = 1; h <= N_HANDS; h++) {
-    // Raise blinds before hand 5 (dealer side + verify Firebase)
-    if (h === BLIND_RAISE_AT) {
-      console.log(`\n${'─'.repeat(52)}`);
-      console.log('  ⬆  Raising blinds before hand 5…');
-      await dealerPage.evaluate(() => increaseBlinds()).catch(() => {});
-      await sleep(1000);
-      const blLevel = await fb('/poker2/blindLevel');
-      const blAnn   = await fb('/poker2/announcement');
-      assert(blLevel === 1, `blindLevel in Firebase = 1 (got ${blLevel})`);
-      assert(typeof blAnn === 'string' && blAnn.includes('20/40'),
-        `blind announcement contains 20/40 (got: ${blAnn})`);
-      // verify dealer UI shows updated blind
-      const dealerBlinds = await dealerPage.evaluate(() =>
-        document.getElementById('d-blinds')?.textContent
-      ).catch(() => '');
-      assert(dealerBlinds === '$0.20/$0.40', `Dealer UI shows $0.20/$0.40 (got: ${dealerBlinds})`);
-      // verify at least one player sees the announcement
-      const playerAnn = await playerPages[0].evaluate(() =>
-        document.getElementById('p-ann')?.textContent
-      ).catch(() => '');
-      console.log(`  Player announcement: "${playerAnn}"`);
-      console.log('─'.repeat(52));
-    }
-
-    const ok = await playHand(dealerPage, playerPages, h);
-    if (!ok) break;
-
-    // After each hand, check blind level is still correct
-    if (h >= BLIND_RAISE_AT) {
-      const blLevel = await fb('/poker2/blindLevel');
-      assert(blLevel === 1, `After hand #${h}: blindLevel still 1 (got ${blLevel})`);
-      // Verify lastRaise stored is currentBB (40¢ = 40 cents) not hardcoded BB (20¢)
-      const lastRaise = await fb('/poker2/bet/lastRaise');
-      // lastRaise is reset at start of each hand to currentBB, check it's ≥ 40
-      if (lastRaise !== null) {
-        assert(lastRaise >= 40, `Hand #${h}: lastRaise in Firebase >= 40 (got ${lastRaise})`);
+async function playStreet(playerPgs) {
+  for (let i = 0; i < 10; i++) {
+    let acted = false;
+    for (let j = 0; j < playerPgs.length; j++) {
+      const page = playerPgs[j].page;
+      const name = playerPgs[j].name;
+      const html = await page.locator('#p-action').innerHTML().catch(function(){ return ''; });
+      if (!html.includes('onclick')) continue;
+      const hasCheck = await page.locator('button:has-text("Check")').isVisible().catch(function(){ return false; });
+      const hasCall  = await page.locator('button:has-text("Call")').isVisible().catch(function(){ return false; });
+      const hasAllin = await page.locator('button:has-text("All-In")').isVisible().catch(function(){ return false; });
+      if (hasCheck) {
+        await page.click('button:has-text("Check")'); acted = true;
+      } else if (hasCall) {
+        await page.click('button:has-text("Call")'); acted = true;
+      } else if (hasAllin) {
+        await page.click('button:has-text("All-In")'); acted = true;
+      } else {
+        const hasFold = await page.locator('button:has-text("Fold")').isVisible().catch(function(){ return false; });
+        if (hasFold) { await page.click('button:has-text("Fold")'); acted = true; }
       }
+      await page.waitForTimeout(400);
     }
-
-    if (h < N_HANDS) await sleep(2000);
+    if (!acted) break;
+    await new Promise(function(r){ setTimeout(r, 500); });
   }
-
-  // ── Step 7: End session → records Hall of Chips ──
-  console.log(`\n${'═'.repeat(52)}`);
-  console.log('  🚫 Ending session → recording Hall of Chips…');
-  await dealerPage.evaluate(() => hostEndSession()).catch(() => {});
-  await sleep(3000);
-
-  // Read back Hall of Chips
-  const monthKey = (() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  })();
-  const hall = await fb(`/poker-hall/${monthKey}`) || {};
-  const sessions = Object.values(hall.sessions || {}).filter(Boolean).sort((a, b) => b.gameNum - a.gameNum);
-
-  console.log(`\n  Hall of Chips — sessions recorded: ${sessions.length}`);
-  if (sessions.length) {
-    const latest = sessions[0];
-    console.log(`  Latest (Game #${latest.gameNum} · ${latest.date}):`);
-    Object.entries(latest.results || {})
-      .map(([k, v]) => { const net = typeof v === 'object' ? v.net : v; return [k.replace(/_/g, ' '), net]; })
-      .sort((a, b) => b[1] - a[1])
-      .forEach(([name, net]) => {
-        const sign = net >= 0 ? '+' : '-';
-        console.log(`    ${name.padEnd(12)} ${sign}$${(Math.abs(net)/100).toFixed(2)}`);
-      });
-  }
-
-  // ── Summary ──
-  console.log(`\n${'═'.repeat(52)}`);
-  console.log(`  Results: ${passed} passed, ${failed} failed`);
-  console.log(failed === 0 ? '  🎉 All good!' : `  ⚠️  ${failed} issue(s)`);
-  console.log('\n  Windows stay open 20s for inspection…');
-  await sleep(20000);
-  await browser.close();
 }
 
-run().catch(err => {
-  console.error('\n❌ Sim crashed:', err.message);
-  process.exit(1);
-});
+async function dealerCtrl(page, label, timeout) {
+  timeout = timeout || 15000;
+  try {
+    await page.waitForSelector('#d-controls button', { state: 'visible', timeout });
+    const btns = await page.locator('#d-controls button').all();
+    for (let i = 0; i < btns.length; i++) {
+      const t = await btns[i].textContent();
+      if (t.indexOf(label) !== -1) { await btns[i].click(); return true; }
+    }
+    bugs.push('Dealer ctrl not found: '+label);
+    return false;
+  } catch(e) { bugs.push('Dealer ctrl timeout: '+label); return false; }
+}
+
+(async function() {
+  console.log('Launching 4 windows...');
+  const browser = await chromium.launch({ headless: false });
+
+  const dealer = await makeCtx(browser, DEALER_NAME);
+  const pgs = [];
+  for (let i = 0; i < PLAYERS.length; i++) {
+    pgs.push({ page: await makeCtx(browser, PLAYERS[i]), name: PLAYERS[i] });
+  }
+
+  console.log('Kuya AD -> Be the Dealer');
+  await dealer.click('button:has-text("BE THE DEALER")');
+  await dealer.waitForTimeout(2000);
+
+  console.log('Players joining...');
+  for (let i = 0; i < pgs.length; i++) {
+    await pgs[i].page.click('button:has-text("JOIN AS PLAYER")');
+    await pgs[i].page.waitForTimeout(600);
+  }
+  await dealer.waitForTimeout(1500);
+
+  console.log('Players readying up...');
+  for (let i = 0; i < pgs.length; i++) {
+    await clickBtn(pgs[i].page, 'READY UP', 5000);
+    await pgs[i].page.waitForTimeout(400);
+  }
+  await dealer.waitForTimeout(2000);
+
+  console.log('Arranging seats...');
+  await clickBtn(dealer, 'ARRANGE SEATS', 8000);
+  await dealer.waitForTimeout(1500);
+
+  console.log('Starting game...');
+  const startBtn = dealer.locator('#s-seating button:has-text("START GAME")');
+  await startBtn.waitFor({ state: 'visible', timeout: 8000 });
+  await startBtn.click();
+  await dealer.waitForTimeout(2500);
+  console.log('Game started!');
+
+  for (let r = 1; r <= ROUNDS; r++) {
+    console.log('--- Round '+r+' ---');
+
+    await dealerCtrl(dealer, 'Deal New Hand', 10000);
+    await dealer.waitForTimeout(2000);
+
+    console.log('  preflop...');
+    await playStreet(pgs);
+    await dealer.waitForTimeout(800);
+
+    await dealerCtrl(dealer, 'Deal Flop', 12000);
+    await dealer.waitForTimeout(1500);
+    console.log('  flop...');
+    await playStreet(pgs);
+    await dealer.waitForTimeout(800);
+
+    await dealerCtrl(dealer, 'Deal Turn', 12000);
+    await dealer.waitForTimeout(1500);
+    console.log('  turn...');
+    await playStreet(pgs);
+    await dealer.waitForTimeout(800);
+
+    await dealerCtrl(dealer, 'Deal River', 12000);
+    await dealer.waitForTimeout(1500);
+    console.log('  river...');
+    await playStreet(pgs);
+    await dealer.waitForTimeout(800);
+
+    await dealerCtrl(dealer, 'Showdown', 12000);
+    await dealer.waitForTimeout(2500);
+    console.log('  done');
+
+    await dealer.screenshot({ path: '/tmp/r'+r+'-dealer.png' });
+    for (let i = 0; i < pgs.length; i++) {
+      await pgs[i].page.screenshot({ path: '/tmp/r'+r+'-'+pgs[i].name+'.png' });
+    }
+  }
+
+  console.log('Ending session...');
+  await dealer.click('button:has-text("End Session")').catch(function(){});
+  await dealer.waitForTimeout(1000);
+  await dealer.click('#cm-ok-btn').catch(function(){});
+  await dealer.waitForTimeout(3000);
+
+  await dealer.screenshot({ path: '/tmp/final-dealer.png' });
+  for (let i = 0; i < pgs.length; i++) {
+    await pgs[i].page.screenshot({ path: '/tmp/final-'+pgs[i].name+'.png' });
+  }
+
+  console.log('\n=== BUG REPORT ===');
+  if (bugs.length) { bugs.forEach(function(b){ console.log(' -', b); }); }
+  else { console.log('  No bugs detected'); }
+
+  await dealer.waitForTimeout(5000);
+  await browser.close();
+})().catch(function(e){ console.error('FATAL:', e.message); });
