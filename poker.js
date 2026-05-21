@@ -738,6 +738,7 @@ function renderDealerConsole(ph){
     </div>`;
   });
 
+  const revBtn=(enc)=>`<button class="btn-reveal" id="pr-reveal-${enc}" onclick="togglePlayerCards('${enc}')" title="Show/hide cards">${hiddenCards[enc]?'👁':'🙈'}</button>`;
   if(phase!=='lobby'){
     fb('GET','/poker2/hands').then(handsD=>{
       if(!handsD)return;
@@ -745,7 +746,7 @@ function renderDealerConsole(ph){
       Object.entries(handsD).forEach(([k,cards])=>{
         if(hiddenCards[k])return;
         const el=document.getElementById(`pr-cards-${k}`);
-        if(el&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
+        if(el&&Array.isArray(cards))el.innerHTML=revBtn(k)+dealerCardHTML(cards);
       });
     });
     fb('GET','/poker2/showdown').then(sd=>{
@@ -753,8 +754,6 @@ function renderDealerConsole(ph){
       Object.entries(sd).forEach(([k,cards])=>{
         const el=document.getElementById(`pr-cards-${k}`);
         if(el&&Array.isArray(cards))el.innerHTML=dealerCardHTML(cards);
-        const btn=document.getElementById(`pr-reveal-${k}`);
-        if(btn)btn.style.display='none';
       });
     });
   }
