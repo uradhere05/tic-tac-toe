@@ -641,7 +641,7 @@
 
 <div class="credits">
   <footer>Created by ADML &mdash; 2026</footer>
-  <div class="app-version">v4.46</div>
+  <div class="app-version">v4.47</div>
 </div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
@@ -697,6 +697,7 @@
     startPresencePoll();
     loadAndRenderLeaderboard();
     loadPokerHall();
+    pruneLeaderboard();
   }
 
   function changeName() { show('s-name'); loadOnlineUsers(); }
@@ -754,6 +755,19 @@
     const parseEntry = v => typeof v === 'object' && v !== null ? { buyIn: v.buyIn || 2000, net: v.net || 0 } : { buyIn: 2000, net: v || 0 };
     const decodeName = enc => decodeURIComponent(enc.replace(/_/g, ' '));
     body.innerHTML = window.buildHallHtml(sessions, decodeName, parseEntry);
+  }
+
+  let _lbPruned = false;
+  async function pruneLeaderboard() {
+    if (_lbPruned) return; _lbPruned = true;
+    try {
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 28);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      const keys = await fetch(`${DB}/leaderboard.json?shallow=true`).then(r => r.json()).catch(() => ({}));
+      const old = Object.keys(keys || {}).filter(k => k < cutoffStr);
+      for (const k of old)
+        fetch(`${DB}/leaderboard/${encodeURIComponent(k)}.json`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
   }
 
   async function loadAndRenderLeaderboard() {
