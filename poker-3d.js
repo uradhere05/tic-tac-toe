@@ -475,10 +475,21 @@ function injectCSS(){
 #s-player.p3d-screen .p-sub    { top: max(34px, calc(env(safe-area-inset-top) + 24px)) !important; font-size:.55rem !important; }
 #s-player.p3d-screen #p-name-badge { top: max(52px, calc(env(safe-area-inset-top) + 42px)) !important; font-size:.75rem !important; }
 #s-player.p3d-screen #p-blinds { top: max(68px, calc(env(safe-area-inset-top) + 58px)) !important; font-size:.6rem !important; }
-/* Hide community and hole wrappers — cards are on 3D table */
+/* Hide community wrap — cards on 3D table; keep hole-area visible in UI */
 #s-player.p3d-screen #p-community-wrap,
-#s-player.p3d-screen .hole-area,
 #s-player.p3d-screen .ann-card { display: none !important; }
+/* Hole-area: glassmorphic card display below 3D table */
+#s-player.p3d-screen .hole-area {
+  background: rgba(0,0,0,0.62) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(46,204,113,0.18) !important;
+  border-radius: 14px !important;
+  padding: 10px 16px !important;
+  margin-bottom: 4px !important;
+  width: 100% !important;
+  max-width: 420px !important;
+}
 /* Glassmorphism bottom panels */
 #s-player.p3d-screen .status-row {
   background: rgba(0,0,0,0.62) !important;
