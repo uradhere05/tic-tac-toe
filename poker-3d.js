@@ -69,12 +69,10 @@ function makeFaceTex(card) {
   ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5; ctx.stroke();
   const rank = RANKS[card.r], suit = SUITS[card.s], clr = SUIT_COLOR[card.s];
   ctx.fillStyle = clr;
-  // top-left
   ctx.font = 'bold 50px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillText(rank, 13, 10);
   ctx.font = '33px Arial';
   ctx.fillText(suit, 15, 59);
-  // bottom-right (rotated)
   ctx.save();
   ctx.translate(256, 384); ctx.rotate(Math.PI);
   ctx.fillStyle = clr;
@@ -83,7 +81,6 @@ function makeFaceTex(card) {
   ctx.font = '33px Arial';
   ctx.fillText(suit, 15, 59);
   ctx.restore();
-  // center pip
   ctx.font = '128px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = clr;
   ctx.fillText(suit, 128, 198);
@@ -111,7 +108,7 @@ const CW = 0.70, CH = 1.00, CD = 0.016;
 
 // ─── PokerCard3D ──────────────────────────────────────────────────────────
 class PokerCard3D {
-  constructor(scene) {
+  constructor(scene, onAnimate) {
     const geo  = new THREE.BoxGeometry(CW, CH, CD);
     const edge = new THREE.MeshStandardMaterial({ map: edgeTex(), roughness: 0.9 });
     this.fm = new THREE.MeshStandardMaterial({ map: backTex(), roughness: 0.28, metalness: 0.04 });
@@ -120,23 +117,18 @@ class PokerCard3D {
     this.mesh = new THREE.Mesh(geo, [edge, edge, edge, edge, this.fm, this.bm]);
     this.mesh.visible = false;
     this.isEmpty = true;
+    this._onAnimate = onAnimate; // callback to mark zone dirty during animation
     scene.add(this.mesh);
   }
 
   setCard(card) {
     if (!card) { this.mesh.visible = false; this.isEmpty = true; return; }
-    const wasEmpty = this.isEmpty;
     this.isEmpty = false;
     this.mesh.visible = true;
 
     if (!card.faceDown) {
       this.fm.map = faceTex(card); this.fm.needsUpdate = true;
-      if (wasEmpty && window.gsap) {
-        this.mesh.rotation.y = Math.PI;
-        window.gsap.to(this.mesh.rotation, { y: 0, duration: 0.52, ease: 'power2.inOut', delay: 0.22 });
-      } else {
-        this.mesh.rotation.y = 0;
-      }
+      this.mesh.rotation.y = 0;
     } else {
       this.fm.map = backTex(); this.fm.needsUpdate = true;
       this.mesh.rotation.y = 0;
@@ -144,18 +136,32 @@ class PokerCard3D {
     this.bm.map = backTex(); this.bm.needsUpdate = true;
   }
 
-  dealIn(tx, ty) {
+  // FIX #5: deal animation first, then flip reveal after landing
+  dealIn(tx, ty, faceUp) {
     const g = window.gsap; if (!g) return;
     const m = this.mesh;
+    // Start face-down above, slide to position, then flip face-up after landing
+    m.rotation.set(-0.22, Math.PI, (Math.random() - 0.5) * 0.14);
     m.position.set(tx + (Math.random() - 0.5) * 0.3, 2.4, 0.4);
-    m.rotation.set(-0.22, 0, (Math.random() - 0.5) * 0.14);
-    g.to(m.position, { x: tx, y: ty, z: 0, duration: 0.40, ease: 'power3.out' });
-    g.to(m.rotation, { x: 0, z: 0, duration: 0.40, ease: 'power3.out' });
+
+    const tl = g.timeline({ onUpdate: this._onAnimate });
+    tl.to(m.position, { x: tx, y: ty, z: 0, duration: 0.40, ease: 'power3.out' }, 0);
+    tl.to(m.rotation, { x: 0, z: 0, duration: 0.40, ease: 'power3.out' }, 0);
+    if (faceUp) {
+      // flip from back (Math.PI) to front (0) after card lands
+      tl.to(m.rotation, { y: 0, duration: 0.45, ease: 'power2.inOut' }, 0.28);
+    } else {
+      tl.to(m.rotation, { y: Math.PI, duration: 0.10 }, 0.38);
+    }
   }
 
   hoverLift(on) {
     const g = window.gsap; if (!g) return;
-    g.to(this.mesh.position, { y: on ? 0.14 : 0, z: on ? 0.07 : 0, duration: 0.18, ease: 'power2.out' });
+    g.to(this.mesh.position, {
+      y: on ? 0.14 : 0, z: on ? 0.07 : 0,
+      duration: 0.18, ease: 'power2.out',
+      onUpdate: this._onAnimate,
+    });
   }
 }
 
@@ -168,6 +174,9 @@ class CardZone {
     this.cards    = [];
     this.dirty    = true;
     this._prev    = [];
+    this._active  = true;   // FIX #2: loop stops when disposed
+    this._resizeH = null;   // FIX #3: stored handler for removal
+    this._pollId  = null;   // not used here but reserved
     this._build();
   }
 
@@ -189,16 +198,21 @@ class CardZone {
     this.scene  = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(-4, 4, 2.5, -2.5, 0.01, 20);
     this.camera.position.z = 8;
-    this._vy = this.opts.vy || 0.72; // half-height world units; smaller = bigger cards
+    this._vy = this.opts.vy || 0.72;
 
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.88));
     const sun = new THREE.DirectionalLight(0xfff6e0, 0.60); sun.position.set(1, 4, 6); this.scene.add(sun);
     const fil = new THREE.DirectionalLight(0xe8f0ff, 0.18); fil.position.set(-3,-1, 3); this.scene.add(fil);
 
-    for (let i = 0; i < this.maxCards; i++) this.cards.push(new PokerCard3D(this.scene));
+    // FIX #5: pass markDirty callback into each card for animation updates
+    const onAnim = () => { this.dirty = true; };
+    for (let i = 0; i < this.maxCards; i++) this.cards.push(new PokerCard3D(this.scene, onAnim));
 
     this._resize();
-    window.addEventListener('resize', () => { this._resize(); this.dirty = true; });
+
+    // FIX #3: store handler so it can be removed on dispose
+    this._resizeH = () => { this._resize(); this.dirty = true; };
+    window.addEventListener('resize', this._resizeH);
 
     if (this.opts.hover) this._bindHover(canvas);
 
@@ -217,19 +231,19 @@ class CardZone {
     this.camera.top    =  vy;
     this.camera.bottom = -vy;
     this.camera.updateProjectionMatrix();
+    // FIX #6: pass maxCards when nothing visible so spacing is correct
     this._layout(this._visible || this.maxCards);
     this.dirty = true;
   }
 
   _layout(count) {
-    if (!count) count = this.maxCards;
+    // FIX #6: never pass 0 or 1 when multiple slots exist
+    if (!count || count < 1) count = this.maxCards;
     const sp = CW * (count <= 2 ? 1.24 : count <= 3 ? 1.18 : count <= 5 ? 1.12 : 1.06);
     const totalW = sp * (count - 1);
     for (let i = 0; i < this.maxCards; i++) {
-      // only set X; Y/Z may be animated by GSAP
-      const base = this.cards[i].mesh.position;
       if (!this.cards[i]._animating) {
-        base.x = -totalW / 2 + i * sp;
+        this.cards[i].mesh.position.x = -totalW / 2 + i * sp;
       }
     }
   }
@@ -240,19 +254,22 @@ class CardZone {
     if (!changed) return;
     this._prev = keys;
 
+    // FIX #8: compute visibility BEFORE layout so positions are correct
     this._visible = cards.filter(c => !!c).length;
-    this._layout(this._visible || 1);
+    this._layout(this._visible || this.maxCards);
 
     for (let i = 0; i < this.maxCards; i++) {
       const card = cards[i], c3d = this.cards[i];
       const wasEmpty = c3d.isEmpty;
+
+      // FIX #5: setCard no longer starts its own flip — dealIn owns the full animation
       c3d.setCard(card || null);
+
       if (card && wasEmpty) {
         const tx = c3d.mesh.position.x;
-        const ty = 0;
         c3d._animating = true;
-        c3d.dealIn(tx, ty);
-        setTimeout(() => { c3d._animating = false; }, 500);
+        c3d.dealIn(tx, 0, !card.faceDown);
+        setTimeout(() => { c3d._animating = false; }, 600);
       }
     }
     this.dirty = true;
@@ -290,8 +307,10 @@ class CardZone {
   }
 
   _loop() {
-    const gsapRunning = window.gsap && !window.gsap.globalTimeline?.paused();
-    if (gsapRunning) this.dirty = true;
+    // FIX #2: stop loop when disposed
+    if (!this._active) return;
+    // FIX #1: don't check globalTimeline (always "running") — dirty is set
+    // explicitly by onUpdate callbacks in GSAP tweens and by markDirty()
     if (this.dirty) {
       this.renderer.render(this.scene, this.camera);
       this.dirty = false;
@@ -300,7 +319,13 @@ class CardZone {
   }
 
   markDirty() { this.dirty = true; }
-  dispose()   { this.renderer.dispose(); }
+
+  // FIX #2 + #3: proper cleanup
+  dispose() {
+    this._active = false;
+    if (this._resizeH) window.removeEventListener('resize', this._resizeH);
+    this.renderer.dispose();
+  }
 }
 
 // ─── DOM helpers ──────────────────────────────────────────────────────────
@@ -347,7 +372,6 @@ body {
     inset 0 2px 14px rgba(0,0,0,0.45),
     0 0 18px rgba(46,204,113,0.05) !important;
 }
-/* Explicit heights so the Three.js canvas has space to fill */
 #d-community, #p-community {
   min-height: 150px !important;
   height: 150px !important;
@@ -378,7 +402,6 @@ body {
   background: radial-gradient(ellipse 60% 40% at 50% 50%,
     rgba(8,30,50,0.97) 0%, rgba(2,8,15,0.99) 100%) !important;
 }
-/* Hide originals once 3D layer is active */
 .p3d-active img.card-img,
 .p3d-active img.card-img-sm,
 .p3d-active .card-empty { opacity: 0 !important; pointer-events: none !important; }
@@ -387,8 +410,10 @@ body {
 }
 
 // ─── Zone watcher ─────────────────────────────────────────────────────────
-const zones     = new Map();  // el → CardZone
+const zones     = new Map();
 const observers = [];
+// FIX #4: store poll ID so it can be cleared
+let _pollId = null;
 
 function setupZone(el, maxCards, opts) {
   if (zones.has(el)) return zones.get(el);
@@ -430,11 +455,25 @@ function watchEl(id, maxCards, opts) {
   zone.update(parseCards(el, maxCards));
 }
 
-// ─── Periodic sync for screen transitions ─────────────────────────────────
-// Screens toggle display:none/flex; resize handles this but only on window resize.
-// Poll every 600ms so newly-revealed screens get correct dimensions.
+// FIX #7: watch #card-overlay for display changes to resize overlay-cards immediately
+function watchOverlayVisibility() {
+  const overlay = document.getElementById('card-overlay');
+  const zone    = zones.get(document.getElementById('overlay-cards'));
+  if (!overlay || !zone) return;
+
+  const obs = new MutationObserver(() => {
+    if (overlay.classList.contains('active')) {
+      // overlay just opened — resize immediately so cards render at correct resolution
+      requestAnimationFrame(() => { zone._resize(); zone.markDirty(); });
+    }
+  });
+  obs.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  observers.push(obs);
+}
+
 function startPoll() {
-  setInterval(() => {
+  // FIX #4: store ID, clear on unload
+  _pollId = setInterval(() => {
     zones.forEach((zone, el) => {
       if (el.offsetWidth > 0 && el.offsetHeight > 0) {
         zone._resize();
@@ -443,12 +482,15 @@ function startPoll() {
       }
     });
   }, 600);
+
+  window.addEventListener('pagehide', () => {
+    clearInterval(_pollId);
+    observers.forEach(o => o.disconnect());
+    zones.forEach(z => z.dispose());
+  });
 }
 
 // ─── innerHTML shim for p-hole ────────────────────────────────────────────
-// poker.js checks `!holeEl.innerHTML` before setting hole cards.
-// Our canvas inside the element makes it non-empty, blocking the check.
-// Override the getter so it returns '' when only our canvas is present.
 function shimHoleInnerHTML() {
   const el = document.getElementById('p-hole');
   if (!el) return;
@@ -474,6 +516,7 @@ function init() {
   watchEl('p-hole',        2, { hover: false, vy: 0.60 });
   watchEl('overlay-cards', 2, { hover: false, vy: 0.54 });
   shimHoleInnerHTML();
+  watchOverlayVisibility(); // FIX #7
   startPoll();
 }
 
