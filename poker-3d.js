@@ -150,26 +150,27 @@ class Card3D {
     this.mesh.scale.set(1, 1, 1);
   }
 
-  dealIn(tx, ty, tz, faceUp) {
+  dealIn(tx, ty, tz, faceUp, flipDelay = 0) {
     const g = window.gsap; if (!g) return;
     const m = this.mesh;
-    // Start with back texture, above the table
+    // Start face-down, launched from above the table
     this.mat.map = backTex(); this.mat.needsUpdate = true;
     m.scale.set(1, 1, 1);
     m.position.set(tx + (Math.random() - 0.5) * 0.5, TY + 2.2, tz - 2.2);
     m.rotation.set(-Math.PI / 2, 0, (Math.random() - 0.5) * 0.3);
     const tl = g.timeline({ onUpdate: this._dirty });
-    // Slide to table surface
+    // Slide down to table surface
     tl.to(m.position, { x: tx, y: TY + 0.006, z: tz, duration: 0.40, ease: 'power3.out' }, 0);
     tl.to(m.rotation, { z: 0, duration: 0.40, ease: 'power3.out' }, 0);
     if (faceUp && this._card) {
-      // Card-flip illusion: squash to edge-on, swap texture, expand back
-      const card = this._card;
-      const mat  = this.mat;
-      const dirty = this._dirty;
-      tl.to(m.scale, { x: 0, duration: 0.12, ease: 'power2.in' }, 0.36);
-      tl.call(() => { mat.map = faceTex(card); mat.needsUpdate = true; dirty(); }, [], 0.48);
-      tl.to(m.scale, { x: 1, duration: 0.16, ease: 'power2.out' }, 0.48);
+      // Dramatic flip: card sits face-down, then lifts + squash-flips + settles
+      const card = this._card, mat = this.mat, dirty = this._dirty;
+      const fd = 0.40 + flipDelay; // flip start time after slide lands
+      tl.to(m.position, { y: TY + 0.07, duration: 0.13, ease: 'power2.out' }, fd);        // brief lift
+      tl.to(m.scale,    { x: 0, duration: 0.14, ease: 'power2.in'  }, fd + 0.08);          // squash to edge
+      tl.call(() => { mat.map = faceTex(card); mat.needsUpdate = true; dirty(); }, [], fd + 0.22); // swap face
+      tl.to(m.scale,    { x: 1, duration: 0.18, ease: 'power2.out' }, fd + 0.22);          // expand face-up
+      tl.to(m.position, { y: TY + 0.006, duration: 0.16, ease: 'power1.inOut' }, fd + 0.26); // settle
     }
   }
 
@@ -366,8 +367,8 @@ class PokerTableScene {
       const wasEmpty=c.isEmpty;
       c.setCard(cards[i]||null);
       if (cards[i]&&wasEmpty){
-        c._animating=true; c.dealIn(tx,TY+0.008,COMM_Z,!cards[i].faceDown);
-        setTimeout(()=>{c._animating=false;},700);
+        c._animating=true; c.dealIn(tx,TY+0.008,COMM_Z,!cards[i].faceDown,0.55);
+        setTimeout(()=>{c._animating=false;},1600);
       }
     }
     this.dirty=true;
