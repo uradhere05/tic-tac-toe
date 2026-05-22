@@ -17,7 +17,7 @@
   'use strict';
 
   /* ── Feature flags ─────────────────────────────────────────────────────── */
-  const REVEAL_ENABLED = false; // set true to re-enable tap/hold/drag reveal overlay
+  const REVEAL_ENABLED = true; // set false to disable tap/hold/drag reveal overlay
 
   /* ── Constants ─────────────────────────────────────────────────────────── */
   const HOLD_MS      = 160;  // ms before hold-peek activates
