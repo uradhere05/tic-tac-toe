@@ -16,6 +16,9 @@
 (function () {
   'use strict';
 
+  /* ── Feature flags ─────────────────────────────────────────────────────── */
+  const REVEAL_ENABLED = false; // set true to re-enable tap/hold/drag reveal overlay
+
   /* ── Constants ─────────────────────────────────────────────────────────── */
   const HOLD_MS      = 160;  // ms before hold-peek activates
   const DRAG_THRESH  = 10;   // px movement before drag mode starts
@@ -369,7 +372,7 @@
 
   /* ── Pointer event handlers ────────────────────────────────────────────── */
   function onDown(e) {
-    if (!_faceDown || _isOpen) return;
+    if (!REVEAL_ENABLED || !_faceDown || _isOpen) return;
     e.preventDefault();
     _dragOrigin = { y: e.clientY ?? e.touches?.[0]?.clientY, dragging: false };
     clearHold();
@@ -408,7 +411,7 @@
 
     if (wasDragging || wasPeeking) {
       endPeek(); // snap backs back to full coverage
-    } else {
+    } else if (REVEAL_ENABLED) {
       openOverlay(); // short tap → fullscreen reveal
     }
   }
