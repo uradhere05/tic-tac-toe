@@ -258,6 +258,7 @@
     _peeking = false;
     clearHold();
     endPeek();
+    window._p3dScene?.flipHoleCards(true);
 
     const ov  = overlayEl();
     const oc  = oCards();
@@ -317,6 +318,7 @@
   function closeOverlay(instant) {
     if (!_isOpen) return;
     _isOpen = false;
+    window._p3dScene?.flipHoleCards(false);
 
     const ov = overlayEl();
     const oc = oCards();

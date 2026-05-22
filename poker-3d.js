@@ -374,7 +374,7 @@ class PokerTableScene {
     this.dirty=true;
   }
 
-  // Update hole cards
+  // Update hole cards — always dealt face-down; flipHoleCards() reveals them
   updateHole(cards) {
     const keys=cards.map(c=>!c?'none':c.faceDown?'back':`${c.r}-${c.s}`);
     if (keys.join()===this._prevHole.join()) return;
@@ -385,10 +385,27 @@ class PokerTableScene {
       const wasEmpty=c.isEmpty;
       c.setCard(cards[i]||null);
       if (cards[i]&&wasEmpty){
-        c._animating=true; c.dealIn(tx,TY+0.008,HOLE_Z,!cards[i].faceDown);
+        c._animating=true; c.dealIn(tx,TY+0.008,HOLE_Z,false); // always face-down
         setTimeout(()=>{c._animating=false;},700);
       }
     }
+    this.dirty=true;
+  }
+
+  // Flip the two 3D hole cards face-up or back face-down
+  flipHoleCards(faceUp) {
+    const g=window.gsap;
+    this.holeCards.forEach(c=>{
+      if(c.isEmpty)return;
+      const mat=c.mat, card=c._card, dirty=this._dirty, m=c.mesh;
+      if(!g){mat.map=faceUp?faceTex(card):backTex();mat.needsUpdate=true;dirty();return;}
+      const tl=g.timeline({onUpdate:dirty});
+      tl.to(m.position,{y:TY+0.065,duration:0.10,ease:'power2.out'},0);
+      tl.to(m.scale,{x:0,duration:0.12,ease:'power2.in'},0.07);
+      tl.call(()=>{mat.map=faceUp?faceTex(card):backTex();mat.needsUpdate=true;dirty();},null,0.19);
+      tl.to(m.scale,{x:1,duration:0.15,ease:'power2.out'},0.19);
+      tl.to(m.position,{y:TY+0.006,duration:0.12,ease:'power1.inOut'},0.23);
+    });
     this.dirty=true;
   }
 
