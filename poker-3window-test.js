@@ -22,26 +22,26 @@ async function tryClick(page, text, timeout = 3000) {
   } catch { return false; }
 }
 
-// Wait for a button to appear, regardless of which page it lands on first
-async function actWhenReady(pages, buttons = ['Check','Call','Fold'], timeout = 12000) {
+// Wait for an action button on any page and click it — returns true if clicked
+async function actWhenReady(pages, buttons = ['Check','Call','Fold'], timeout = 14000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     for (const page of pages) {
       for (const btn of buttons) {
         try {
           const loc = page.locator(`button:has-text("${btn}")`);
-          const vis = await loc.isVisible();
-          if (vis) {
+          if (await loc.isVisible({ timeout: 200 })) {
             await loc.click();
-            console.log(`  ✅ Clicked "${btn}" on ${await page.title().then(() => 'player')}`);
-            await WAIT(800);
+            console.log(`  ✅ Clicked "${btn}"`);
+            await WAIT(1200); // wait for Firebase to propagate
             return true;
           }
         } catch {}
       }
     }
-    await WAIT(500);
+    await WAIT(600);
   }
+  console.log('  ⚠️  No action button found in time');
   return false;
 }
 
@@ -155,23 +155,33 @@ async function resetFirebase() {
   await ss(matt,   '10-matt-flop');
   await ss(gianne, '11-gianne-flop');
 
-  // ── Flop betting round ────────────────────────────────────────────
+  // ── Flop betting ──────────────────────────────────────────────────
   console.log('\n[9] Flop betting…');
   await actWhenReady([gianne, matt]);
-  await WAIT(1200);
   await actWhenReady([matt, gianne]);
   await WAIT(2000);
 
   // ── Deal turn ────────────────────────────────────────────────────
   console.log('\n[10] Dealing turn…');
   const turnOk = await tryClick(dealer, 'Deal Turn', 8000);
-  if (turnOk) {
-    console.log('  ✅ Turn dealt');
-    await WAIT(3500);
-  }
+  if (turnOk) { console.log('  ✅ Turn dealt'); await WAIT(3500); }
   await ss(dealer, '12-dealer-turn');
   await ss(matt,   '13-matt-turn');
   await ss(gianne, '14-gianne-turn');
+
+  // ── Turn betting ──────────────────────────────────────────────────
+  console.log('\n[11] Turn betting…');
+  await actWhenReady([gianne, matt]);
+  await actWhenReady([matt, gianne]);
+  await WAIT(2000);
+
+  // ── Deal river (5th card) ─────────────────────────────────────────
+  console.log('\n[12] Dealing river (5 cards)…');
+  const riverOk = await tryClick(dealer, 'Deal River', 8000);
+  if (riverOk) { console.log('  ✅ River dealt — all 5 community cards live'); await WAIT(3500); }
+  await ss(dealer, '15-dealer-river');
+  await ss(matt,   '16-matt-river');
+  await ss(gianne, '17-gianne-river');
 
   console.log('\n════════════════════════════════════════');
   console.log('✅  Test complete — screenshots saved as test-*.png');
