@@ -225,7 +225,14 @@ class CardZone {
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     const aspect = w / h;
-    const vy = this._vy;
+
+    // Dynamically widen the camera if needed so all maxCards always fit
+    // horizontally with ~8% margin on each side, even on narrow screens.
+    const sp5 = CW * (this.maxCards <= 2 ? 1.24 : this.maxCards <= 3 ? 1.18 : 1.06);
+    const neededW = sp5 * (this.maxCards - 1) + CW;
+    const vyForFit = neededW / (2 * aspect * 0.84); // 8% margin each side
+    const vy = Math.max(this._vy, vyForFit);
+
     this.camera.left   = -vy * aspect;
     this.camera.right  =  vy * aspect;
     this.camera.top    =  vy;
