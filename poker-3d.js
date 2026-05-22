@@ -521,15 +521,11 @@ function injectCSS(){
   width: 100% !important;
   max-width: 420px !important;
 }
-/* Hand strength label — show below hole cards in 3D as floating text */
+/* Hand strength label — flows naturally below cards inside hole-area panel */
 #s-player.p3d-screen .hand-strength {
-  position: fixed !important;
-  bottom: calc(220px + env(safe-area-inset-bottom)) !important;
-  left: 50% !important; transform: translateX(-50%) !important;
-  z-index: 15 !important;
+  position: static !important;
   font-size: .72rem !important;
   text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important;
-  pointer-events: none;
 }
 /* Keep overlay for tap-to-view */
 #card-overlay {
