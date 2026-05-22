@@ -373,30 +373,30 @@ body {
     0 0 18px rgba(46,204,113,0.05) !important;
 }
 #d-community, #p-community {
-  min-height: 150px !important;
-  height: 150px !important;
+  min-height: 110px !important;
+  height: 110px !important;
   overflow: visible !important;
   justify-content: center;
 }
 #p-hole {
-  min-height: 180px !important;
-  height: 180px !important;
+  min-height: 126px !important;
+  height: 126px !important;
   overflow: visible !important;
   justify-content: center;
 }
 #overlay-cards {
-  width: min(420px, 90vw) !important;
-  height: 280px !important;
+  width: min(380px, 88vw) !important;
+  height: 210px !important;
   overflow: visible !important;
 }
 @media (max-width: 430px) {
   #d-community, #p-community {
-    min-height: 120px !important; height: 120px !important;
+    min-height: 90px !important; height: 90px !important;
   }
   #p-hole {
-    min-height: 148px !important; height: 148px !important;
+    min-height: 104px !important; height: 104px !important;
   }
-  #overlay-cards { height: 220px !important; }
+  #overlay-cards { height: 170px !important; }
 }
 #card-overlay {
   background: radial-gradient(ellipse 60% 40% at 50% 50%,
@@ -511,10 +511,10 @@ function shimHoleInnerHTML() {
 // ─── Init ─────────────────────────────────────────────────────────────────
 function init() {
   injectCSS();
-  watchEl('d-community',   5, { hover: true,  vy: 0.58 });
-  watchEl('p-community',   5, { hover: false, vy: 0.58 });
-  watchEl('p-hole',        2, { hover: false, vy: 0.60 });
-  watchEl('overlay-cards', 2, { hover: false, vy: 0.54 });
+  watchEl('d-community',   5, { hover: true,  vy: 0.72 });
+  watchEl('p-community',   5, { hover: false, vy: 0.72 });
+  watchEl('p-hole',        2, { hover: false, vy: 0.72 });
+  watchEl('overlay-cards', 2, { hover: false, vy: 0.66 });
   shimHoleInnerHTML();
   watchOverlayVisibility(); // FIX #7
   startPoll();
