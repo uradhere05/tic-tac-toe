@@ -41,8 +41,20 @@
   const holeEl   = ()  => $('p-hole');
   const holeArea = ()  => document.querySelector('#s-player .hole-area');
   const overlayEl= ()  => $('card-overlay');
-  const oCards   = ()  => $('overlay-cards');
   const strEl    = ()  => $('p-hand-strength');
+
+  // Use a dedicated container — never touch #overlay-cards (poker-3d owns it)
+  function getRevealCards() {
+    let el = $('hc-reveal-cards');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'hc-reveal-cards';
+      el.className = 'cards-row';
+      const hint = overlayEl()?.querySelector('.overlay-hint');
+      hint ? hint.parentNode.insertBefore(el, hint) : overlayEl()?.appendChild(el);
+    }
+    return el;
+  }
   const G        = ()  => window.gsap; // GSAP reference
 
   /* ── CSS ───────────────────────────────────────────────────────────────── */
@@ -264,7 +276,7 @@
     window._p3dScene?.flipHoleCards(true);
 
     const ov  = overlayEl();
-    const oc  = oCards();
+    const oc  = getRevealCards();
     const g   = G();
     if (!ov || !oc) return;
 
@@ -324,7 +336,7 @@
     window._p3dScene?.flipHoleCards(false);
 
     const ov = overlayEl();
-    const oc = oCards();
+    const oc = getRevealCards();
     const g  = G();
 
     if (!g || instant) {
