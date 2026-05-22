@@ -38,38 +38,18 @@ function rrPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function makeBackTex() {
-  const C = document.createElement('canvas'); C.width=256; C.height=384;
-  const ctx = C.getContext('2d');
-  rrPath(ctx,0,0,256,384,14); ctx.fillStyle='#0e2057'; ctx.fill();
-  ctx.save(); ctx.clip();
-  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1.3;
-  for (let i=-400;i<650;i+=16){
-    ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+384,384);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(i+384,0);ctx.lineTo(i,384);ctx.stroke();
-  }
-  ctx.restore();
-  rrPath(ctx,9,9,238,366,10); ctx.strokeStyle='rgba(255,210,0,0.55)';ctx.lineWidth=2.5;ctx.stroke();
-  rrPath(ctx,18,18,220,348,7); ctx.strokeStyle='rgba(255,210,0,0.22)';ctx.lineWidth=1;ctx.stroke();
-  const t=new THREE.CanvasTexture(C); t.colorSpace=THREE.SRGBColorSpace; return t;
-}
+const SUIT_LETTERS = ['S','H','D','C']; // index matches SUIT_MAP values
+const API_BASE = 'https://deckofcardsapi.com/static/img';
+const _tLoader = new THREE.TextureLoader();
 
-function makeFaceTex(card) {
-  const C=document.createElement('canvas'); C.width=256; C.height=384;
-  const ctx=C.getContext('2d');
-  rrPath(ctx,0,0,256,384,14); ctx.fillStyle='#f9f9f9';ctx.fill();
-  ctx.strokeStyle='#ccc';ctx.lineWidth=1.5;ctx.stroke();
-  const rank=RANKS[card.r],suit=SUITS[card.s],clr=SUIT_COLOR[card.s];
-  ctx.fillStyle=clr;
-  ctx.font='bold 50px Arial';ctx.textAlign='left';ctx.textBaseline='top';
-  ctx.fillText(rank,13,10); ctx.font='33px Arial';ctx.fillText(suit,15,59);
-  ctx.save();ctx.translate(256,384);ctx.rotate(Math.PI);
-  ctx.fillStyle=clr;ctx.font='bold 50px Arial';ctx.textAlign='left';ctx.textBaseline='top';
-  ctx.fillText(rank,13,10);ctx.font='33px Arial';ctx.fillText(suit,15,59);
-  ctx.restore();
-  ctx.font='128px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillStyle=clr;ctx.fillText(suit,128,198);
-  const t=new THREE.CanvasTexture(C); t.colorSpace=THREE.SRGBColorSpace; return t;
+function loadTex(url) {
+  const tex = _tLoader.load(url, t => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.needsUpdate = true;
+    if (window._p3dScene) window._p3dScene.dirty = true;
+  });
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 function makeEdgeTex() {
@@ -80,9 +60,9 @@ function makeEdgeTex() {
 
 const _tc=new Map();
 const getTex=(k,fn)=>{if(!_tc.has(k))_tc.set(k,fn());return _tc.get(k);};
-const backTex=()=>getTex('back',makeBackTex);
+const backTex=()=>getTex('back',()=>loadTex(`${API_BASE}/back.png`));
 const edgeTex=()=>getTex('edge',makeEdgeTex);
-const faceTex=c=>getTex(`f${c.r}-${c.s}`,()=>makeFaceTex(c));
+const faceTex=c=>getTex(`f${c.r}-${c.s}`,()=>loadTex(`${API_BASE}/${RANK_CODES[c.r]}${SUIT_LETTERS[c.s]}.png`));
 
 // ─── Table constants ──────────────────────────────────────────────────────
 const TRX=3.8, TRZ=2.1;   // table ellipse radii
